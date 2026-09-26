@@ -292,3 +292,135 @@ def walk_forward_execution_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.S
         pooled_dir.append(d)
         fold_sharpes.append(_sharpe(ret))
     return _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes, return_raw)
+
+
+def _score_masked(direction_full, idx_range, open_, high, low, close, atr, n_hold,
+                   sl_type=None, sl_level=None, rr_ratio=None):
+    mask = np.zeros(len(direction_full), dtype=bool)
+    mask[idx_range] = True
+    restricted = direction_full.where(pd.Series(mask, index=direction_full.index), 0.0)
+    return simulate_trades(restricted, open_, high, low, close, atr, n_hold, sl_type, sl_level, rr_ratio)
+
+
+def _inner_select_n_hold(direction_full, train_idx, open_, high, low, close, atr, n_hold_grid,
+                          min_trades: int = 10):
+    """Step 6: pick the holding period using ONLY the training range's own
+    Sharpe (mirrors 02n, but re-run inside every fold instead of once on the
+    whole history) -- avoids freezing a single N chosen by peeking at all 5
+    folds' pooled OOS performance at once."""
+    best_n, best_sh, best_qualifies = n_hold_grid[0], float("-inf"), False
+    for n in n_hold_grid:
+        ret, _ = _score_masked(direction_full, train_idx, open_, high, low, close, atr, n)
+        sh = _sharpe(ret)
+        qualifies = len(ret) >= min_trades and not np.isnan(sh)
+        sh_cmp = sh if not np.isnan(sh) else float("-inf")
+        if (qualifies and not best_qualifies) or (qualifies == best_qualifies and sh_cmp > best_sh):
+            best_n, best_sh, best_qualifies = n, sh_cmp, qualifies
+    return best_n
+
+
+def _inner_select_sl_tp(direction_side, train_idx, open_, high, low, close, atr, n_hold, sl_configs,
+                         min_trades: int = 10):
+    """Step 6: pick one side's (sl_type, sl_level, rr_ratio) using only the
+    training range's Sharpe (mirrors 02o/02p, re-run inside every fold)."""
+    best_cfg, best_sh, best_qualifies = sl_configs[0], float("-inf"), False
+    for sl_type, sl_level, rr in sl_configs:
+        ret, _ = _score_masked(direction_side, train_idx, open_, high, low, close, atr, n_hold,
+                                sl_type, sl_level, rr)
+        sh = _sharpe(ret)
+        qualifies = len(ret) >= min_trades and not np.isnan(sh)
+        sh_cmp = sh if not np.isnan(sh) else float("-inf")
+        if (qualifies and not best_qualifies) or (qualifies == best_qualifies and sh_cmp > best_sh):
+            best_cfg, best_sh, best_qualifies = (sl_type, sl_level, rr), sh_cmp, qualifies
+    return best_cfg
+
+
+def nested_walk_forward_single(factor: pd.Series, close: pd.Series, open_: pd.Series, high: pd.Series,
+                                low: pd.Series, atr: pd.Series, mode: str, n_hold_grid, sl_configs,
+                                quantile: float = 0.8, n_folds: int = 5) -> dict:
+    """Full nested walk-forward (signal design step 6): everything 02n/02o/02p
+    chose ONCE by looking at all 5 folds' pooled OOS performance together (N,
+    then per-side stop-loss/take-profit) is instead re-chosen INSIDE every
+    fold using ONLY that fold's training range, then frozen and applied to
+    that fold's held-out test range -- the rigorous version of the same
+    search, testing whether the earlier choices are stable across time or an
+    artifact of picking on the full sample. Returns pooled OOS stats plus
+    each fold's own chosen hyperparameters (for a stability diagnostic)."""
+    chunks = _fold_chunks(len(factor), n_folds)
+    pooled_ret, pooled_dir, fold_sharpes, fold_choices = [], [], [], []
+    for i in range(1, n_folds + 1):
+        train_idx, test_idx = np.concatenate(chunks[:i]), chunks[i]
+        if len(test_idx) == 0:
+            continue
+        train_factor = factor.iloc[train_idx]
+        direction_full = _direction_for_mode(
+            factor, close, mode, quantile,
+            lo=train_factor.quantile(1 - quantile), hi=train_factor.quantile(quantile),
+            thresh=train_factor.quantile(quantile),
+        )
+        n_hold = _inner_select_n_hold(direction_full, train_idx, open_, high, low, close, atr, n_hold_grid)
+
+        test_ret_parts, test_dir_parts = [], []
+        choice = {"n_hold": n_hold}
+        for side in ("long", "short"):
+            side_dir = _apply_direction_filter(direction_full, side)
+            sl_type, sl_level, rr = _inner_select_sl_tp(side_dir, train_idx, open_, high, low, close,
+                                                         atr, n_hold, sl_configs)
+            choice[f"{side}_sl_type"], choice[f"{side}_sl_level"], choice[f"{side}_rr"] = sl_type, sl_level, rr
+            ret, d = _score_masked(side_dir, test_idx, open_, high, low, close, atr, n_hold,
+                                    sl_type, sl_level, rr)
+            test_ret_parts.append(ret)
+            test_dir_parts.append(d)
+        fold_ret = np.concatenate(test_ret_parts)
+        fold_dir = np.concatenate(test_dir_parts)
+        pooled_ret.append(fold_ret)
+        pooled_dir.append(fold_dir)
+        fold_sharpes.append(_sharpe(fold_ret))
+        fold_choices.append(choice)
+    result = _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes)
+    result["fold_choices"] = fold_choices
+    return result
+
+
+def nested_walk_forward_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.Series, mode_b: str,
+                              close: pd.Series, open_: pd.Series, high: pd.Series, low: pd.Series,
+                              atr: pd.Series, n_hold_grid, sl_configs, quantile: float = 0.8,
+                              n_folds: int = 5) -> dict:
+    """Pair version of nested_walk_forward_single."""
+    chunks = _fold_chunks(len(factor_a), n_folds)
+    pooled_ret, pooled_dir, fold_sharpes, fold_choices = [], [], [], []
+    for i in range(1, n_folds + 1):
+        train_idx, test_idx = np.concatenate(chunks[:i]), chunks[i]
+        if len(test_idx) == 0:
+            continue
+        dir_a = _direction_for_mode(factor_a, close, mode_a, quantile,
+                                     lo=factor_a.iloc[train_idx].quantile(1 - quantile),
+                                     hi=factor_a.iloc[train_idx].quantile(quantile),
+                                     thresh=factor_a.iloc[train_idx].quantile(quantile))
+        dir_b = _direction_for_mode(factor_b, close, mode_b, quantile,
+                                     lo=factor_b.iloc[train_idx].quantile(1 - quantile),
+                                     hi=factor_b.iloc[train_idx].quantile(quantile),
+                                     thresh=factor_b.iloc[train_idx].quantile(quantile))
+        combined = combine_directions(dir_a, dir_b)
+        n_hold = _inner_select_n_hold(combined, train_idx, open_, high, low, close, atr, n_hold_grid)
+
+        test_ret_parts, test_dir_parts = [], []
+        choice = {"n_hold": n_hold}
+        for side in ("long", "short"):
+            side_dir = _apply_direction_filter(combined, side)
+            sl_type, sl_level, rr = _inner_select_sl_tp(side_dir, train_idx, open_, high, low, close,
+                                                         atr, n_hold, sl_configs)
+            choice[f"{side}_sl_type"], choice[f"{side}_sl_level"], choice[f"{side}_rr"] = sl_type, sl_level, rr
+            ret, d = _score_masked(side_dir, test_idx, open_, high, low, close, atr, n_hold,
+                                    sl_type, sl_level, rr)
+            test_ret_parts.append(ret)
+            test_dir_parts.append(d)
+        fold_ret = np.concatenate(test_ret_parts)
+        fold_dir = np.concatenate(test_dir_parts)
+        pooled_ret.append(fold_ret)
+        pooled_dir.append(fold_dir)
+        fold_sharpes.append(_sharpe(fold_ret))
+        fold_choices.append(choice)
+    result = _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes)
+    result["fold_choices"] = fold_choices
+    return result

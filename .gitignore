@@ -1,0 +1,25 @@
+# 敏感配置（永远不提交）
+.env
+*.env
+!.env.example
+
+# 原始/处理后的行情数据（体量大，不入 git；由 01_数据提取/ 脚本本地生成）
+/data/raw/*
+/data/processed/*
+!/data/raw/.gitkeep
+!/data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# 本地日志
+*.log
+06_运维脚本/logs/
+
+# OS
+.DS_Store
+Thumbs.db

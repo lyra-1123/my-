@@ -1,0 +1,15 @@
+# 数据路径配置（非敏感，跟踪进 git）
+# 环境变量 GOLDQ_RAW_DIR / GOLDQ_PROCESSED_DIR 可覆盖以下默认值，
+# 便于同一份代码在云端（本仓库）和本地 Windows（实际跑 MT5/Dukascopy 采集）之间切换。
+
+symbol: XAUUSD
+timeframe_base: M1
+
+raw_dir: data/raw            # 存放 DAT_ASCII_XAUUSD_M1_*.csv 原始文件
+processed_dir: data/processed # 存放 build_dataset.py 生成的 Parquet/DuckDB
+
+# MT5 服务器时间 -> UTC 的小时偏移。永久铁律（详见 lib/goldq/dukascopy_io.py 顶部说明）：
+# MT5 直连导出的时间戳是 broker 服务器时间，不是 UTC；Dukascopy 原生导出才是真 UTC。
+# 必须先用 mt5_fill_volume.py 的 verify_overlap() 或 mt5_verify_suspicious.py 人工核对
+# 某个 broker 的服务器时间与 UTC 的真实偏移后，再改这个值——禁止假设为 0。
+mt5_utc_offset_hours: 0  # ⚠️ 占位值，上线前必须校准，见 99_结果/traps_log.md

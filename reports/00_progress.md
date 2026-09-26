@@ -11,7 +11,7 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 | 1. 数据清洗 | ✅ 完成 | `scripts/01_build_clean_dataset.py` | `reports/01_data_quality_report.md` | 635万条M1数据，0坏点、0未解释缺口，已产出M1~D1多周期parquet |
 | 2. 因子挖掘 | ✅ 完成(v4，新因子类型+全面百分位化+系统性组合搜索) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 383个因子中286个通过\|IC\|≥0.01；新增Choppiness Index/Aroon/Parkinson-GK波动率/linreg_r²/avg_gap，其中Choppiness Index表现强(\|IC\|~0.08)且符号与bb_width/adx相反，两者互相印证"波动率/趋势会均值回归"；穷举15个代表因子的两两组合，最优对(bb_width_50+efficiency_ratio_20)把未来ER压低17.7%，好于v1~v3手选组合(~15%)；8因子平均合成打分反而不如两两组合(9.9%<17.7%，简单平均稀释信号)，阶段3不建议用平均合成分数；session/星期几乎无区分力 |
 | 2b. 因子分类筛选(多horizon PBO+多折walk-forward Sharpe) | ✅ 完成(v3) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | v1(1天horizon)筛出12/38；v2(改4h/8h匹配日内马丁周期+单次70/30切分)骤降到2/38(adx、aroon_down)；v3诊断出问题不在PBO阈值(0.5→0.7几乎不变)而在"单次切分"太脆弱，改用5折扩张窗口walk-forward后**稳健核心回升到11/38**：adx_slope、adx、hour、autocorr_returns、linreg_r2、h4_efficiency_ratio、choppiness_index、mfi、aroon_down、dist_from_high、aroon_up——其中adx_slope/adx折一致性最好(4h上4-5折为正)，dist_from_high折一致性最差(8h仅1/5折为正，优先级应靠后) |
-| 3. 回测 | 未开始 | - | - | - |
+| 3. 回测(基线，无过滤器) | ✅ 完成 | `scripts/03_baseline_backtest.py` | `reports/03_baseline_backtest_report.md` | 长仓ATR网格马丁(初始0.01手/2倍加仓/最多8层/1xATR(14)间距和止盈/$10000初始资金/1:200杠杆)：权益从$10000稳定涨到峰值$104,961(2012-10-09)，随后半年内回撤95%到$4,787，最终被2013年4月中旬黄金历史级暴跌一根H1 bar打出-$105,418强平，账户**破产**(2013-04-15)，此后不再交易。验证了马丁格尔的核心风险：稳定盈利可以持续数年，但尾部风险一次性摧毁全部收益。这是阶段3b(接入11个regime因子做入场过滤)的对照组基准 |
 | 4. 策略成型 | 未开始 | - | - | - |
 | 5. 多agent审核 | 未开始 | - | - | - |
 | 6. 策略运行 | 未开始 | - | - | - |

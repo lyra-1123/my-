@@ -124,9 +124,10 @@ def main():
         ann_sharpe = wf["oos_sharpe_all"] * (annual_rate ** 0.5) if annual_rate > 0 else float("nan")
         earlier_ann = earlier.loc[name, "shared_ann_sharpe"] if name in earlier.index else float("nan")
         if kind == "single":
-            passes = wf["n_folds_positive"] >= 3 and wf["n_long"] >= MIN_LONG_SHORT and wf["n_short"] >= MIN_LONG_SHORT
+            passes = (wf["oos_sharpe_all"] > 0 and wf["n_folds_positive"] >= 3
+                      and wf["n_long"] >= MIN_LONG_SHORT and wf["n_short"] >= MIN_LONG_SHORT)
         else:
-            passes = wf["n_folds_positive"] >= 3 and annual_rate >= MIN_ANNUAL_RATE
+            passes = wf["oos_sharpe_all"] > 0 and wf["n_folds_positive"] >= 3 and annual_rate >= MIN_ANNUAL_RATE
         result_rows.append({
             "name": name, "kind": kind, "nested_ann_sharpe": ann_sharpe, "annual_rate": annual_rate,
             "n_folds_positive": wf["n_folds_positive"], "passes": passes, "earlier_peeking_ann_sharpe": earlier_ann,

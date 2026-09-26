@@ -56,6 +56,7 @@ def main():
     close = factors["close"]
     print(f"      {len(factors):,} M5 bars, {factors.shape[1]} columns")
 
+    years = (factors["close"].shape[0] * 5 / 60 / 24) / 365.25  # M5 bars -> years, rough
     fwd_return = close.pct_change(HOLDING_BARS).shift(-HOLDING_BARS)
     points = decision_points(len(factors), HOLDING_BARS)
     points = points[fwd_return.notna().to_numpy()[points]]
@@ -134,25 +135,29 @@ def main():
         f"持有期占位值: {HOLDING_BARS}根M5(~1小时)，真实值待步骤3确定。",
         "",
         f"## 阶段2 walk-forward结果（{len(top)}个候选）", "",
-        "| 因子 | 分类 | 模式 | OOS Sharpe(多空合计) | OOS Sharpe(多) | OOS Sharpe(空) | "
-        "多空次数 | 折数为正 |",
-        "|---|---|---|---|---|---|---|---|",
+        "| 因子 | 分类 | 模式 | OOS Sharpe(未年化) | OOS Sharpe(年化) | OOS Sharpe(多) | "
+        "OOS Sharpe(空) | 多空次数 | 折数为正 |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for _, r in stage2_df.sort_values("wf_oos_sharpe_all", ascending=False).iterrows():
+        annual = (r["wf_n_long"] + r["wf_n_short"]) / years
+        ann_sharpe = r["wf_oos_sharpe_all"] * (annual ** 0.5) if annual > 0 else float("nan")
         lines.append(
             f"| {r['variant']} | {r['category']} | {r['mode']} | {r['wf_oos_sharpe_all']:+.3f} | "
-            f"{r['wf_oos_sharpe_long']:+.3f} | {r['wf_oos_sharpe_short']:+.3f} | "
+            f"{ann_sharpe:+.2f} | {r['wf_oos_sharpe_long']:+.3f} | {r['wf_oos_sharpe_short']:+.3f} | "
             f"{r['wf_n_long']}/{r['wf_n_short']} | {r['wf_n_folds_positive']}/5 |"
         )
 
     lines += ["", f"## 最终通过筛选的候选（OOS Sharpe>0 且 >=3/5折为正 且 多空触发都>=30次）："
                f"{len(validated)}个", ""]
     if len(validated):
-        lines += ["| 因子 | 分类 | 模式 | OOS Sharpe | OOS Sharpe(多/空) |",
-                   "|---|---|---|---|---|"]
+        lines += ["| 因子 | 分类 | 模式 | OOS Sharpe(未年化) | OOS Sharpe(年化) | OOS Sharpe(多/空) |",
+                   "|---|---|---|---|---|---|"]
         for _, r in validated.iterrows():
+            annual = (r["wf_n_long"] + r["wf_n_short"]) / years
+            ann_sharpe = r["wf_oos_sharpe_all"] * (annual ** 0.5) if annual > 0 else float("nan")
             lines.append(f"| {r['variant']} | {r['category']} | {r['mode']} | "
-                          f"{r['wf_oos_sharpe_all']:+.3f} | "
+                          f"{r['wf_oos_sharpe_all']:+.3f} | {ann_sharpe:+.2f} | "
                           f"{r['wf_oos_sharpe_long']:+.3f}/{r['wf_oos_sharpe_short']:+.3f} |")
     else:
         lines.append("无（说明多空都稳健的方向性因子，在这批候选里没有找到）")

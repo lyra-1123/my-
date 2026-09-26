@@ -99,31 +99,107 @@ def _sharpe(x: np.ndarray) -> float:
     return x.mean() / x.std(ddof=1)
 
 
+def combine_directions(direction_a: pd.Series, direction_b: pd.Series) -> pd.Series:
+    """AND-consensus: only fires where both conditions are active AND agree
+    on the same sign (mirrors signal_long/short's "A(long) & B(long)"
+    template) — not just "both nonzero", genuine directional agreement."""
+    agree = (direction_a == direction_b) & (direction_a != 0)
+    return direction_a.where(agree, 0.0)
+
+
+def _direction_for_mode(factor: pd.Series, close: pd.Series, mode: str,
+                         quantile: float, lo=None, hi=None, thresh=None) -> pd.Series:
+    if mode == "momentum":
+        return momentum_direction(factor, close, thresh if thresh is not None else factor.quantile(quantile))
+    lo = lo if lo is not None else factor.quantile(1 - quantile)
+    hi = hi if hi is not None else factor.quantile(quantile)
+    return reversion_direction(factor, lo, hi)
+
+
+def _fold_chunks(n_rows: int, n_folds: int) -> list:
+    """Contiguous BAR-INDEX chunks spanning the whole series (0..n_rows-1),
+    NOT the sparse `decision_points` grid built for dense per-bar factor
+    testing. Directional AND-signals fire rarely (a handful to a few
+    hundred times a year) — subsetting to every Nth bar before looking for
+    them silently discards most of the actual trigger bars (an earlier bug
+    here made annual activation rates look ~10x lower than reality)."""
+    return np.array_split(np.arange(n_rows), n_folds + 1)
+
+
+def walk_forward_direction_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.Series, mode_b: str,
+                                 close: pd.Series, fwd_return: pd.Series, points: np.ndarray,
+                                 n_folds: int = 5, quantile: float = 0.8) -> dict:
+    """Same expanding-window walk-forward as walk_forward_direction, but for
+    an AND-consensus pair: each factor's own threshold(s) are refit on the
+    training range of each fold (no look-ahead), directions combined via
+    combine_directions, then scored at every actual trigger bar in that
+    fold's test range (not a sparse subsample — see _fold_chunks). `points`
+    is accepted for signature compatibility but no longer used to define
+    folds."""
+    chunks = _fold_chunks(len(factor_a), n_folds)
+    pooled_ret, pooled_dir = [], []
+    fold_sharpes = []
+    for i in range(1, n_folds + 1):
+        train_idx, test_idx = np.concatenate(chunks[:i]), chunks[i]
+        if len(test_idx) == 0:
+            continue
+        dir_a = _direction_for_mode(factor_a, close, mode_a, quantile,
+                                     lo=factor_a.iloc[train_idx].quantile(1 - quantile),
+                                     hi=factor_a.iloc[train_idx].quantile(quantile),
+                                     thresh=factor_a.iloc[train_idx].quantile(quantile))
+        dir_b = _direction_for_mode(factor_b, close, mode_b, quantile,
+                                     lo=factor_b.iloc[train_idx].quantile(1 - quantile),
+                                     hi=factor_b.iloc[train_idx].quantile(quantile),
+                                     thresh=factor_b.iloc[train_idx].quantile(quantile))
+        combined = combine_directions(dir_a, dir_b)
+        test_slice = combined.iloc[test_idx]
+        active = test_slice[test_slice != 0].index.intersection(fwd_return.dropna().index)
+        test_ret = (combined.loc[active] * fwd_return.loc[active])
+        pooled_ret.append(test_ret)
+        pooled_dir.append(combined.loc[active])
+        fold_sharpes.append(_sharpe(test_ret.to_numpy()))
+
+    ret = pd.concat(pooled_ret) if pooled_ret else pd.Series(dtype=float)
+    dirn = pd.concat(pooled_dir) if pooled_dir else pd.Series(dtype=float)
+    fold_sharpes = np.array(fold_sharpes)
+    return {
+        "oos_sharpe_all": _sharpe(ret.to_numpy()),
+        "oos_sharpe_long": _sharpe(ret[dirn > 0].to_numpy()),
+        "oos_sharpe_short": _sharpe(ret[dirn < 0].to_numpy()),
+        "n_long": int((dirn > 0).sum()), "n_short": int((dirn < 0).sum()),
+        "n_folds_positive": int(np.nansum(fold_sharpes > 0)),
+        "n_folds_total": int(np.sum(~np.isnan(fold_sharpes))),
+    }
+
+
 def walk_forward_direction(factor: pd.Series, close: pd.Series, fwd_return: pd.Series,
                             points: np.ndarray, mode: str, n_folds: int = 5,
                             quantile: float = 0.8) -> dict:
     """5-fold expanding-window walk-forward for momentum_direction/
-    reversion_direction: threshold(s) fit on training points only per fold,
-    frozen, applied to that fold's test points; all folds' test returns
-    pooled into one Sharpe (same convention as
-    factors.validation.walk_forward_multi_fold)."""
-    chunks = np.array_split(points, n_folds + 1)
+    reversion_direction: threshold(s) fit on the training RANGE of each
+    fold, frozen, applied to that fold's test range; scored at every
+    actual trigger bar (see _fold_chunks — NOT the sparse decision_points
+    grid). `points` kept for signature compatibility, unused for fold
+    definition."""
+    chunks = _fold_chunks(len(factor), n_folds)
     pooled_ret, pooled_dir = [], []
     fold_sharpes = []
     for i in range(1, n_folds + 1):
-        train_points, test_points = np.concatenate(chunks[:i]), chunks[i]
-        if len(test_points) == 0:
+        train_idx, test_idx = np.concatenate(chunks[:i]), chunks[i]
+        if len(test_idx) == 0:
             continue
-        train_factor = factor.iloc[train_points]
+        train_factor = factor.iloc[train_idx]
         if mode == "momentum":
             direction = momentum_direction(factor, close, train_factor.quantile(quantile))
         else:
             direction = reversion_direction(
                 factor, train_factor.quantile(1 - quantile), train_factor.quantile(quantile)
             )
-        test_ret = (direction * fwd_return).iloc[test_points]
+        test_slice = direction.iloc[test_idx]
+        active = test_slice[test_slice != 0].index.intersection(fwd_return.dropna().index)
+        test_ret = (direction.loc[active] * fwd_return.loc[active])
         pooled_ret.append(test_ret)
-        pooled_dir.append(direction.iloc[test_points])
+        pooled_dir.append(direction.loc[active])
         fold_sharpes.append(_sharpe(test_ret.to_numpy()))
 
     ret = pd.concat(pooled_ret) if pooled_ret else pd.Series(dtype=float)

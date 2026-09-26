@@ -10,44 +10,46 @@
 
 ## 阶段2 walk-forward结果（25个候选）
 
-| 因子 | 分类 | 模式 | OOS Sharpe(多空合计) | OOS Sharpe(多) | OOS Sharpe(空) | 多空次数 | 折数为正 |
-|---|---|---|---|---|---|---|---|
-| garman_klass_vol_20 | volatility | reversion | +0.002 | +0.068 | -0.037 | 767/551 | 4/5 |
-| adx_50_pctrank2000 | trend_strength | reversion | +0.002 | +0.080 | -0.057 | 516/390 | 2/5 |
-| vol_of_vol_100 | volatility | reversion | +0.001 | +0.001 | +0.043 | 470/207 | 2/5 |
-| ma_slope_50_pctrank500 | momentum | reversion | +0.001 | +0.016 | +0.012 | 401/391 | 3/5 |
-| williams_r_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011 | -0.000 | 2438/2553 | 3/5 |
-| stochastic_k_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011 | -0.000 | 2438/2553 | 3/5 |
-| donchian_position_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011 | -0.000 | 2438/2553 | 3/5 |
-| bb_width_100 | volatility | reversion | +0.001 | +0.047 | -0.035 | 311/220 | 3/5 |
-| parkinson_vol_20 | volatility | reversion | +0.001 | +0.013 | +0.002 | 802/553 | 2/5 |
-| parkinson_vol_20_pctrank500 | volatility | reversion | +0.001 | +0.014 | -0.003 | 1041/725 | 2/5 |
-| ma_slope_100 | momentum | reversion | -0.001 | -0.223 | +0.043 | 151/165 | 2/5 |
-| parkinson_vol_100_pctrank2000 | volatility | reversion | -0.001 | +0.073 | -0.150 | 357/224 | 3/5 |
-| donchian_position_100 | mean_reversion | reversion | -0.001 | -0.025 | +0.014 | 2425/2510 | 2/5 |
-| williams_r_100 | mean_reversion | reversion | -0.001 | -0.025 | +0.014 | 2425/2510 | 2/5 |
-| stochastic_k_100 | mean_reversion | reversion | -0.001 | -0.025 | +0.014 | 2425/2510 | 2/5 |
-| garman_klass_vol_20_pctrank500 | volatility | reversion | -0.002 | +0.011 | -0.037 | 984/748 | 1/5 |
-| bb_width_100_pctrank500 | volatility | reversion | -0.002 | -0.038 | +0.012 | 436/299 | 2/5 |
-| stochastic_d_100_pctrank2000 | mean_reversion | reversion | -0.003 | +0.001 | -0.038 | 1430/1527 | 2/5 |
-| stochastic_d_100 | mean_reversion | reversion | -0.003 | -0.020 | -0.019 | 1402/1425 | 0/5 |
-| atr_50 | volatility | reversion | -0.004 | -0.059 | -0.041 | 304/328 | 1/5 |
-| avg_gap_50 | price_action | reversion | -0.005 | -0.037 | -0.120 | 1019/69 | 2/5 |
-| ma_slope_50_pctrank2000 | momentum | reversion | -0.005 | -0.016 | -0.104 | 332/337 | 1/5 |
-| ma_slope_100_pctrank500 | momentum | reversion | -0.005 | -0.137 | -0.036 | 196/225 | 1/5 |
-| choppiness_index_100_pctrank2000 | trend_strength | reversion | -0.006 | -0.044 | -0.057 | 575/804 | 1/5 |
-| hour | other | momentum | -0.008 | +0.015 | -0.054 | 8867/8771 | 0/5 |
+| 因子 | 分类 | 模式 | OOS Sharpe(未年化) | OOS Sharpe(年化) | OOS Sharpe(多) | OOS Sharpe(空) | 多空次数 | 折数为正 |
+|---|---|---|---|---|---|---|---|---|
+| vol_of_vol_100 | volatility | reversion | +0.028 | +0.72 | +0.028 | +0.029 | 5360/2457 | 5/5 |
+| adx_50_pctrank2000 | trend_strength | reversion | +0.023 | +0.68 | +0.032 | +0.011 | 6110/4745 | 3/5 |
+| bb_width_100 | volatility | reversion | +0.023 | +0.52 | +0.034 | +0.009 | 3827/2578 | 3/5 |
+| bb_width_100_pctrank500 | volatility | reversion | +0.017 | +0.47 | +0.021 | +0.012 | 5369/3750 | 4/5 |
+| parkinson_vol_100_pctrank2000 | volatility | reversion | +0.017 | +0.41 | +0.033 | -0.011 | 4325/3010 | 4/5 |
+| garman_klass_vol_20_pctrank500 | volatility | reversion | +0.016 | +0.68 | +0.022 | +0.010 | 12257/8430 | 5/5 |
+| parkinson_vol_20_pctrank500 | volatility | reversion | +0.014 | +0.57 | +0.018 | +0.009 | 12616/8636 | 4/5 |
+| garman_klass_vol_20 | volatility | reversion | +0.002 | +0.07 | +0.005 | -0.001 | 9399/6281 | 4/5 |
+| avg_gap_50 | price_action | reversion | -0.000 | -0.02 | -0.002 | +0.017 | 12473/481 | 2/5 |
+| parkinson_vol_20 | volatility | reversion | -0.001 | -0.02 | +0.004 | -0.006 | 9843/6458 | 2/5 |
+| atr_50 | volatility | reversion | -0.002 | -0.06 | +0.030 | -0.038 | 3787/3568 | 2/5 |
+| ma_slope_50_pctrank500 | momentum | reversion | -0.009 | -0.25 | -0.006 | -0.013 | 4497/4528 | 2/5 |
+| ma_slope_50_pctrank2000 | momentum | reversion | -0.012 | -0.31 | -0.003 | -0.022 | 4066/4130 | 0/5 |
+| hour | other | momentum | -0.013 | -1.76 | +0.019 | -0.046 | 106222/105248 | 0/5 |
+| stochastic_d_100 | mean_reversion | reversion | -0.018 | -0.93 | -0.005 | -0.031 | 16673/16916 | 0/5 |
+| ma_slope_100 | momentum | reversion | -0.020 | -0.35 | -0.043 | -0.003 | 1899/1893 | 2/5 |
+| choppiness_index_100_pctrank2000 | trend_strength | reversion | -0.021 | -0.78 | -0.008 | -0.031 | 7369/9517 | 1/5 |
+| stochastic_d_100_pctrank2000 | mean_reversion | reversion | -0.024 | -1.29 | -0.013 | -0.036 | 17143/17652 | 0/5 |
+| stochastic_k_100_pctrank2000 | mean_reversion | reversion | -0.026 | -1.85 | -0.028 | -0.025 | 29878/30867 | 0/5 |
+| williams_r_100_pctrank2000 | mean_reversion | reversion | -0.026 | -1.85 | -0.028 | -0.025 | 29878/30867 | 0/5 |
+| donchian_position_100_pctrank2000 | mean_reversion | reversion | -0.026 | -1.85 | -0.028 | -0.025 | 29878/30867 | 0/5 |
+| donchian_position_100 | mean_reversion | reversion | -0.029 | -1.98 | -0.021 | -0.037 | 29103/29786 | 0/5 |
+| stochastic_k_100 | mean_reversion | reversion | -0.029 | -1.98 | -0.021 | -0.037 | 29103/29786 | 0/5 |
+| williams_r_100 | mean_reversion | reversion | -0.029 | -1.98 | -0.021 | -0.037 | 29103/29786 | 0/5 |
+| ma_slope_100_pctrank500 | momentum | reversion | -0.030 | -0.61 | -0.032 | -0.028 | 2473/2484 | 2/5 |
 
-## 最终通过筛选的候选（OOS Sharpe>0 且 >=3/5折为正 且 多空触发都>=30次）：6个
+## 最终通过筛选的候选（OOS Sharpe>0 且 >=3/5折为正 且 多空触发都>=30次）：8个
 
-| 因子 | 分类 | 模式 | OOS Sharpe | OOS Sharpe(多/空) |
-|---|---|---|---|---|
-| garman_klass_vol_20 | volatility | reversion | +0.002 | +0.068/-0.037 |
-| ma_slope_50_pctrank500 | momentum | reversion | +0.001 | +0.016/+0.012 |
-| stochastic_k_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011/-0.000 |
-| williams_r_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011/-0.000 |
-| donchian_position_100_pctrank2000 | mean_reversion | reversion | +0.001 | +0.011/-0.000 |
-| bb_width_100 | volatility | reversion | +0.001 | +0.047/-0.035 |
+| 因子 | 分类 | 模式 | OOS Sharpe(未年化) | OOS Sharpe(年化) | OOS Sharpe(多/空) |
+|---|---|---|---|---|---|
+| vol_of_vol_100 | volatility | reversion | +0.028 | +0.72 | +0.028/+0.029 |
+| adx_50_pctrank2000 | trend_strength | reversion | +0.023 | +0.68 | +0.032/+0.011 |
+| bb_width_100 | volatility | reversion | +0.023 | +0.52 | +0.034/+0.009 |
+| bb_width_100_pctrank500 | volatility | reversion | +0.017 | +0.47 | +0.021/+0.012 |
+| parkinson_vol_100_pctrank2000 | volatility | reversion | +0.017 | +0.41 | +0.033/-0.011 |
+| garman_klass_vol_20_pctrank500 | volatility | reversion | +0.016 | +0.68 | +0.022/+0.010 |
+| parkinson_vol_20_pctrank500 | volatility | reversion | +0.014 | +0.57 | +0.018/+0.009 |
+| garman_klass_vol_20 | volatility | reversion | +0.002 | +0.07 | +0.005/-0.001 |
 
 ## 结论与下一步
 

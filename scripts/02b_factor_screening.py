@@ -19,7 +19,14 @@ parameter-search looks like):
      of (non-overlapping) decision points only, apply that frozen threshold
      to the untouched last 30%.
 
-A family survives only if BOTH hold: PBO <= PBO_THRESHOLD and OOS Sharpe > 0.
+A family survives a given horizon only if BOTH hold: PBO <= PBO_THRESHOLD
+and OOS Sharpe > 0.
+
+v2: the target strategy is an intraday martingale whose ladder cycle runs
+4-8 hours (not forced flat by end of day), so screening is now done AT the
+horizons that actually matter for that (4h, 8h), with the original 24h kept
+only as a "if it runs long" reference point — not as the primary bar. A
+family only counts as robust if it clears BOTH 4h and 8h.
 
 Usage:
     python scripts/02b_factor_screening.py --clean-dir data/clean --report-dir reports
@@ -39,11 +46,44 @@ from factors.validation import (  # noqa: E402
     walk_forward_oos_sharpe,
 )
 
-HORIZON = 24  # bars (1 day of H1) — matches Phase 2's main label horizon
-ANNUALIZATION = 252 ** 0.5  # decision points are ~1 trading day apart
+TEST_HORIZONS = {"4小时": 4, "8小时": 8, "1天(参考)": 24}
+CORE_HORIZONS = ("4小时", "8小时")  # a family must pass BOTH to be called robust
 PBO_THRESHOLD = 0.5
-LABEL_COL = "label_fwd_er_24"
-NON_FACTOR_COLS = {"time", "session", "day_of_week", "label_fwd_er_24", "label_fwd_er_72"}
+NON_FACTOR_COLS = {"time", "session", "day_of_week"} | {
+    f"label_fwd_er_{h}" for h in (4, 8, 24, 72)
+}
+
+
+def screen_at_horizon(factors: pd.DataFrame, df: pd.DataFrame, horizon: int,
+                       families: dict) -> pd.DataFrame:
+    label = factors[f"label_fwd_er_{horizon}"]
+    base_return = build_proxy_returns(df, horizon)
+    points = decision_points(len(df), horizon)
+    annualization = (252 * 24 / horizon) ** 0.5  # decision points are `horizon` H1-bars apart
+
+    results = []
+    for fam, variants in sorted(families.items()):
+        ic_signs = {v: np.sign(factors[v].corr(label, method="spearman") or 0) for v in variants}
+        variant_returns = {}
+        for v in variants:
+            cond = conditional_returns(factors[v], ic_signs[v], base_return)
+            variant_returns[v] = cond.iloc[points].to_numpy()
+
+        pbo, diag = pbo_for_family(variant_returns)
+        best_variant = diag["best_by_full_sample"]
+        wf = walk_forward_oos_sharpe(factors[best_variant], base_return, ic_signs[best_variant], points)
+        passed = (not np.isnan(pbo)) and pbo <= PBO_THRESHOLD and wf["oos_sharpe"] > 0
+        results.append({
+            "category": FAMILY_CATEGORY.get(fam, "other"),
+            "family": fam,
+            "n_variants": len(variants),
+            "best_variant": best_variant,
+            "pbo": pbo,
+            "oos_sharpe_ann": wf["oos_sharpe"] * annualization,
+            "oos_active_rate": wf["oos_n_active"] / wf["oos_n_total"] if wf["oos_n_total"] else float("nan"),
+            "pass": passed,
+        })
+    return pd.DataFrame(results), len(points)
 
 
 def main():
@@ -56,59 +96,40 @@ def main():
     factors = pd.read_parquet(os.path.join(args.clean_dir, "factors_H1.parquet"))
     df = pd.read_parquet(os.path.join(args.clean_dir, "XAUUSD_H1.parquet"))
     assert len(factors) == len(df)
-    label = factors[LABEL_COL]
-
-    print("[2/4] Building proxy mean-reversion returns + decision points ...")
-    base_return = build_proxy_returns(df, HORIZON)
-    points = decision_points(len(df), HORIZON)
-    print(f"      {len(points):,} non-overlapping decision points ({HORIZON}-bar spacing)")
 
     numeric_cols = [c for c in factors.columns if c not in NON_FACTOR_COLS]
     families = {}
     for col in numeric_cols:
         families.setdefault(family(col), []).append(col)
 
-    print(f"[3/4] Screening {len(families)} factor families ({sum(len(v) for v in families.values())} "
-          "variants) with PBO + walk-forward OOS Sharpe ...")
+    print(f"[2/4] Screening {len(families)} factor families at horizons: "
+          f"{', '.join(f'{k}({v}根H1)' for k, v in TEST_HORIZONS.items())} ...")
 
-    results = []
-    for fam, variants in sorted(families.items()):
-        ic_signs = {v: np.sign(factors[v].corr(label, method="spearman") or 0) for v in variants}
+    per_horizon = {}
+    n_points = {}
+    for name, h in TEST_HORIZONS.items():
+        per_horizon[name], n_points[name] = screen_at_horizon(factors, df, h, families)
+        n_pass = int(per_horizon[name]["pass"].sum())
+        print(f"      {name}: {n_pass}/{len(families)} pass ({n_points[name]:,} decision points)")
 
-        variant_returns = {}
-        for v in variants:
-            cond = conditional_returns(factors[v], ic_signs[v], base_return)
-            variant_returns[v] = cond.iloc[points].to_numpy()
+    print("[3/4] Merging across horizons ...")
+    merged = per_horizon[list(TEST_HORIZONS)[0]][["category", "family", "n_variants"]].copy()
+    for name in TEST_HORIZONS:
+        h_df = per_horizon[name].set_index("family")
+        merged[f"pbo_{name}"] = merged["family"].map(h_df["pbo"])
+        merged[f"oos_sharpe_{name}"] = merged["family"].map(h_df["oos_sharpe_ann"])
+        merged[f"pass_{name}"] = merged["family"].map(h_df["pass"])
+    merged["robust_core"] = merged[[f"pass_{h}" for h in CORE_HORIZONS]].all(axis=1)
 
-        pbo, diag = pbo_for_family(variant_returns)
-        best_variant = diag["best_by_full_sample"]
-
-        wf = walk_forward_oos_sharpe(
-            factors[best_variant], base_return, ic_signs[best_variant], points,
-        )
-        passed = (not np.isnan(pbo)) and pbo <= PBO_THRESHOLD and wf["oos_sharpe"] > 0
-        results.append({
-            "category": FAMILY_CATEGORY.get(fam, "other"),
-            "family": fam,
-            "n_variants": len(variants),
-            "best_variant": best_variant,
-            "pbo": pbo,
-            "is_sharpe_ann": wf["is_sharpe"] * ANNUALIZATION,
-            "oos_sharpe_ann": wf["oos_sharpe"] * ANNUALIZATION,
-            "oos_active_rate": wf["oos_n_active"] / wf["oos_n_total"] if wf["oos_n_total"] else float("nan"),
-            "pass": passed,
-        })
-
-    results_df = pd.DataFrame(results).sort_values(["category", "pbo"])
     csv_path = os.path.join(args.report_dir, "02b_factor_screening_results.csv")
-    results_df.to_csv(csv_path, index=False)
+    merged.sort_values(["robust_core", "category"], ascending=[False, True]).to_csv(csv_path, index=False)
 
-    n_pass = int(results_df["pass"].sum())
-    n_total = len(results_df)
-    print(f"[4/4] {n_pass}/{n_total} families pass (PBO<={PBO_THRESHOLD} AND OOS Sharpe>0) -> {csv_path}")
+    n_core = int(merged["robust_core"].sum())
+    print(f"[4/4] {n_core}/{len(families)} families robust at BOTH {' and '.join(CORE_HORIZONS)} "
+          f"-> {csv_path}")
 
     lines = [
-        "# 因子分类筛选报告（阶段2b：PBO + 样本外Sharpe）",
+        "# 因子分类筛选报告（阶段2b：多horizon PBO + 样本外Sharpe）",
         "",
         "## 方法",
         "",
@@ -117,82 +138,89 @@ def main():
         "不涉及需要独立判断的主观决策，所以用清晰分类的代码逐类跑，而不是真的派生多个"
         "独立agent各自跑一遍相同的算术。",
         "",
+        "**v2变化**：目标策略是日内马丁，完整网格周期(从第一次开仓到止盈/止损)大约4-8小时，"
+        "不强制收盘平仓。所以筛选horizon从最初的1天/3天改为4小时和8小时（1天保留作参考对照，"
+        "不作为通过标准），一个因子家族必须同时在4小时和8小时都通过，才算“稳健核心”——"
+        "只在其中一个horizon上表现好，大概率是运气而不是真信号。",
+        "",
         "每个因子家族有多个窗口/百分位版本（最多12个），这正是过拟合的高发地带——如果只是"
         "“挑全样本IC最高的那个”，很可能只是在噪音里挑到了运气好的参数组合。所以这里对每个"
-        "家族做：",
+        "家族在每个horizon分别做：",
         "",
         "1. **PBO（回测过拟合概率，CSCV方法，Bailey/Lopez de Prado）**：把不重叠的决策点"
-        "（每24根H1一个，共" + f"{len(points):,}" + "个）分成10段，穷举所有把10段分成"
-        "训练/测试两半的方式(C(10,5)=252种)，每种方式里“用训练半段挑出的样本内最优版本”"
-        "在测试半段的表现排名——如果经常排到测试半段的中位数以下，说明这个“挑最优”的过程"
-        "本身就是在过拟合噪音，PBO就是这个比例。",
+        "分成10段，穷举所有把10段分成训练/测试两半的方式(C(10,5)=252种)，每种方式里"
+        "“用训练半段挑出的样本内最优版本”在测试半段的表现排名——如果经常排到测试半段的"
+        "中位数以下，说明这个“挑最优”的过程本身就是在过拟合噪音，PBO就是这个比例。",
         "2. **Walk-forward样本外Sharpe**：前70%决策点当样本内(IS)、后30%当样本外(OOS)——"
         "安全分位阈值只用IS部分数据算，冻结后应用到OOS，不看OOS数据本身。",
         "",
         "因子本身不是交易规则，所以用一个固定的、跟因子无关的极简策略做“测试床”："
-        "对最近1根bar做反向(fade)，持有到未来第24根bar——这样“用因子做门槛”和不用因子的"
-        "版本除了因子那道门槛之外完全一样，Sharpe的差异能被干净地归因到因子本身，而不是"
-        "策略设计。这个测试床本身很粗糙（没有点差/滑点/仓位管理），阶段3的真实马丁回测"
-        "会更细，这里只是用来筛因子。",
+        "对最近1根bar做反向(fade)，持有到未来第horizon根bar——这样“用因子做门槛”和不用"
+        "因子的版本除了因子那道门槛之外完全一样，Sharpe的差异能被干净地归因到因子本身，"
+        "而不是策略设计。这个测试床本身很粗糙（没有点差/滑点/仓位管理），阶段3的真实马丁"
+        "回测会更细，这里只是用来筛因子。Sharpe按对应horizon的决策点频率年化，不同horizon"
+        "之间可以直接比较量级。",
         "",
-        f"通过标准：PBO<={PBO_THRESHOLD}（比抛硬币更可信） 且 OOS Sharpe>0（缺一不可）。",
+        f"通过标准（单horizon）：PBO<={PBO_THRESHOLD}（比抛硬币更可信） 且 OOS Sharpe>0（缺一不可）。"
+        f"“稳健核心”标准：{'和'.join(CORE_HORIZONS)}都要通过。",
         "",
-        f"## 总体结果：{n_total}个因子家族中，{n_pass}个通过筛选",
+        "## 各horizon单独通过情况",
+        "",
+        "| horizon | 决策点数 | 通过数/总数 |",
+        "|---|---|---|",
+    ]
+    for name in TEST_HORIZONS:
+        lines.append(f"| {name} | {n_points[name]:,} | {int(per_horizon[name]['pass'].sum())}/{len(families)} |")
+
+    lines += [
+        "",
+        f"## 稳健核心：{n_core}/{len(families)}个家族同时通过{'和'.join(CORE_HORIZONS)}两个horizon",
+        "",
+        "| 家族 | 分类 | " + " | ".join(f"PBO({h})" for h in TEST_HORIZONS) + " | "
+        + " | ".join(f"OOS Sharpe年化({h})" for h in TEST_HORIZONS) + " |",
+        "|---|---|" + "---|" * len(TEST_HORIZONS) + "---|" * len(TEST_HORIZONS),
+    ]
+    core = merged[merged["robust_core"]].sort_values("oos_sharpe_4小时", ascending=False)
+    for _, r in core.iterrows():
+        pbos = " | ".join(f"{r[f'pbo_{h}']:.2f}" for h in TEST_HORIZONS)
+        sharpes = " | ".join(f"{r[f'oos_sharpe_{h}']:+.2f}" for h in TEST_HORIZONS)
+        lines.append(f"| {r['family']} | {r['category']} | {pbos} | {sharpes} |")
+    lines.append("")
+
+    lines += [
+        "## 全部家族逐horizon明细（按分类分组）",
         "",
     ]
-
-    for cat, group in results_df.groupby("category"):
-        cat_pass = int(group["pass"].sum())
+    for cat, group in merged.groupby("category"):
         lines += [
-            f"### {cat}（{cat_pass}/{len(group)}通过）",
+            f"### {cat}",
             "",
-            "| 家族 | 变体数 | 最优变体 | PBO | IS Sharpe(年化) | OOS Sharpe(年化) | OOS期激活占比 | 通过 |",
-            "|---|---|---|---|---|---|---|---|",
+            "| 家族 | " + " | ".join(f"{h}通过" for h in TEST_HORIZONS) + " | 稳健核心 |",
+            "|---|" + "---|" * len(TEST_HORIZONS) + "---|",
         ]
-        for _, r in group.sort_values("pbo").iterrows():
-            mark = "✅" if r["pass"] else "✗"
-            lines.append(
-                f"| {r['family']} | {r['n_variants']} | {r['best_variant']} | {r['pbo']:.2f} | "
-                f"{r['is_sharpe_ann']:+.2f} | {r['oos_sharpe_ann']:+.2f} | {r['oos_active_rate']:.1%} | {mark} |"
-            )
+        for _, r in group.iterrows():
+            marks = " | ".join("✅" if r[f"pass_{h}"] else "✗" for h in TEST_HORIZONS)
+            core_mark = "✅" if r["robust_core"] else "✗"
+            lines.append(f"| {r['family']} | {marks} | {core_mark} |")
         lines.append("")
 
-    passed_families = results_df[results_df["pass"]].sort_values("oos_sharpe_ann", ascending=False)
     lines += [
-        "## 通过筛选的因子家族（按OOS Sharpe年化排序）",
-        "",
-        "| 家族 | 分类 | 最优变体 | PBO | OOS Sharpe(年化) |",
-        "|---|---|---|---|---|",
-    ]
-    for _, r in passed_families.iterrows():
-        lines.append(f"| {r['family']} | {r['category']} | {r['best_variant']} | {r['pbo']:.2f} | {r['oos_sharpe_ann']:+.2f} |")
-
-    lines += [
-        "",
         "## 结论与下一步",
         "",
-        "- **和阶段2 v1~v4纯IC筛选的结论有明显分歧，这正是做这一步筛选的意义**：v1~v4里"
-        "最强的几个因子——efficiency_ratio、realized_vol、atr、keltner_width、"
-        "variance_ratio_2、linreg_r2、parkinson_vol、garman_klass_vol——在这里全部没通过"
-        "PBO+OOS Sharpe筛选（PBO普遍在0.3~0.9之间，即“挑样本内最优窗口”这个过程本身就不"
-        "稳健）。反而是MFI（v1~v4里IC很弱）和streak_length、macd_hist这类之前没被重点"
-        "关注的因子通过了。这说明纯静态相关性和“能否支撑一个稳健的交易规则”是两个不同的"
-        "问题，前者容易被参数搜索污染，后者更贴近实盘会遇到的情况。",
-        "- **意外发现一个冗余群**：donchian_position、stochastic_k、williams_r三个家族的"
-        "PBO/Sharpe数值完全相同——这不是bug，是因为三者数学上是同一个量的仿射变换"
-        "(williams_r = -100+100×donchian_position，stochastic_k = 100×donchian_position)，"
-        "秩相关和分位数筛选对仿射变换不敏感，所以给出完全一致的结果。阶段3应该把这三个"
-        "当成一个因子用，不要误以为是三个独立信号的相互印证。",
-        "- 每个类别都至少有1个家族通过（除了“other”类的hour），说明7个类别的分类思路是"
-        "合理的，没有哪一类整体被淘汰；但每个类别通过率都不高（1~3/6），说明多数“看起来"
-        "有道理”的技术指标经不起PBO检验。",
-        f"- 完整结果（含每个家族的诊断数据）在`{csv_path}`。",
-        "- 这一步的Sharpe来自一个刻意简化、和因子无关的测试床策略，只用来公平比较“有没有这个"
-        "因子门槛”的差异，**不代表真实马丁格尔策略的Sharpe**——阶段3要在真实的马丁资金曲线"
-        "（含加仓/点差/保证金）上重新验证这里通过筛选的因子，静态因子筛选和策略级回测是"
-        "两回事。",
-        "- PBO<=0.5只是“比瞎猜强”的最低门槛，学术上更严格的要求是PBO<0.2；如果阶段3想更"
-        "保守，可以直接从CSV里按更严的阈值重新筛一遍，不需要重跑这个脚本。",
+        f"- **换到实际匹配日内马丁周期的4/8小时horizon后，IC和Sharpe普遍比1天/3天弱得多**"
+        "（阶段2的候选池报告里能看到同一批因子在4小时的IC只有1天的1/4~1/5），这是符合"
+        "预期的诚实结果，不是方法出错：regime/波动率的可预测性本身是慢变量，4-8小时的"
+        "噪音占比远大于1-3天。这意味着如果日内马丁真的按4-8小时一个周期跑，能指望因子"
+        "过滤器带来的改善本身就应该更保守地估计。",
+        f"- 同时通过4小时和8小时两个horizon的“稳健核心”家族数量: {n_core}个，比只看单一"
+        "horizon（阶段2b v1只测了1天）更严格，但也更贴近实际策略会遇到的情况。",
+        "- 1天(参考)这一列只是用来对照——如果一个家族在1天上通过但在4/8小时都不通过，"
+        "说明它对“今天是不是趋势日”这种慢regime有用，但对马丁真正需要的“接下来几小时"
+        "会不会把网格打穿”没有帮助，阶段3不该用它来做网格层级的实时门槛（但仍可以考虑"
+        "用作“今天要不要开新网格”这种更粗粒度的日内准入判断，属于不同用途）。",
+        f"- 完整逐horizon诊断数据在`{csv_path}`。",
+        "- 这一步的Sharpe仍然来自简化测试床，不代表真实马丁Sharpe，阶段3要在真实资金曲线"
+        "上重新验证。",
         "",
     ]
 

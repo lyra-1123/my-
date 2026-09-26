@@ -10,7 +10,7 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 |---|---|---|---|---|
 | 1. 数据清洗 | ✅ 完成 | `scripts/01_build_clean_dataset.py` | `reports/01_data_quality_report.md` | 635万条M1数据，0坏点、0未解释缺口，已产出M1~D1多周期parquet |
 | 2. 因子挖掘 | ✅ 完成(v4，新因子类型+全面百分位化+系统性组合搜索) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 383个因子中286个通过\|IC\|≥0.01；新增Choppiness Index/Aroon/Parkinson-GK波动率/linreg_r²/avg_gap，其中Choppiness Index表现强(\|IC\|~0.08)且符号与bb_width/adx相反，两者互相印证"波动率/趋势会均值回归"；穷举15个代表因子的两两组合，最优对(bb_width_50+efficiency_ratio_20)把未来ER压低17.7%，好于v1~v3手选组合(~15%)；8因子平均合成打分反而不如两两组合(9.9%<17.7%，简单平均稀释信号)，阶段3不建议用平均合成分数；session/星期几乎无区分力 |
-| 2b. 因子分类筛选(PBO+OOS Sharpe) | ✅ 完成 | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | 38个因子家族按7类(均值回归/动量/波动率/趋势强度/价格行为/量能/更高周期)分类筛选，PBO≤0.5且walk-forward OOS Sharpe>0的双重标准下**只有12个通过**；和纯IC筛选结论有明显分歧——v1~v4里最强的efficiency_ratio/realized_vol/atr/keltner_width等全部未通过，反而是MFI、streak_length、macd_hist这类IC弱的通过了；发现donchian_position/stochastic_k/williams_r是同一信号的仿射变换(结果完全相同)，阶段3应只留一个 |
+| 2b. 因子分类筛选(多horizon PBO+OOS Sharpe) | ✅ 完成(v2，改为4h/8h匹配日内马丁周期) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | v1用1天horizon筛出12/38；v2改成日内马丁实际的4-8小时周期后：单独4小时通过21/38，单独8小时只通过2/38，**同时通过4小时和8小时的"稳健核心"只有2个家族(adx、aroon_down)**——多数在4小时看似有效的因子(含efficiency_ratio、bb_width、choppiness_index等)到8小时OOS Sharpe直接转负(-0.4~-0.9)，说明大部分"信号"其实是horizon特定的噪音，不能泛化；adx和aroon_down在4h/8h/1天三个horizon上都稳定为正，是目前唯一可信的候选 |
 | 3. 回测 | 未开始 | - | - | - |
 | 4. 策略成型 | 未开始 | - | - | - |
 | 5. 多agent审核 | 未开始 | - | - | - |
@@ -28,6 +28,7 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 - 阶段2产出的候选regime过滤器（bb_width_24与adx_14同时处于各自20年历史高位20%分位）
   待阶段3在真实回测（而非静态相关性）里验证是否真的能降低马丁网格的爆仓概率，
   且要检查触发频率（历史上约10%的时间满足条件）是否会让策略常年空仓。
-- 阶段2b用更严格的PBO+walk-forward OOS Sharpe筛选后，只有12个因子家族通过，且和阶段2
-  纯IC筛选的结论有明显分歧——阶段3选因子应以阶段2b的12个通过项为准，阶段2的候选池
-  （尤其是efficiency_ratio、realized_vol、atr等在2b里未通过的）仅供参考，不要直接用。
+- 阶段2b v2改用匹配日内马丁实际周期(4-8小时)的horizon重新筛选后，能同时经受4小时和8小时
+  双重考验的因子家族只剩adx和aroon_down两个——阶段3选因子应以这2个为主，此前阶段2/2b v1
+  基于1天/3天horizon的候选池（efficiency_ratio、realized_vol、bb_width等）大多在4-8小时
+  尺度上不成立，不要直接套用到日内网格的实时门槛上。

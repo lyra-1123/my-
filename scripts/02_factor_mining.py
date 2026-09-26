@@ -30,6 +30,15 @@ size), extended the percentile-rank transform to EVERY windowed factor
 filter with a systematic search: every pair among the top decorrelated
 (one-per-family) factors is tested, plus a multi-factor composite score.
 
+v5: the target strategy is an intraday martingale whose full ladder cycle
+(first entry to take-profit/stop) typically runs 4-8 hours and isn't
+forced flat by end of day — so the original 1-day/3-day horizons were
+measuring the wrong thing (whether the whole DAY trends, not whether the
+next few hours of a live ladder would). Replaced/extended with 4h and 8h
+H1-bar horizons (plus keep 1d/3d for context/robustness comparison), and
+label_fwd_er_{4,8,24,72} are all written to factors_H1.parquet so Phase 2b
+can screen at the horizons that actually match the strategy.
+
 Usage:
     python scripts/02_factor_mining.py \
         --clean-dir data/clean --report-dir reports
@@ -47,7 +56,7 @@ from factors.library import (  # noqa: E402
 )
 from factors.labels import forward_efficiency_ratio  # noqa: E402
 
-HORIZONS = {"1天(24根H1)": 24, "3天(72根H1)": 72}
+HORIZONS = {"4小时(4根H1)": 4, "8小时(8根H1)": 8, "1天(24根H1)": 24, "3天(72根H1)": 72}
 CANDIDATE_IC_THRESHOLD = 0.01
 HTF_WINDOWS = (20, 50)  # in H4 bars: ~3.3 days and ~8.3 days of context
 
@@ -129,7 +138,7 @@ def main():
     main_horizon_name, main_horizon = next(iter(HORIZONS.items()))
 
     lines = [
-        "# 因子挖掘报告（阶段2，v4：新增因子类型 + 全面百分位化 + 系统性组合搜索）",
+        "# 因子挖掘报告（阶段2，v5：horizon改为匹配日内马丁的4-8小时周期）",
         "",
         "## 方法",
         "",

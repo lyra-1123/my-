@@ -49,10 +49,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean-dir", default="data/clean")
     parser.add_argument("--report-dir", default="reports")
+    parser.add_argument("--factors-file", default="factors_M5.parquet")
+    parser.add_argument("--out-prefix", default="02h_directional")
     args = parser.parse_args()
 
-    print("[1/5] Loading cached M5 factor table ...")
-    factors = pd.read_parquet(os.path.join(args.clean_dir, "factors_M5.parquet"))
+    print(f"[1/5] Loading cached M5 factor table ({args.factors_file}) ...")
+    factors = pd.read_parquet(os.path.join(args.clean_dir, args.factors_file))
     close = factors["close"]
     print(f"      {len(factors):,} M5 bars, {factors.shape[1]} columns")
 
@@ -93,7 +95,7 @@ def main():
             })
 
     stage1_df = pd.DataFrame(stage1)
-    stage1_path = os.path.join(args.report_dir, "02h_directional_stage1_scan.csv")
+    stage1_path = os.path.join(args.report_dir, f"{args.out_prefix}_stage1_scan.csv")
     stage1_df.to_csv(stage1_path, index=False)
     print(f"      {len(stage1_df)}/{len(variant_cols)*2} combinations clear "
           f"n_active>={MIN_ACTIVATIONS} -> {stage1_path}")
@@ -107,7 +109,7 @@ def main():
         wf = walk_forward_direction(f, close, fwd_return, points, row["mode"], n_folds=5)
         stage2.append({**row.to_dict(), **{f"wf_{k}": v for k, v in wf.items()}})
     stage2_df = pd.DataFrame(stage2)
-    stage2_path = os.path.join(args.report_dir, "02h_directional_stage2_walkforward.csv")
+    stage2_path = os.path.join(args.report_dir, f"{args.out_prefix}_stage2_walkforward.csv")
     stage2_df.to_csv(stage2_path, index=False)
 
     print("[4/5] Selecting final validated candidates (OOS Sharpe>0 both directions active, "
@@ -173,7 +175,7 @@ def main():
         "",
     ]
 
-    report_path = os.path.join(args.report_dir, "02h_directional_factor_mining_report.md")
+    report_path = os.path.join(args.report_dir, f"{args.out_prefix}_factor_mining_report.md")
     with open(report_path, "w") as fh:
         fh.write("\n".join(lines) + "\n")
     print(f"[5/5] Wrote {report_path}")

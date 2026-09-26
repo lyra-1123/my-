@@ -56,12 +56,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean-dir", default="data/clean")
     parser.add_argument("--report-dir", default="reports")
+    parser.add_argument("--factors-file", default="factors_M5.parquet")
+    parser.add_argument("--stage1-file", default="02h_directional_stage1_scan.csv")
+    parser.add_argument("--out-prefix", default="02i")
     args = parser.parse_args()
 
     print("[1/6] Loading M5 factor table + stage-1 scan ...")
-    factors = pd.read_parquet(os.path.join(args.clean_dir, "factors_M5.parquet"))
+    factors = pd.read_parquet(os.path.join(args.clean_dir, args.factors_file))
     close = factors["close"]
-    stage1 = pd.read_csv(os.path.join(args.report_dir, "02h_directional_stage1_scan.csv"))
+    stage1 = pd.read_csv(os.path.join(args.report_dir, args.stage1_file))
     years = (factors.shape[0] * 5 / 60 / 24) / 365.25  # M5 bars -> years, rough
 
     fwd_return = close.pct_change(HOLDING_BARS).shift(-HOLDING_BARS)
@@ -97,7 +100,7 @@ def main():
         })
 
     pair_df = pd.DataFrame(pair_rows)
-    pair_path = os.path.join(args.report_dir, "02i_pair_stage1_scan.csv")
+    pair_path = os.path.join(args.report_dir, f"{args.out_prefix}_pair_stage1_scan.csv")
     pair_df.to_csv(pair_path, index=False)
     print(f"      {len(pair_df)} pairs clear n_active>={MIN_ACTIVATIONS} and "
           f">={MIN_ANNUAL_RATE}/year -> {pair_path}")
@@ -112,7 +115,7 @@ def main():
         )
         stage2.append({**row.to_dict(), **{f"wf_{k}": v for k, v in wf.items()}})
     stage2_df = pd.DataFrame(stage2)
-    stage2_path = os.path.join(args.report_dir, "02i_pair_stage2_walkforward.csv")
+    stage2_path = os.path.join(args.report_dir, f"{args.out_prefix}_pair_stage2_walkforward.csv")
     stage2_df.to_csv(stage2_path, index=False)
 
     validated = stage2_df[
@@ -181,7 +184,7 @@ def main():
         "",
     ]
 
-    report_path = os.path.join(args.report_dir, "02i_directional_combo_search_report.md")
+    report_path = os.path.join(args.report_dir, f"{args.out_prefix}_directional_combo_search_report.md")
     with open(report_path, "w") as fh:
         fh.write("\n".join(lines) + "\n")
     print(f"[6/6] Wrote {report_path}")

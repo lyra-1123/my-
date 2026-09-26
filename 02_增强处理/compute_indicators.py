@@ -32,6 +32,22 @@ def compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     return 100 - (100 / (1 + rs))
 
 
+def compute_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """ADX（趋势强度），Wilder平滑，标准算法。用于第5章多Regime切分（趋势 vs 震荡）。"""
+    up_move = df["high"].diff()
+    down_move = -df["low"].diff()
+
+    plus_dm = up_move.where((up_move > down_move) & (up_move > 0), 0.0)
+    minus_dm = down_move.where((down_move > up_move) & (down_move > 0), 0.0)
+
+    atr = compute_atr(df, period)
+    plus_di = 100 * plus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr
+    minus_di = 100 * minus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr
+
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di)
+    return dx.ewm(alpha=1 / period, adjust=False).mean()
+
+
 def compute_mfi(df: pd.DataFrame, period: int = 12) -> pd.Series:
     """Money Flow Index：成交量加权版的RSI。用简单滚动求和（不是Wilder平滑，是MFI的标准算法）。"""
     typical_price = (df["high"] + df["low"] + df["close"]) / 3

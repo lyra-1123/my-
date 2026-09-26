@@ -66,61 +66,73 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--clean-dir", default="data/clean")
     parser.add_argument("--report-dir", default="reports")
+    parser.add_argument("--resume-from-scan", default=None,
+                         help="skip the (expensive) sweep and regenerate the report/winners "
+                              "from an already-saved 02j_window_scan.csv")
     args = parser.parse_args()
 
-    print("[1/4] Loading M5 bars ...")
-    df = pd.read_parquet(os.path.join(args.clean_dir, "XAUUSD_M5.parquet")).dropna(subset=["close"])
-    df = df.reset_index(drop=True)
-    close = df["close"]
-    years = (len(df) * 5 / 60 / 24) / 365.25
-    print(f"      {len(df):,} M5 bars, {years:.1f} years")
-
-    fwd_return = close.pct_change(HOLDING_BARS).shift(-HOLDING_BARS)
-    points = decision_points(len(df), HOLDING_BARS)
-    points = points[fwd_return.notna().to_numpy()[points]]
-
-    print(f"[2/4] Sweeping {len(SPECS)} specs x {len(MULTIPLIERS)} window multipliers "
-          f"({MULTIPLIERS}) ...")
-    rows = []
-    for family, n0, pw0 in SPECS:
-        func = WINDOWED_FACTORS[family]
-        for m in MULTIPLIERS:
-            n = max(2, n0 * m)
-            raw = func(df, n)
-            if pw0 is not None:
-                pw = pw0 * PCTRANK_SCALE
-                factor = raw.rolling(pw).rank(pct=True)
-                variant = f"{family}_{n}_pctrank{pw}"
-            else:
-                pw = None
-                factor = raw
-                variant = f"{family}_{n}"
-            if factor.isna().all():
-                continue
-            wf = walk_forward_direction(factor, close, fwd_return, points, mode="reversion", n_folds=5)
-            annual_rate = (wf["n_long"] + wf["n_short"]) / years
-            ann_sharpe = wf["oos_sharpe_all"] * (annual_rate ** 0.5) if annual_rate > 0 else float("nan")
-            rows.append({
-                "family": family, "pctrank_h1": pw0, "multiplier": m,
-                "base_window_h1": n0, "window_m5": n, "window_hours": n * 5 / 60,
-                "pctrank_window_m5": pw, "variant": variant,
-                "oos_sharpe_all": wf["oos_sharpe_all"], "ann_sharpe": ann_sharpe,
-                "annual_rate": annual_rate, "n_folds_positive": wf["n_folds_positive"],
-            })
-            print(f"      {variant}: ann_sharpe={ann_sharpe:+.2f} annual_rate={annual_rate:.0f} "
-                  f"folds+={wf['n_folds_positive']}/5")
-
-    scan_df = pd.DataFrame(rows)
     scan_path = os.path.join(args.report_dir, "02j_window_scan.csv")
-    scan_df.to_csv(scan_path, index=False)
+
+    if args.resume_from_scan:
+        print(f"[1/4] Resuming from saved scan: {args.resume_from_scan}")
+        scan_df = pd.read_csv(args.resume_from_scan)
+        years = (1_283_950 * 5 / 60 / 24) / 365.25  # matches the M5 bar count used to build the scan
+    else:
+        print("[1/4] Loading M5 bars ...")
+        df = pd.read_parquet(os.path.join(args.clean_dir, "XAUUSD_M5.parquet")).dropna(subset=["close"])
+        df = df.reset_index(drop=True)
+        close = df["close"]
+        years = (len(df) * 5 / 60 / 24) / 365.25
+        print(f"      {len(df):,} M5 bars, {years:.1f} years")
+
+        fwd_return = close.pct_change(HOLDING_BARS).shift(-HOLDING_BARS)
+        points = decision_points(len(df), HOLDING_BARS)
+        points = points[fwd_return.notna().to_numpy()[points]]
+
+        print(f"[2/4] Sweeping {len(SPECS)} specs x {len(MULTIPLIERS)} window multipliers "
+              f"({MULTIPLIERS}) ...")
+        rows = []
+        for family, n0, pw0 in SPECS:
+            func = WINDOWED_FACTORS[family]
+            for m in MULTIPLIERS:
+                n = max(2, n0 * m)
+                raw = func(df, n)
+                if pw0 is not None:
+                    pw = pw0 * PCTRANK_SCALE
+                    factor = raw.rolling(pw).rank(pct=True)
+                    variant = f"{family}_{n}_pctrank{pw}"
+                else:
+                    pw = None
+                    factor = raw
+                    variant = f"{family}_{n}"
+                if factor.isna().all():
+                    continue
+                wf = walk_forward_direction(factor, close, fwd_return, points, mode="reversion", n_folds=5)
+                annual_rate = (wf["n_long"] + wf["n_short"]) / years
+                ann_sharpe = wf["oos_sharpe_all"] * (annual_rate ** 0.5) if annual_rate > 0 else float("nan")
+                rows.append({
+                    "family": family, "pctrank_h1": pw0, "multiplier": m,
+                    "base_window_h1": n0, "window_m5": n, "window_hours": n * 5 / 60,
+                    "pctrank_window_m5": pw, "variant": variant,
+                    "oos_sharpe_all": wf["oos_sharpe_all"], "ann_sharpe": ann_sharpe,
+                    "annual_rate": annual_rate, "n_folds_positive": wf["n_folds_positive"],
+                })
+                print(f"      {variant}: ann_sharpe={ann_sharpe:+.2f} annual_rate={annual_rate:.0f} "
+                      f"folds+={wf['n_folds_positive']}/5")
+
+        scan_df = pd.DataFrame(rows)
+        scan_df.to_csv(scan_path, index=False)
 
     print("[3/4] Picking winning window per spec ...")
     winners = []
     for (family, pw0), grp in scan_df.groupby(["family", "pctrank_h1"], dropna=False):
         original = grp[grp["multiplier"] == 1]
         usable = grp[(grp["n_folds_positive"] >= MIN_FOLDS_POSITIVE) & (grp["annual_rate"] >= MIN_ANNUAL_RATE)]
+        # prefer the strongest genuinely POSITIVE result, not the largest |Sharpe| regardless of
+        # sign -- a large negative Sharpe just means this factor's reversion convention doesn't
+        # work in this window, not a "strong signal" worth picking as the winner.
         pool = usable if len(usable) else grp
-        winner = pool.loc[pool["ann_sharpe"].abs().idxmax()]
+        winner = pool.loc[pool["ann_sharpe"].idxmax()]
         orig_row = original.iloc[0] if len(original) else None
         winners.append({
             "family": family, "pctrank_h1": pw0,
@@ -150,7 +162,7 @@ def main():
         "## 每个因子的窗口扫描结果", "",
     ]
     for (family, pw0), grp in scan_df.groupby(["family", "pctrank_h1"], dropna=False):
-        pw_label = f"，pctrank({pw0}h1->{int(pw0*PCTRANK_SCALE)}m5)" if pw0 is not None else ""
+        pw_label = f"，pctrank({pw0:.0f}h1->{int(pw0*PCTRANK_SCALE)}m5)" if pd.notna(pw0) else ""
         lines.append(f"**{family}**(H1原窗口{grp['base_window_h1'].iloc[0]}{pw_label})：")
         lines += ["", "| 倍数 | M5窗口(bar/小时) | OOS Sharpe(年化) | 年触发 | 折数为正 |",
                    "|---|---|---|---|---|"]

@@ -40,12 +40,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-import re
-
 import pandas as pd  # noqa: E402
 
 from factors.library import (  # noqa: E402
-    build_factor_table, adx, bollinger_width, efficiency_ratio, choppiness_index,
+    build_factor_table, adx, bollinger_width, efficiency_ratio, choppiness_index, family,
 )
 from factors.labels import forward_efficiency_ratio  # noqa: E402
 
@@ -89,15 +87,6 @@ def build_htf_context(h4_df: pd.DataFrame) -> pd.DataFrame:
         ctx[f"h4_efficiency_ratio_{n}"] = efficiency_ratio(h4_df, n)
         ctx[f"h4_choppiness_index_{n}"] = choppiness_index(h4_df, n)
     return ctx.sort_values("valid_from")
-
-
-def family(name: str) -> str:
-    """Strip window/pctrank suffixes so e.g. bb_width_50, bb_width_100 and
-    bb_width_50_pctrank2000 are recognized as the same underlying indicator
-    (near-collinear, shouldn't both be picked as "independent" factors)."""
-    name = re.sub(r"_pctrank\d+$", "", name)
-    name = re.sub(r"_\d+$", "", name)
-    return name
 
 
 def main():

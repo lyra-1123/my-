@@ -8,10 +8,45 @@ look-ahead); labels in `labels.py` look forward and are for evaluation only.
 """
 from __future__ import annotations
 
+import re
+
 import numpy as np
 import pandas as pd
 
 WINDOWS = (10, 20, 50, 100)
+
+
+def family(name: str) -> str:
+    """Strip window/pctrank suffixes so e.g. bb_width_50, bb_width_100 and
+    bb_width_50_pctrank2000 are recognized as the same underlying indicator
+    (near-collinear variants of one family, not independent factors)."""
+    name = re.sub(r"_pctrank\d+$", "", name)
+    name = re.sub(r"_\d+$", "", name)
+    return name
+
+
+# Groups families by trading rationale, for category-organized mining/
+# screening (Phase 2 v5, see scripts/02b_factor_screening.py).
+FAMILY_CATEGORY = {
+    "rsi": "mean_reversion", "zscore_vs_ma": "mean_reversion",
+    "stochastic_k": "mean_reversion", "stochastic_d": "mean_reversion",
+    "williams_r": "mean_reversion", "cci": "mean_reversion",
+    "donchian_position": "mean_reversion",
+    "roc": "momentum", "ma_slope": "momentum", "macd_hist": "momentum",
+    "aroon_up": "momentum", "aroon_down": "momentum", "autocorr_returns": "momentum",
+    "atr": "volatility", "realized_vol": "volatility", "bb_width": "volatility",
+    "keltner_width": "volatility", "vol_of_vol": "volatility",
+    "parkinson_vol": "volatility", "garman_klass_vol": "volatility",
+    "adx": "trend_strength", "adx_slope": "trend_strength",
+    "efficiency_ratio": "trend_strength", "variance_ratio_2": "trend_strength",
+    "choppiness_index": "trend_strength", "linreg_r2": "trend_strength",
+    "dist_from_high": "price_action", "dist_from_low": "price_action",
+    "skew_returns": "price_action", "kurt_returns": "price_action",
+    "streak_length": "price_action", "avg_gap": "price_action",
+    "mfi": "volume",
+    "h4_adx": "higher_timeframe", "h4_bb_width": "higher_timeframe",
+    "h4_efficiency_ratio": "higher_timeframe", "h4_choppiness_index": "higher_timeframe",
+}
 
 
 def _true_range(df: pd.DataFrame) -> pd.Series:

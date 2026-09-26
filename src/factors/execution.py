@@ -88,11 +88,11 @@ def _sharpe(x: np.ndarray) -> float:
     return x.mean() / x.std(ddof=1)
 
 
-def _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes):
+def _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes, return_raw: bool = False):
     ret_all = np.concatenate(pooled_ret) if pooled_ret else np.array([])
     dir_all = np.concatenate(pooled_dir) if pooled_dir else np.array([])
     fold_sharpes = np.array(fold_sharpes)
-    return {
+    result = {
         "oos_sharpe_all": _sharpe(ret_all),
         "oos_sharpe_long": _sharpe(ret_all[dir_all > 0]) if len(dir_all) else float("nan"),
         "oos_sharpe_short": _sharpe(ret_all[dir_all < 0]) if len(dir_all) else float("nan"),
@@ -100,16 +100,35 @@ def _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes):
         "n_folds_positive": int(np.nansum(fold_sharpes > 0)),
         "n_folds_total": int(np.sum(~np.isnan(fold_sharpes))),
     }
+    if return_raw:
+        result["ret_all"], result["dir_all"] = ret_all, dir_all
+    return result
+
+
+def _apply_direction_filter(direction: pd.Series, direction_filter: str | None) -> pd.Series:
+    """direction_filter: None (keep both), "long" (zero out short triggers),
+    or "short" (zero out long triggers) -- used by step 4 to search/score
+    stop-loss/take-profit separately per side."""
+    if direction_filter is None:
+        return direction
+    if direction_filter == "long":
+        return direction.where(direction > 0, 0.0)
+    if direction_filter == "short":
+        return direction.where(direction < 0, 0.0)
+    raise ValueError(f"unknown direction_filter {direction_filter!r}")
 
 
 def walk_forward_execution_single(factor: pd.Series, close: pd.Series, open_: pd.Series,
                                    high: pd.Series, low: pd.Series, atr: pd.Series, mode: str,
                                    n_hold: int, sl_type=None, sl_level=None, rr_ratio=None,
-                                   quantile: float = 0.8, n_folds: int = 5) -> dict:
+                                   quantile: float = 0.8, n_folds: int = 5,
+                                   direction_filter: str | None = None, return_raw: bool = False) -> dict:
     """Same expanding-window walk-forward as direction.walk_forward_direction
     (threshold fit on training range, frozen, applied to test range) but
     scored with simulate_trades' real entry/exit simulation instead of
-    fwd_return."""
+    fwd_return. direction_filter restricts scoring to only long or only
+    short triggers (see _apply_direction_filter) -- for step 4's per-side
+    stop-loss/take-profit search."""
     chunks = _fold_chunks(len(factor), n_folds)
     pooled_ret, pooled_dir, fold_sharpes = [], [], []
     for i in range(1, n_folds + 1):
@@ -122,6 +141,7 @@ def walk_forward_execution_single(factor: pd.Series, close: pd.Series, open_: pd
             lo=train_factor.quantile(1 - quantile), hi=train_factor.quantile(quantile),
             thresh=train_factor.quantile(quantile),
         )
+        direction_full = _apply_direction_filter(direction_full, direction_filter)
         mask = np.zeros(len(factor), dtype=bool)
         mask[test_idx] = True
         direction_test = direction_full.where(pd.Series(mask, index=factor.index), 0.0)
@@ -130,13 +150,14 @@ def walk_forward_execution_single(factor: pd.Series, close: pd.Series, open_: pd
         pooled_ret.append(ret)
         pooled_dir.append(d)
         fold_sharpes.append(_sharpe(ret))
-    return _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes)
+    return _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes, return_raw)
 
 
 def walk_forward_execution_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.Series, mode_b: str,
                                  close: pd.Series, open_: pd.Series, high: pd.Series, low: pd.Series,
                                  atr: pd.Series, n_hold: int, sl_type=None, sl_level=None, rr_ratio=None,
-                                 quantile: float = 0.8, n_folds: int = 5) -> dict:
+                                 quantile: float = 0.8, n_folds: int = 5,
+                                 direction_filter: str | None = None, return_raw: bool = False) -> dict:
     """Pair (AND-consensus) version of walk_forward_execution_single."""
     chunks = _fold_chunks(len(factor_a), n_folds)
     pooled_ret, pooled_dir, fold_sharpes = [], [], []
@@ -153,6 +174,7 @@ def walk_forward_execution_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.S
                                      hi=factor_b.iloc[train_idx].quantile(quantile),
                                      thresh=factor_b.iloc[train_idx].quantile(quantile))
         combined = combine_directions(dir_a, dir_b)
+        combined = _apply_direction_filter(combined, direction_filter)
         mask = np.zeros(len(factor_a), dtype=bool)
         mask[test_idx] = True
         combined_test = combined.where(pd.Series(mask, index=factor_a.index), 0.0)
@@ -161,4 +183,4 @@ def walk_forward_execution_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.S
         pooled_ret.append(ret)
         pooled_dir.append(d)
         fold_sharpes.append(_sharpe(ret))
-    return _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes)
+    return _pool_fold_results(pooled_ret, pooled_dir, fold_sharpes, return_raw)

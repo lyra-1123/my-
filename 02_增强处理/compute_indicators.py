@@ -30,3 +30,18 @@ def compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
     rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
+
+
+def compute_mfi(df: pd.DataFrame, period: int = 12) -> pd.Series:
+    """Money Flow Index：成交量加权版的RSI。用简单滚动求和（不是Wilder平滑，是MFI的标准算法）。"""
+    typical_price = (df["high"] + df["low"] + df["close"]) / 3
+    raw_money_flow = typical_price * df["volume"]
+
+    price_up = typical_price > typical_price.shift(1)
+    positive_flow = raw_money_flow.where(price_up, 0.0)
+    negative_flow = raw_money_flow.where(~price_up, 0.0)
+
+    positive_sum = positive_flow.rolling(period).sum()
+    negative_sum = negative_flow.rolling(period).sum()
+    money_flow_ratio = positive_sum / negative_sum
+    return 100 - (100 / (1 + money_flow_ratio))

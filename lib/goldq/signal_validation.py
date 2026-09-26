@@ -20,33 +20,39 @@ def compute_forward_mfe_mae(df: pd.DataFrame, forward_bars: int) -> tuple[pd.Ser
     return mfe, mae
 
 
-def baseline_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int, direction: int = 1) -> dict:
+def baseline_hit_rate(df: pd.DataFrame, target_usd, forward_bars: int, direction: int = 1) -> dict:
     """
     对照组：不看任何信号，随便一根 bar 作为"入场点"，未来 forward_bars 内 MFE>=target_usd 的比例。
     信号的命中率必须显著高于这个基线，否则说明信号毫无增益（甚至可能比瞎猜还差）。
     direction=1 对应"随便做多"基线，direction=-1 对应"随便做空"基线——双向信号应该
     分别和同方向的基线比较（多头信号比多头基线，空头信号比空头基线），而不是混在一起。
+    target_usd 可以是固定数字，也可以是逐 bar 不同的 pd.Series（比如按当前 ATR 定目标）——
+    这样"随便一根bar"的基线也会用它自己那根bar的目标，跟波动率相关的信号做公平对比，
+    不会因为信号本身就在筛选高波动时段而虚高。
     """
     mfe, mae = compute_forward_mfe_mae(df, forward_bars)
     if direction < 0:
         mfe, mae = -mae, -mfe  # 做空：MFE=entry-low=-mae(做多口径)，MAE=entry-high=-mfe(做多口径)
-    valid = mfe.notna()
+    target = target_usd.reindex(mfe.index) if isinstance(target_usd, pd.Series) else target_usd
+    valid = mfe.notna() & (target.notna() if isinstance(target, pd.Series) else True)
     return {
-        "hit_rate": (mfe[valid] >= target_usd).mean(),
+        "hit_rate": (mfe[valid] >= (target[valid] if isinstance(target, pd.Series) else target)).mean(),
         "avg_mfe": mfe[valid].mean(),
         "avg_mae": mae[valid].mean(),
         "n_bars": int(valid.sum()),
     }
 
 
-def evaluate_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) -> dict:
+def evaluate_hit_rate(df: pd.DataFrame, target_usd, forward_bars: int) -> dict:
     """
     三件套 1：命中率与平均收益（MFE/MAE 口径：未来窗口内最高/最低价 - 入场价）。
     支持双向信号：df["signal"] 可以是 0/1（只做多，向后兼容）或 -1/0/1（做空/无/做多）。
     做多的 MFE = 未来窗口最高价-入场价；做空的 MFE = 入场价-未来窗口最低价（方向对齐后都是"越大越好"）。
+    target_usd 可以是固定数字，也可以是 pd.Series（逐信号取入场那一刻的值，比如当前ATR）。
     """
     signal_values = df["signal"].values
     signal_positions = np.flatnonzero(signal_values != 0)
+    target_is_series = isinstance(target_usd, pd.Series)
 
     records = []
     for pos in signal_positions:
@@ -61,13 +67,17 @@ def evaluate_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) ->
         else:
             mfe = entry_price - window["low"].min()
             mae = entry_price - window["high"].max()
+        target = target_usd.iloc[pos] if target_is_series else target_usd
+        if target_is_series and pd.isna(target):
+            continue  # ATR 还没热身（比如数据最开头），跳过
         records.append({
             "signal_time": df["time_utc"].iloc[pos],
             "direction": direction,
             "entry_price": entry_price,
             "mfe": mfe,
             "mae": mae,
-            "hit": mfe >= target_usd,
+            "target": target,
+            "hit": mfe >= target,
         })
 
     if not records:
@@ -131,8 +141,9 @@ def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int =
     return pd.DataFrame(ic_records)
 
 
-def print_report(hit_report: dict, stability: pd.DataFrame, target_usd: float,
-                  min_hit_rate: float, min_avg_mfe: float, baseline: dict | None = None) -> None:
+def print_report(hit_report: dict, stability: pd.DataFrame, target_usd,
+                  min_hit_rate: float, min_avg_mfe: float, baseline: dict | None = None,
+                  target_label: str | None = None) -> None:
     print("=" * 60)
     print("三件套 1：命中率与平均收益")
     print("=" * 60)
@@ -140,8 +151,9 @@ def print_report(hit_report: dict, stability: pd.DataFrame, target_usd: float,
         print("没有任何信号触发，无法验证。检查信号定义/参数是否过严。")
         return
 
+    label = target_label if target_label is not None else f"${target_usd}"
     print(f"信号次数: {hit_report['n_signals']}")
-    print(f"命中率 (未来窗口MFE>=${target_usd}): {hit_report['hit_rate']*100:.1f}%")
+    print(f"命中率 (未来窗口MFE>={label}): {hit_report['hit_rate']*100:.1f}%")
     print(f"平均 MFE: ${hit_report['avg_mfe']:.2f} (std ${hit_report['std_mfe']:.2f})")
     print(f"平均 MAE: ${hit_report['avg_mae']:.2f}")
     print(f"逐笔 Sharpe 近似 (avg_mfe/std_mfe): {hit_report['sharpe_proxy']:.2f}")

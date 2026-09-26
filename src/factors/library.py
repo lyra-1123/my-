@@ -181,6 +181,19 @@ def kurt_returns(df: pd.DataFrame, n: int) -> pd.Series:
     return _log_return(df).rolling(n).kurt()
 
 
+def mfi(df: pd.DataFrame, n: int) -> pd.Series:
+    """Money Flow Index: volume-weighted RSI. Our `volume` column is a
+    tick-count proxy, not real traded volume (see reports/00_progress.md),
+    so treat this as a weaker signal than a true-volume MFI would be."""
+    tp = (df["high"] + df["low"] + df["close"]) / 3
+    raw_flow = tp * df["volume"]
+    direction = np.sign(tp.diff())
+    pos_flow = raw_flow.where(direction > 0, 0.0).rolling(n).sum()
+    neg_flow = raw_flow.where(direction < 0, 0.0).rolling(n).sum()
+    ratio = pos_flow / neg_flow.replace(0, np.nan)
+    return 100 - 100 / (1 + ratio)
+
+
 def macd_histogram(df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.Series:
     ema_fast = df["close"].ewm(span=fast, adjust=False).mean()
     ema_slow = df["close"].ewm(span=slow, adjust=False).mean()
@@ -230,20 +243,40 @@ WINDOWED_FACTORS = {
     "donchian_position": donchian_position,
     "skew_returns": skew_returns,
     "kurt_returns": kurt_returns,
+    "mfi": mfi,
 }
+
+# Families whose raw level drifts with gold's price/regime over 18 years
+# (e.g. ATR in dollars means something different at $860 vs $5300 gold) —
+# for these we also add a percentile-rank version: "where does today's value
+# sit relative to its own trailing PCTRANK_WINDOWS-bar history", which is
+# regime-relative and comparable across the whole sample. adx/rsi/stochastic
+# etc are already bounded 0-100 and don't need this.
+PERCENTILE_RANK_FAMILIES = (
+    "atr", "realized_vol", "bb_width", "keltner_width", "vol_of_vol",
+    "adx", "efficiency_ratio", "mfi",
+)
+PCTRANK_WINDOWS = (500, 2000)  # ~3 weeks and ~12 weeks of H1 bars
 
 
 def build_factor_table(df: pd.DataFrame, windows=WINDOWS) -> pd.DataFrame:
     """df: OHLCV with a `time` column (e.g. H1 bars). Returns a DataFrame of
     factor columns aligned to df's index, all backward-looking only."""
-    out = pd.DataFrame(index=df.index)
+    cols = {}
     for name, fn in WINDOWED_FACTORS.items():
         for n in windows:
-            out[f"{name}_{n}"] = fn(df, n)
-    out["macd_hist"] = macd_histogram(df)
-    out["streak_length"] = streak_length(df)
-    out["hour"] = df["time"].dt.hour
-    out["session"] = session_bucket(df)
-    out["day_of_week"] = day_of_week(df)
-    out["time"] = df["time"]
-    return out
+            cols[f"{name}_{n}"] = fn(df, n)
+
+    for name in PERCENTILE_RANK_FAMILIES:
+        for n in windows:
+            base = cols[f"{name}_{n}"]
+            for pw in PCTRANK_WINDOWS:
+                cols[f"{name}_{n}_pctrank{pw}"] = base.rolling(pw).rank(pct=True)
+
+    cols["macd_hist"] = macd_histogram(df)
+    cols["streak_length"] = streak_length(df)
+    cols["hour"] = df["time"].dt.hour
+    cols["session"] = session_bucket(df)
+    cols["day_of_week"] = day_of_week(df)
+    cols["time"] = df["time"]
+    return pd.DataFrame(cols, index=df.index)

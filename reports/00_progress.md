@@ -9,7 +9,7 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 | 阶段 | 状态 | 脚本 | 报告 | 一句话结论 |
 |---|---|---|---|---|
 | 1. 数据清洗 | ✅ 完成 | `scripts/01_build_clean_dataset.py` | `reports/01_data_quality_report.md` | 635万条M1数据，0坏点、0未解释缺口，已产出M1~D1多周期parquet |
-| 2. 因子挖掘 | ✅ 完成(v2扩大候选池) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 101个因子中70个通过\|IC\|≥0.01，仍是波动率/趋势强度类占主导(max\|IC\|~0.05~0.10)，未挖到量级更强的新因子；bb_width+adx高位组合能把未来ER均值压低约15%；session/星期几乎无区分力 |
+| 2. 因子挖掘 | ✅ 完成(v3，含MFI+ADX等百分位排名) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 169个因子中135个通过\|IC\|≥0.01，仍是波动率/趋势强度类占主导(max\|IC\|~0.05~0.10)；MFI偏弱(volume是tick代理非真实成交量)；长窗口(100根)的百分位排名版本明显强于原始值(修正金价860→5300+的尺度漂移)，阶段3应优先用pctrank_2000版本；bb_width+adx高位组合能把未来ER均值压低约15%；session/星期几乎无区分力 |
 | 3. 回测 | 未开始 | - | - | - |
 | 4. 策略成型 | 未开始 | - | - | - |
 | 5. 多agent审核 | 未开始 | - | - | - |

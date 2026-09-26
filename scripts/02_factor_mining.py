@@ -14,6 +14,14 @@ windows + MACD + streak-length + two H4 higher-timeframe context factors,
 |IC| >= CANDIDATE_IC_THRESHOLD as a candidate pool (not just the top few),
 saved to reports/02_factor_candidate_pool.csv for Phase 3 to draw from.
 
+v3: added MFI (volume-weighted RSI) and, for the volatility/trend-strength
+families that actually carry signal, a percentile-rank transform ("where
+does today's ADX/ATR/bb_width/... sit relative to its own trailing 500/2000
+-bar history") — gold's gone from ~$860 to ~$5300 over this sample, so a raw
+dollar-denominated level means something different in 2009 vs 2026; the
+percentile-rank version is regime-relative and comparable across the whole
+sample.
+
 Usage:
     python scripts/02_factor_mining.py \
         --clean-dir data/clean --report-dir reports
@@ -110,7 +118,7 @@ def main():
     main_horizon_name, main_horizon = next(iter(HORIZONS.items()))
 
     lines = [
-        "# 因子挖掘报告（阶段2，v2扩大候选池）",
+        "# 因子挖掘报告（阶段2，v3扩大候选池）",
         "",
         "## 方法",
         "",
@@ -123,12 +131,18 @@ def main():
         "评估、不作为任何模型输入。",
         "",
         f"评估基于H1（{len(df):,}根），标签窗口：" + "、".join(HORIZONS.keys()),
-        f"；本轮相比v1把候选因子从25个扩大到{n_numeric_factors}个：新增波动率类"
+        f"；候选因子从v1的25个扩大到本轮的{n_numeric_factors}个：v2新增波动率类"
         "(keltner_width/vol_of_vol)、趋势类(adx_slope/variance_ratio_2/autocorr_returns/"
         "streak_length/macd_hist)、超买超卖类(stochastic_k/d、williams_r、cci、roc、"
         "dist_from_high/low、donchian_position)、分布形态类(skew/kurt_returns)，以及2个"
         "H4更高周期的regime背景因子(h4_adx、h4_bb_width、h4_efficiency_ratio)，且每类基本"
-        "指标从3个回看窗口(14/24/48)扩到4个(10/20/50/100)。",
+        "指标从3个回看窗口(14/24/48)扩到4个(10/20/50/100)；v3新增MFI(资金流量指标，用"
+        "tick成交量代理，非真实成交量，解读需谨慎)，并对波动率/趋势强度类因子(atr、"
+        "realized_vol、bb_width、keltner_width、vol_of_vol、adx、efficiency_ratio、mfi)"
+        "额外算了相对其自身滚动500根/2000根历史的百分位排名——原始因子是黄金"
+        "美元报价的绝对水平，18年里金价从~860涨到~5300，同样的ATR数值在2009年和2026年"
+        "代表的“波动程度”完全不是一回事，百分位排名把它转成“相对当前regime”的量纲，"
+        "跨样本可比。",
         "",
         f"## 候选池：|IC|>={CANDIDATE_IC_THRESHOLD}的因子（{len(pool)}/{n_numeric_factors}个，"
         f"按max|IC|排序，完整CSV见`reports/02_factor_candidate_pool.csv`）",
@@ -230,6 +244,14 @@ def main():
         "任何一个因子都不构成可交易的强信号，必须像候选池里已验证的“组合过滤器”那样叠加使用。",
         "- 候选池CSV会传给阶段3，用于在真实马丁资金曲线回测里做特征选择/组合，而不是直接把"
         "静态相关性当结论。",
+        "- MFI（资金流量指标）偏弱（max|IC|约0.02~0.03），符合预期：我们的volume是tick数量"
+        "代理而非真实成交量，量价类指标在这份数据上先天打折扣，不建议作为主力因子。",
+        "- 百分位排名的价值分窗口而定：对20/50根这种较短窗口，pctrank版本和原始值IC几乎"
+        "一样（说明短窗口本身已经是局部相对值，金价长期涨幅带来的尺度漂移影响不大）；但对"
+        "100根这种较长窗口，pctrank版本明显强于原始值（如atr_100、keltner_width_100，"
+        "max|IC|从~0.055~0.061提升到~0.076），说明长窗口的原始指标确实受金价从860到5300+的"
+        "尺度漂移污染，百分位排名修正了这个问题——这是本轮扩大范围里少数几个“方法改进直接"
+        "带来更强因子”的例子，值得在阶段3优先使用这些pctrank_2000版本而非同名原始版本。",
         "- 仍然只用了价格衍生的技术类因子（含H1自身+H4更高周期），没有引入跨市场/宏观数据"
         "（本地目前只有XAUUSD自身行情）；如果后续要加美元指数/美债收益率/VIX等跨市场因子，"
         "需要额外的数据源。",

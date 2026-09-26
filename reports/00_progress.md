@@ -10,7 +10,8 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 |---|---|---|---|---|
 | 1. 数据清洗 | ✅ 完成 | `scripts/01_build_clean_dataset.py` | `reports/01_data_quality_report.md` | 635万条M1数据，0坏点、0未解释缺口，已产出M1~D1多周期parquet |
 | 2. 因子挖掘 | ✅ 完成(v4，新因子类型+全面百分位化+系统性组合搜索) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 383个因子中286个通过\|IC\|≥0.01；新增Choppiness Index/Aroon/Parkinson-GK波动率/linreg_r²/avg_gap，其中Choppiness Index表现强(\|IC\|~0.08)且符号与bb_width/adx相反，两者互相印证"波动率/趋势会均值回归"；穷举15个代表因子的两两组合，最优对(bb_width_50+efficiency_ratio_20)把未来ER压低17.7%，好于v1~v3手选组合(~15%)；8因子平均合成打分反而不如两两组合(9.9%<17.7%，简单平均稀释信号)，阶段3不建议用平均合成分数；session/星期几乎无区分力 |
-| 2b. 因子分类筛选(IC+IR+PBO+OOS Sharpe) | ✅ 完成(v6) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | v1→v5见历史(12→2→11→0→0/38，v4/v5的IC+IR联合筛选让4h/8h的通过名单完全不重叠)；**v6只用IR≥0.3做门槛(IC/PBO/OOS Sharpe降级为参考指标)后，4h通过名单变成8h通过名单的子集，"稳健核心"回升到4个：atr、autocorr_returns、bb_width、choppiness_index**；但其中只有`autocorr_returns`和`choppiness_index`在4h和8h上OOS Sharpe同时为正(atr/bb_width的8h OOS Sharpe为负，IR稳定不代表能赚钱)——**最终推荐的单因子候选是这2个**。阶段3计划两条线并行：单因子用这2个，同时把阶段2 v4验证过的组合过滤器(bb_width_50+adx_20，压低未来ER15~18%)接入真实马丁回测做对照 |
+| 2b. 因子分类筛选(IC+IR+PBO+OOS Sharpe) | ✅ 完成(v6，被2c取代) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` | 见提交历史：v1→v6从12→2→11→0→0→4个家族级候选(autocorr_returns/choppiness_index等)。核心局限是"先选家族代表变体、再筛"，代表变体不一定是OOS表现最好的——这个局限在2c里解决了 |
+| 2c. 分类别因子最终筛选(变体级搜索) | ✅ 完成 | `scripts/02c_category_factor_selection.py` | `reports/02c_category_factor_selection_report.md` + `reports/02c_category_variant_scan.csv` | 不再"先选家族代表"，直接对均值回归/动量/波动率/价格行为4大类下全部314个变体逐个测(4h+8h的IR+5折walk-forward OOS Sharpe)，通过标准=双horizon OOS Sharpe同时为正。**均值回归类原本7个家族84个变体颗粒无收**（RSI/zscore/stochastic/CCI/Donchian/Williams %R本质都是"距离均值多远"，彼此仿射相关，缺乏regime预测力）——新增`mean_reversion_speed`(AR(1)回归估计的均值回归**速度**，不是距离)后奏效。**四大类最终候选**：均值回归=`mean_reversion_speed_20`(IR 0.34/0.51, OOS Sharpe +0.25/+0.25，全项目里最均衡的因子之一)、动量=`autocorr_returns_100`(IR 0.38/0.43, OOS +0.49/+0.08)、波动率=`vol_of_vol_10_pctrank500`(IR 0.23/0.26, OOS +0.18/+0.15，84个波动率变体里唯一双horizon都过的)、价格行为=`dist_from_high_20_pctrank500`(IR 0.25/0.38, OOS +0.21/+0.05)。这4个是阶段3的正式候选池 |
 | 3. 回测(基线，无过滤器) | ✅ 完成 | `scripts/03_baseline_backtest.py` | `reports/03_baseline_backtest_report.md` | 长仓ATR网格马丁(初始0.01手/2倍加仓/最多8层/1xATR(14)间距和止盈/$10000初始资金/1:200杠杆)：权益从$10000稳定涨到峰值$104,961(2012-10-09)，随后半年内回撤95%到$4,787，最终被2013年4月中旬黄金历史级暴跌一根H1 bar打出-$105,418强平，账户**破产**(2013-04-15)，此后不再交易。验证了马丁格尔的核心风险：稳定盈利可以持续数年，但尾部风险一次性摧毁全部收益。这是阶段3b(接入11个regime因子做入场过滤)的对照组基准 |
 | 4. 策略成型 | 未开始 | - | - | - |
 | 5. 多agent审核 | 未开始 | - | - | - |
@@ -28,8 +29,10 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 - 阶段2产出的候选regime过滤器（bb_width_24与adx_14同时处于各自20年历史高位20%分位）
   待阶段3在真实回测（而非静态相关性）里验证是否真的能降低马丁网格的爆仓概率，
   且要检查触发频率（历史上约10%的时间满足条件）是否会让策略常年空仓。
-- 阶段2b最终结论（v6）：单因子regime过滤器，能同时满足"4h/8h跨horizon稳定(IR)"+"OOS
-  Sharpe为正"的只有`autocorr_returns`和`choppiness_index`，阶段3应以这2个为单因子候选。
+- **阶段3应以阶段2c的4个分类别候选为准**（`mean_reversion_speed_20`、`autocorr_returns_100`、
+  `vol_of_vol_10_pctrank500`、`dist_from_high_20_pctrank500`），这是变体级穷举搜索的结果，
+  比阶段2b家族级代表变体的筛选更彻底。阶段2b提到的`choppiness_index`等仍可参考，但不是
+  正式候选池的一部分。
 - **重要修正**：早前说"组合过滤器能压低15~18%未来ER"，那是1天horizon下测出的数字，
   发现`scripts/02_factor_mining.py`的组合搜索结论文字曾被硬编码、没有随HORIZONS字典
   顺序变化自动更新（v5把4小时排到了第一位，表格已按4小时重算，但结论文字还留着1天

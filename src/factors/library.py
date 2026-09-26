@@ -32,6 +32,7 @@ FAMILY_CATEGORY = {
     "stochastic_k": "mean_reversion", "stochastic_d": "mean_reversion",
     "williams_r": "mean_reversion", "cci": "mean_reversion",
     "donchian_position": "mean_reversion",
+    "ma_cross_count": "mean_reversion", "mean_reversion_speed": "mean_reversion",
     "roc": "momentum", "ma_slope": "momentum", "macd_hist": "momentum",
     "aroon_up": "momentum", "aroon_down": "momentum", "autocorr_returns": "momentum",
     "atr": "volatility", "realized_vol": "volatility", "bb_width": "volatility",
@@ -163,6 +164,33 @@ def zscore_vs_ma(df: pd.DataFrame, n: int) -> pd.Series:
     ma = df["close"].rolling(n).mean()
     sd = df["close"].rolling(n).std()
     return (df["close"] - ma) / sd.replace(0, np.nan)
+
+
+def ma_cross_count(df: pd.DataFrame, n: int) -> pd.Series:
+    """Number of times close crosses its own rolling MA within the trailing
+    n bars — a structurally different mean-reversion signal from RSI/
+    zscore/stochastic (all "distance from center") and from ER/ADX/CHOP
+    (which look at path efficiency, not the mean specifically): this
+    measures oscillation FREQUENCY around a moving target. High count =
+    choppily crossing back and forth, low = staying on one side (trending)."""
+    ma = df["close"].rolling(n).mean()
+    sign = np.sign(df["close"] - ma)
+    crossed = (sign != sign.shift()).astype(float)
+    return crossed.rolling(n).sum()
+
+
+def mean_reversion_speed(df: pd.DataFrame, n: int) -> pd.Series:
+    """Rolling AR(1)-style mean-reversion speed: regresses the bar-to-bar
+    CHANGE in (close - MA) on its own lagged level. Positive = deviations
+    from the mean get pulled back (mean-reverting), near zero/negative =
+    deviations persist or grow (trending) — this captures reversion SPEED,
+    distinct from the "how far from the mean right now" factors above."""
+    deviation = df["close"] - df["close"].rolling(n).mean()
+    delta = deviation.diff()
+    lagged = deviation.shift(1)
+    cov = delta.rolling(n).cov(lagged)
+    var = lagged.rolling(n).var()
+    return -cov / var.replace(0, np.nan)
 
 
 def stochastic_k(df: pd.DataFrame, n: int) -> pd.Series:
@@ -324,6 +352,8 @@ WINDOWED_FACTORS = {
     "dist_from_high": dist_from_high,
     "dist_from_low": dist_from_low,
     "donchian_position": donchian_position,
+    "ma_cross_count": ma_cross_count,
+    "mean_reversion_speed": mean_reversion_speed,
     "skew_returns": skew_returns,
     "kurt_returns": kurt_returns,
     "mfi": mfi,

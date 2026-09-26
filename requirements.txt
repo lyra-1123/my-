@@ -3,6 +3,8 @@ pandas>=2.0
 pyarrow>=14.0
 pyyaml>=6.0
 duckdb>=0.10
+scipy>=1.10
+numpy>=1.24
 
 # 仅本地 Windows 数据采集环境需要（云端沙箱无法安装/运行）
 # MetaTrader5>=5.0.45

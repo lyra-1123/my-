@@ -55,6 +55,42 @@ def conditional_returns(factor: pd.Series, ic_sign: float, base_return: pd.Serie
     return base_return.where(mask, 0.0)
 
 
+def information_ratio(factor: pd.Series, label: pd.Series, times: pd.Series,
+                       points: np.ndarray, freq: str = "M") -> dict:
+    """ICIR: split the (non-overlapping) decision points into calendar
+    periods (months by default), compute Spearman IC within each period
+    separately, then IR = mean(IC)/std(IC) across periods — this measures
+    whether a factor's predictive power is *consistent* period to period,
+    not just strong on average (a factor with the same full-sample IC but
+    wildly swinging sign period to period is far less trustworthy). The
+    per-period IC series is oriented by the full-sample IC's sign so a
+    reliably-negative factor scores a high positive IR, not a negative one.
+    """
+    sub = pd.DataFrame({
+        "factor": factor.iloc[points].to_numpy(),
+        "label": label.iloc[points].to_numpy(),
+        "time": pd.to_datetime(pd.Series(times).iloc[points].to_numpy()),
+    }).dropna()
+    if len(sub) < 30:
+        return {"ic": np.nan, "ir": np.nan, "n_periods": 0}
+
+    full_ic = sub["factor"].corr(sub["label"], method="spearman")
+    sign = np.sign(full_ic) if full_ic and not np.isnan(full_ic) else 1.0
+
+    sub["period"] = sub["time"].dt.tz_localize(None).dt.to_period(freq)
+    period_ic = sub.groupby("period").apply(
+        lambda g: g["factor"].corr(g["label"], method="spearman") if len(g) >= 10 else np.nan,
+        include_groups=False,
+    ).dropna()
+
+    if len(period_ic) < 3 or period_ic.std() == 0:
+        return {"ic": full_ic, "ir": np.nan, "n_periods": len(period_ic)}
+
+    oriented = period_ic * sign
+    ir = oriented.mean() / oriented.std()
+    return {"ic": full_ic, "ir": float(ir), "n_periods": len(period_ic)}
+
+
 def _sharpe(x: np.ndarray) -> float:
     x = x[~np.isnan(x)]
     if len(x) < 10 or x.std(ddof=1) == 0:

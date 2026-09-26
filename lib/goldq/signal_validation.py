@@ -20,12 +20,16 @@ def compute_forward_mfe_mae(df: pd.DataFrame, forward_bars: int) -> tuple[pd.Ser
     return mfe, mae
 
 
-def baseline_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) -> dict:
+def baseline_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int, direction: int = 1) -> dict:
     """
     对照组：不看任何信号，随便一根 bar 作为"入场点"，未来 forward_bars 内 MFE>=target_usd 的比例。
     信号的命中率必须显著高于这个基线，否则说明信号毫无增益（甚至可能比瞎猜还差）。
+    direction=1 对应"随便做多"基线，direction=-1 对应"随便做空"基线——双向信号应该
+    分别和同方向的基线比较（多头信号比多头基线，空头信号比空头基线），而不是混在一起。
     """
     mfe, mae = compute_forward_mfe_mae(df, forward_bars)
+    if direction < 0:
+        mfe, mae = -mae, -mfe  # 做空：MFE=entry-low=-mae(做多口径)，MAE=entry-high=-mfe(做多口径)
     valid = mfe.notna()
     return {
         "hit_rate": (mfe[valid] >= target_usd).mean(),
@@ -36,19 +40,30 @@ def baseline_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) ->
 
 
 def evaluate_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) -> dict:
-    """三件套 1：命中率与平均收益（MFE/MAE 口径：未来窗口内最高/最低价 - 入场价）"""
-    signal_positions = np.flatnonzero(df["signal"].values == 1)
+    """
+    三件套 1：命中率与平均收益（MFE/MAE 口径：未来窗口内最高/最低价 - 入场价）。
+    支持双向信号：df["signal"] 可以是 0/1（只做多，向后兼容）或 -1/0/1（做空/无/做多）。
+    做多的 MFE = 未来窗口最高价-入场价；做空的 MFE = 入场价-未来窗口最低价（方向对齐后都是"越大越好"）。
+    """
+    signal_values = df["signal"].values
+    signal_positions = np.flatnonzero(signal_values != 0)
 
     records = []
     for pos in signal_positions:
         if pos + forward_bars >= len(df):
             continue  # 窗口不完整（数据末尾），跳过，不用不完整的未来数据凑数
+        direction = 1 if signal_values[pos] > 0 else -1
         entry_price = df["close"].iloc[pos]
         window = df.iloc[pos + 1: pos + 1 + forward_bars]
-        mfe = window["high"].max() - entry_price
-        mae = window["low"].min() - entry_price
+        if direction > 0:
+            mfe = window["high"].max() - entry_price
+            mae = window["low"].min() - entry_price
+        else:
+            mfe = entry_price - window["low"].min()
+            mae = entry_price - window["high"].max()
         records.append({
             "signal_time": df["time_utc"].iloc[pos],
+            "direction": direction,
             "entry_price": entry_price,
             "mfe": mfe,
             "mae": mae,
@@ -72,11 +87,23 @@ def evaluate_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) ->
     }
 
 
-def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int = 2000) -> pd.DataFrame:
-    """三件套 2：信号稳定性——按滚动 regime 窗口算 IC（信号 vs 未来 MFE% 的 spearman 相关）"""
+def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int = 2000,
+                        return_type: str = "mfe") -> pd.DataFrame:
+    """
+    三件套 2：信号稳定性——按滚动 regime 窗口算 IC（信号 vs 未来收益的 spearman 相关）。
+    return_type="mfe"（默认，向后兼容假设1/2/3）：只看多头视角的未来最大有利偏移百分比，
+        适用于 signal 只有 0/1（只做多）的场景。
+    return_type="close"：未来收盘价的原始涨跌百分比（可正可负），适用于 signal 是 -1/0/1
+        的双向信号——signal为+1时预测正收益、-1时预测负收益，用spearman相关直接检验
+        "信号方向"和"未来涨跌方向"是否一致，天然支持双向。
+    """
     entry_price = df["close"]
-    forward_high = df["high"].shift(-1).rolling(forward_bars).max().shift(-(forward_bars - 1))
-    forward_mfe_pct = (forward_high - entry_price) / entry_price
+    if return_type == "close":
+        forward_ret = (df["close"].shift(-forward_bars) - entry_price) / entry_price
+    else:
+        forward_high = df["high"].shift(-1).rolling(forward_bars).max().shift(-(forward_bars - 1))
+        forward_ret = (forward_high - entry_price) / entry_price
+    forward_mfe_pct = forward_ret
 
     ic_records = []
     step = regime_window // 2
@@ -85,7 +112,8 @@ def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int =
         regime_signal = df["signal"].iloc[start:end]
         regime_ret = forward_mfe_pct.iloc[start:end]
 
-        if regime_signal.sum() < 5:  # 该窗口触发次数太少，IC 没有统计意义
+        n_triggers = int((regime_signal != 0).sum())  # 用非零计数，双向信号(-1/+1)求和会互相抵消
+        if n_triggers < 5:  # 该窗口触发次数太少，IC 没有统计意义
             continue
 
         valid = regime_signal.notna() & regime_ret.notna()
@@ -96,7 +124,7 @@ def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int =
         ic_records.append({
             "start": df["time_utc"].iloc[start],
             "end": df["time_utc"].iloc[end - 1],
-            "n_signals_in_window": int(regime_signal.sum()),
+            "n_signals_in_window": n_triggers,
             "ic": ic,
         })
 

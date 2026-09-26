@@ -33,3 +33,10 @@
   按方向加权的基线、evaluate_stability 新增 return_type="close" 模式），并新增
   `02_增强处理/compute_indicators.py`（EMA/ATR/RSI）。关键诊断：固定$3目标掩盖了
   "本来就在筛选高波动时段"这个前提，更合理的目标应该跟ATR挂钩而不是固定美元数。
+- 第六轮 `hypothesis_atr_momentum_v2`（MFI替代RSI，目标改成1倍当前ATR）在全量数据上
+  **技术上通过了两条可证伪标准**（命中率54.4%≥50%，MFE/ATR比值1.63≥1.5，多空双向一致），
+  是连续6轮验证里第一次通过。但基线本身贴着48.8%（ATR相对目标天然接近抛硬币），
+  真实边际是+5.7个百分点/相对提升~12%，IC稳定性依然只有2%健康窗口。鉴于这是在同一份
+  数据上调的第6个变体，存在多重检验风险，**下一步是送进第5章Walk-Forward/CSCV做
+  过拟合检验，而不是直接采信**。泛化了 `signal_validation.py` 支持逐bar不同的目标
+  （pd.Series，比如ATR），新增 `compute_mfi()`。

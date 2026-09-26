@@ -26,3 +26,10 @@
 - **MACD 金叉方向结案**：连续4个变体验证后一致得出"最多~2倍基线边际，幅度和频率都不够
   独立成策略"的结论，决定停止在这个方向继续测试，转向其他假设类型。详见
   `hypothesis_single_htf_golden_cross.md` 的"最终结论"表格。
+- 第五个假设 `hypothesis_atr_momentum`（EMA20方向regime + ATR扩张1.5倍 + MACD/RSI12触发，
+  双向，目标$3）在全量数据上验证 **REJECTED**（命中率30.3% << 50%，平均MFE $3.07 < $5），
+  但样本量4547次（多空双向）是目前最大、边际最扎实的一次（2倍基线，多空表现接近）。
+  为支持双向信号，泛化了 `lib/goldq/signal_validation.py`（direction-aware MFE/MAE、
+  按方向加权的基线、evaluate_stability 新增 return_type="close" 模式），并新增
+  `02_增强处理/compute_indicators.py`（EMA/ATR/RSI）。关键诊断：固定$3目标掩盖了
+  "本来就在筛选高波动时段"这个前提，更合理的目标应该跟ATR挂钩而不是固定美元数。

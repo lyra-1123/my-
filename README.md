@@ -41,10 +41,14 @@ data/          原始/处理后数据（不进 git，本地生成）
 | `build_dataset.py` | **唯一**合并入口：把 `data/raw/*.csv` 合并去重排序为 `data/processed/XAUUSD_M1.parquet` |
 | `validate_data.py` | 数据自检 SOP：日均 bars/天连续性、重复时间戳、异常缺口、跨年时区 sanity check |
 
-⚠️ **已知待办**（详见 `99_结果/traps_log.md`）：`mt5_export_direct.py` 导出的时间戳是 broker
+✅ **数据自检已完成**（2026-09-26，全量 635万行，2008-12-31~2026-09-25）：`build_dataset.py` +
+`validate_data.py` + `inspect_year.py` 跑完，结论是数据整体健康，可以进入信号层。细节和两个
+遗留小问题（2014年两处未知大缺口、2009年数据偏稀疏）记在 `99_结果/traps_log.md`。
+
+⚠️ **待办**（详见 `99_结果/traps_log.md`）：`mt5_export_direct.py` 导出的时间戳是 broker
 服务器时间而非 UTC，与 Dukascopy 原生 UTC 数据混用前必须先校准 `07_配置参数/data_paths.yaml`
-里的 `mt5_utc_offset_hours`。上面这套脚本本身已经在小样本真实数据上跑通验证（build → validate
-全链路无报错），但尚未在完整 17 年数据集上跑过——见下面"下一步"。
+里的 `mt5_utc_offset_hours`。当前数据集全部来自 Dukascopy，暂不受影响，只在未来用这两个
+MT5 脚本补数据时才需要处理。
 
 ## 运行环境说明
 
@@ -56,19 +60,12 @@ data/          原始/处理后数据（不进 git，本地生成）
 
 ## 下一步（Next Actions）
 
-1. **打通数据**：把 Google Drive 里的 17 个 CSV 下载到本地 `data/raw/`（或设置
-   `GOLDQ_RAW_DIR` 指向已有目录），运行：
-   ```bash
-   pip install -r requirements.txt
-   python 01_数据提取/build_dataset.py
-   python 01_数据提取/validate_data.py
-   ```
-   把 `validate_data.py` 的输出发回来，我们一起看有没有异常交易日/时区错位再进第 3 章剩余环节
-   （交易成本建模等）。
-2. **校准时区偏移**：如果要用 `mt5_export_direct.py` / `mt5_fill_volume.py`，先确定你的
-   broker 服务器时间相对 UTC 的偏移，填进 `mt5_utc_offset_hours`。
-3. **写第一个 Hypothesis First**：复制 `00_方案/hypothesis_template.md`，填完整 5 段
-   （我相信 / 因为 / 可证伪 / 预期效应大小 / 失败模式）。这一步指南明确要求必须由你来写，
+1. ~~打通数据 + 数据自检~~ ✅ 已完成（2026-09-26）。
+2. **校准时区偏移**：如果以后要用 `mt5_export_direct.py` / `mt5_fill_volume.py` 补数据，
+   先确定你的 broker 服务器时间相对 UTC 的偏移，填进 `mt5_utc_offset_hours`。不急，
+   当前数据集不依赖这两个脚本。
+3. **写第一个 Hypothesis First**（当前阻塞项）：复制 `00_方案/hypothesis_template.md`，
+   填完整 5 段（我相信 / 因为 / 可证伪 / 预期效应大小 / 失败模式）。这一步指南明确要求必须由你来写，
    AI 只能帮你把想法结构化，不能替你发现规律。有了假设，才能进第 4 章写信号代码。
 
 ## 准备工作检查表（指南第 2.6 节）
@@ -78,6 +75,6 @@ data/          原始/处理后数据（不进 git，本地生成）
 - [x] git 仓库已初始化 + `.gitignore`（.env 排除、data/ 排除）
 - [x] 数据源已选定：Dukascopy（主）+ MT5（兜底/校验），SSoT 唯一入口 `fetch_bars()`
 - [ ] 硬件/实盘部署形态尚未选定（第 7 章再定）
-- [ ] 历史回测深度已在完整数据集上验证（目前只验证了脚本逻辑，未跑全量 17 年数据）
-- [ ] MT5 时区偏移已校准
+- [x] 历史回测深度已在完整数据集上验证（2008-12-31~2026-09-25，635万行，见 traps_log.md）
+- [ ] MT5 时区偏移已校准（当前数据不依赖 MT5 导出，暂缓）
 - [ ] Bot 修改前快照 SOP（等有第一个 Bot 时再建立习惯）

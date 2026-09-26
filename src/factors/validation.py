@@ -98,25 +98,16 @@ def _sharpe(x: np.ndarray) -> float:
     return x.mean() / x.std(ddof=1)
 
 
-def pbo_for_family(variant_returns: dict, n_blocks: int = 10) -> tuple[float, dict]:
-    """Combinatorially symmetric cross-validation (CSCV), simplified: split
-    the (already non-overlapping) decision-point return series of every
-    variant into n_blocks contiguous blocks, form all ways to bisect the
-    blocks into an IS/OOS half, and check how often "best variant by IS
-    Sharpe" ranks below the OOS median. Returns (PBO, extra diagnostics).
-    """
-    names = list(variant_returns.keys())
-    n = len(next(iter(variant_returns.values())))
-    edges = np.linspace(0, n, n_blocks + 1).astype(int)
-    block_slices = [slice(edges[i], edges[i + 1]) for i in range(n_blocks)]
-
-    # block_sharpe[b, v] = Sharpe of variant v's returns restricted to block b
-    block_sharpe = np.full((n_blocks, len(names)), np.nan)
-    for v, name in enumerate(names):
-        arr = variant_returns[name]
-        for b, sl in enumerate(block_slices):
-            block_sharpe[b, v] = _sharpe(arr[sl])
-
+def pbo_from_block_sharpe(block_sharpe: np.ndarray, names: list, n_blocks: int = 10) -> tuple[float, dict]:
+    """CSCV core, factored out of `pbo_for_family` so callers that can't
+    afford to hold every candidate's full per-bar return array in memory at
+    once (e.g. hundreds of directional-signal candidates over 1.28M M5 bars)
+    can build `block_sharpe[b, v]` incrementally — one candidate's array
+    computed, block-Sharpe'd, and discarded before moving to the next —
+    then only pass in the small (n_blocks x n_candidates) result matrix.
+    Same CSCV logic as `pbo_for_family`: bisect blocks into every IS/OOS
+    half, check how often "best candidate by IS Sharpe" ranks below the OOS
+    median. Returns (PBO, extra diagnostics)."""
     half = n_blocks // 2
     logits = []
     for train_blocks in combinations(range(n_blocks), half):
@@ -136,6 +127,28 @@ def pbo_for_family(variant_returns: dict, n_blocks: int = 10) -> tuple[float, di
     pbo = float((logits < 0).mean()) if len(logits) else float("nan")
     best_overall = names[int(np.nanargmax(np.nanmean(block_sharpe, axis=0)))]
     return pbo, {"n_splits": len(logits), "best_by_full_sample": best_overall}
+
+
+def pbo_for_family(variant_returns: dict, n_blocks: int = 10) -> tuple[float, dict]:
+    """Combinatorially symmetric cross-validation (CSCV), simplified: split
+    the (already non-overlapping) decision-point return series of every
+    variant into n_blocks contiguous blocks, form all ways to bisect the
+    blocks into an IS/OOS half, and check how often "best variant by IS
+    Sharpe" ranks below the OOS median. Returns (PBO, extra diagnostics).
+    """
+    names = list(variant_returns.keys())
+    n = len(next(iter(variant_returns.values())))
+    edges = np.linspace(0, n, n_blocks + 1).astype(int)
+    block_slices = [slice(edges[i], edges[i + 1]) for i in range(n_blocks)]
+
+    # block_sharpe[b, v] = Sharpe of variant v's returns restricted to block b
+    block_sharpe = np.full((n_blocks, len(names)), np.nan)
+    for v, name in enumerate(names):
+        arr = variant_returns[name]
+        for b, sl in enumerate(block_slices):
+            block_sharpe[b, v] = _sharpe(arr[sl])
+
+    return pbo_from_block_sharpe(block_sharpe, names, n_blocks)
 
 
 def walk_forward_oos_sharpe(df_factor: pd.Series, base_return: pd.Series, ic_sign: float,

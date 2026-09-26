@@ -11,6 +11,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+WINDOWS = (10, 20, 50, 100)
+
 
 def _true_range(df: pd.DataFrame) -> pd.Series:
     prev_close = df["close"].shift(1)
@@ -24,13 +26,18 @@ def _true_range(df: pd.DataFrame) -> pd.Series:
     ).max(axis=1)
 
 
+def _log_return(df: pd.DataFrame) -> pd.Series:
+    return np.log(df["close"]).diff()
+
+
+# ---------- volatility ----------
+
 def atr(df: pd.DataFrame, n: int) -> pd.Series:
     return _true_range(df).rolling(n).mean()
 
 
 def realized_vol(df: pd.DataFrame, n: int) -> pd.Series:
-    log_ret = np.log(df["close"]).diff()
-    return log_ret.rolling(n).std()
+    return _log_return(df).rolling(n).std()
 
 
 def bollinger_width(df: pd.DataFrame, n: int, k: float = 2.0) -> pd.Series:
@@ -39,13 +46,16 @@ def bollinger_width(df: pd.DataFrame, n: int, k: float = 2.0) -> pd.Series:
     return (2 * k * sd) / ma
 
 
-def rsi(df: pd.DataFrame, n: int) -> pd.Series:
-    delta = df["close"].diff()
-    gain = delta.clip(lower=0).rolling(n).mean()
-    loss = (-delta.clip(upper=0)).rolling(n).mean()
-    rs = gain / loss.replace(0, np.nan)
-    return 100 - 100 / (1 + rs)
+def keltner_width(df: pd.DataFrame, n: int, mult: float = 2.0) -> pd.Series:
+    ema = df["close"].ewm(span=n, adjust=False).mean()
+    return (2 * mult * atr(df, n)) / ema
 
+
+def vol_of_vol(df: pd.DataFrame, n: int) -> pd.Series:
+    return realized_vol(df, n).rolling(n).std()
+
+
+# ---------- trend strength / persistence ----------
 
 def adx(df: pd.DataFrame, n: int) -> pd.Series:
     up_move = df["high"].diff()
@@ -60,15 +70,14 @@ def adx(df: pd.DataFrame, n: int) -> pd.Series:
     return dx.rolling(n).mean()
 
 
+def adx_slope(df: pd.DataFrame, n: int) -> pd.Series:
+    a = adx(df, n)
+    return a - a.shift(max(n // 4, 1))
+
+
 def ma_slope(df: pd.DataFrame, n: int) -> pd.Series:
     ma = df["close"].rolling(n).mean()
     return (ma - ma.shift(n)) / (n * df["close"])
-
-
-def zscore_vs_ma(df: pd.DataFrame, n: int) -> pd.Series:
-    ma = df["close"].rolling(n).mean()
-    sd = df["close"].rolling(n).std()
-    return (df["close"] - ma) / sd.replace(0, np.nan)
 
 
 def efficiency_ratio(df: pd.DataFrame, n: int) -> pd.Series:
@@ -79,6 +88,108 @@ def efficiency_ratio(df: pd.DataFrame, n: int) -> pd.Series:
     path = df["close"].diff().abs().rolling(n).sum()
     return net / path.replace(0, np.nan)
 
+
+def variance_ratio_2(df: pd.DataFrame, n: int) -> pd.Series:
+    """Lo-MacKinlay 2-period variance ratio, estimated over trailing n bars.
+    >1 = trending/positively autocorrelated, <1 = mean-reverting."""
+    r1 = _log_return(df)
+    r2 = np.log(df["close"]).diff(2)
+    var_r1 = r1.rolling(n).var()
+    var_r2 = r2.rolling(n).var()
+    return var_r2 / (2 * var_r1.replace(0, np.nan))
+
+
+def autocorr_returns(df: pd.DataFrame, n: int) -> pd.Series:
+    """Rolling lag-1 autocorrelation of returns over trailing n bars.
+    Positive = momentum/trending, negative = mean-reverting."""
+    r = _log_return(df)
+    return r.rolling(n).corr(r.shift(1))
+
+
+def streak_length(df: pd.DataFrame) -> pd.Series:
+    """Number of consecutive bars (including current) moving in the same
+    direction as the current bar."""
+    sign = np.sign(df["close"].diff())
+    streak_id = (sign != sign.shift()).cumsum()
+    return sign.groupby(streak_id).cumcount() + 1
+
+
+# ---------- oscillators / mean-reversion ----------
+
+def rsi(df: pd.DataFrame, n: int) -> pd.Series:
+    delta = df["close"].diff()
+    gain = delta.clip(lower=0).rolling(n).mean()
+    loss = (-delta.clip(upper=0)).rolling(n).mean()
+    rs = gain / loss.replace(0, np.nan)
+    return 100 - 100 / (1 + rs)
+
+
+def zscore_vs_ma(df: pd.DataFrame, n: int) -> pd.Series:
+    ma = df["close"].rolling(n).mean()
+    sd = df["close"].rolling(n).std()
+    return (df["close"] - ma) / sd.replace(0, np.nan)
+
+
+def stochastic_k(df: pd.DataFrame, n: int) -> pd.Series:
+    hh = df["high"].rolling(n).max()
+    ll = df["low"].rolling(n).min()
+    return 100 * (df["close"] - ll) / (hh - ll).replace(0, np.nan)
+
+
+def stochastic_d(df: pd.DataFrame, n: int) -> pd.Series:
+    return stochastic_k(df, n).rolling(3).mean()
+
+
+def williams_r(df: pd.DataFrame, n: int) -> pd.Series:
+    hh = df["high"].rolling(n).max()
+    ll = df["low"].rolling(n).min()
+    return -100 * (hh - df["close"]) / (hh - ll).replace(0, np.nan)
+
+
+def cci(df: pd.DataFrame, n: int) -> pd.Series:
+    tp = (df["high"] + df["low"] + df["close"]) / 3
+    ma = tp.rolling(n).mean()
+    mad = (tp - ma).abs().rolling(n).mean()
+    return (tp - ma) / (0.015 * mad.replace(0, np.nan))
+
+
+def roc(df: pd.DataFrame, n: int) -> pd.Series:
+    return df["close"].pct_change(n)
+
+
+def dist_from_high(df: pd.DataFrame, n: int) -> pd.Series:
+    hh = df["high"].rolling(n).max()
+    return (df["close"] - hh) / hh
+
+
+def dist_from_low(df: pd.DataFrame, n: int) -> pd.Series:
+    ll = df["low"].rolling(n).min()
+    return (df["close"] - ll) / ll
+
+
+def donchian_position(df: pd.DataFrame, n: int) -> pd.Series:
+    hh = df["high"].rolling(n).max()
+    ll = df["low"].rolling(n).min()
+    return (df["close"] - ll) / (hh - ll).replace(0, np.nan)
+
+
+def skew_returns(df: pd.DataFrame, n: int) -> pd.Series:
+    return _log_return(df).rolling(n).skew()
+
+
+def kurt_returns(df: pd.DataFrame, n: int) -> pd.Series:
+    return _log_return(df).rolling(n).kurt()
+
+
+def macd_histogram(df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.Series:
+    ema_fast = df["close"].ewm(span=fast, adjust=False).mean()
+    ema_slow = df["close"].ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+    return (macd_line - signal_line) / df["close"]
+
+
+# ---------- time ----------
 
 def session_bucket(df: pd.DataFrame) -> pd.Series:
     """Coarse UTC trading-session label. NOT independently verified against a
@@ -94,19 +205,43 @@ def day_of_week(df: pd.DataFrame) -> pd.Series:
     return df["time"].dt.dayofweek
 
 
-def build_factor_table(df: pd.DataFrame) -> pd.DataFrame:
+# windowed indicator -> function, applied for every n in WINDOWS
+WINDOWED_FACTORS = {
+    "atr": atr,
+    "realized_vol": realized_vol,
+    "bb_width": bollinger_width,
+    "keltner_width": keltner_width,
+    "vol_of_vol": vol_of_vol,
+    "adx": adx,
+    "adx_slope": adx_slope,
+    "ma_slope": ma_slope,
+    "efficiency_ratio": efficiency_ratio,
+    "variance_ratio_2": variance_ratio_2,
+    "autocorr_returns": autocorr_returns,
+    "rsi": rsi,
+    "zscore_vs_ma": zscore_vs_ma,
+    "stochastic_k": stochastic_k,
+    "stochastic_d": stochastic_d,
+    "williams_r": williams_r,
+    "cci": cci,
+    "roc": roc,
+    "dist_from_high": dist_from_high,
+    "dist_from_low": dist_from_low,
+    "donchian_position": donchian_position,
+    "skew_returns": skew_returns,
+    "kurt_returns": kurt_returns,
+}
+
+
+def build_factor_table(df: pd.DataFrame, windows=WINDOWS) -> pd.DataFrame:
     """df: OHLCV with a `time` column (e.g. H1 bars). Returns a DataFrame of
     factor columns aligned to df's index, all backward-looking only."""
     out = pd.DataFrame(index=df.index)
-    for n in (14, 24, 48):
-        out[f"atr_{n}"] = atr(df, n)
-        out[f"realized_vol_{n}"] = realized_vol(df, n)
-        out[f"bb_width_{n}"] = bollinger_width(df, n)
-        out[f"rsi_{n}"] = rsi(df, n)
-        out[f"adx_{n}"] = adx(df, n)
-        out[f"ma_slope_{n}"] = ma_slope(df, n)
-        out[f"zscore_vs_ma_{n}"] = zscore_vs_ma(df, n)
-        out[f"efficiency_ratio_{n}"] = efficiency_ratio(df, n)
+    for name, fn in WINDOWED_FACTORS.items():
+        for n in windows:
+            out[f"{name}_{n}"] = fn(df, n)
+    out["macd_hist"] = macd_histogram(df)
+    out["streak_length"] = streak_length(df)
     out["hour"] = df["time"].dt.hour
     out["session"] = session_bucket(df)
     out["day_of_week"] = day_of_week(df)

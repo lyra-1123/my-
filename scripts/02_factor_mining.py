@@ -337,13 +337,28 @@ def main():
         "(bb_width/adx的发现)；当前处于窄幅盘整时，未来更可能变成突破趋势(choppiness_index的"
         "发现)。两个独立构造的指标从不同角度印证了同一个“波动率/趋势会均值回归”的市场现象，"
         "互相印证比单独看更可信。",
-        "- 系统性两两组合搜索（穷举15个代表因子的组合，而非手选一对）找到了比v1~v3手选组合更好的"
-        "结果：bb_width_50+efficiency_ratio_20能把未来ER压低约17.7%（v1~v3手选的bb_width+adx"
-        "组合约15%），说明系统性搜索确实有必要，手选容易漏掉更优组合。",
-        "- 但8因子平均合成打分并不比两两组合更好——合成分数整体IC(-0.087)和单用bb_width_50"
-        "几乎一样，最高安全分位的ER降幅(9.9%)反而不如最优两两组合(17.7%)，说明简单平均会把"
-        "强因子的信号稀释掉，阶段3不建议用“一堆因子取平均”的合成分数，应该用穷举验证过的"
-        "两因子(或阶段3回测里可以再试三因子)AND过滤器。",
+        (
+            f"- 系统性两两组合搜索（穷举15个代表因子的组合）在{main_horizon_name}上最好的一对是"
+            f"`{pair_results[0][0]}`+`{pair_results[0][1]}`，能把未来ER压低约"
+            f"{best_pair_reduction:+.1%}（样本占比{pair_results[0][3]:.1%}）。"
+            if pair_results else
+            f"- {main_horizon_name}上没有样本量>=500的两两组合，穷举搜索在这个horizon上"
+            "拿不到可信结果。"
+        ),
+        f"- 8因子平均合成打分在{main_horizon_name}上的效果：合成分数IC={composite_ic:+.3f}"
+        f"（对比单因子最强的{ic.iloc[0]['factor']}: {ic.iloc[0][main_horizon_name]:+.3f}），"
+        f"最高安全分位ER降幅{composite_reduction:+.1%}，"
+        + ("比最优两两组合更强" if pair_results and composite_reduction > best_pair_reduction
+           else "反而不如最优两两组合，说明简单平均稀释了强因子的信号，不建议用“一堆因子取"
+                "平均”的合成分数") + "。",
+        "- **重要提醒**：这份报告每次重跑`02_factor_mining.py`都会用当时`HORIZONS`字典里排第一"
+        "的horizon作为“主horizon”重新计算上面两条结论和组合搜索表——v5把主horizon从1天改成了"
+        "4小时后，同一个bb_width_50+efficiency_ratio_20组合在4小时上的降幅从早先1天horizon"
+        "测出的约17.7%掉到了个位数百分比（regime可预测性在短horizon上本来就弱，这和"
+        "reports/00_progress.md记录的IC量级衰减是一回事）。之前对话里提到的“组合过滤器"
+        "降低15~18%”这个数字，指的是1天horizon下的结果，不是4/8小时——如果要在阶段3的"
+        "日内马丁上用组合过滤器，应该以本报告当前呈现的4小时数字为准，而不是沿用早先"
+        "按1天horizon算出的15~18%。",
         "",
     ]
 

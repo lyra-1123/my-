@@ -325,8 +325,9 @@ def _inner_select_sl_tp(direction_side, train_idx, open_, high, low, close, atr,
     training range's Sharpe (mirrors 02o/02p, re-run inside every fold)."""
     best_cfg, best_sh, best_qualifies = sl_configs[0], float("-inf"), False
     for sl_type, sl_level, rr in sl_configs:
+        real_sl_type = None if sl_type == "none" else sl_type
         ret, _ = _score_masked(direction_side, train_idx, open_, high, low, close, atr, n_hold,
-                                sl_type, sl_level, rr)
+                                real_sl_type, sl_level, rr)
         sh = _sharpe(ret)
         qualifies = len(ret) >= min_trades and not np.isnan(sh)
         sh_cmp = sh if not np.isnan(sh) else float("-inf")
@@ -367,8 +368,9 @@ def nested_walk_forward_single(factor: pd.Series, close: pd.Series, open_: pd.Se
             sl_type, sl_level, rr = _inner_select_sl_tp(side_dir, train_idx, open_, high, low, close,
                                                          atr, n_hold, sl_configs)
             choice[f"{side}_sl_type"], choice[f"{side}_sl_level"], choice[f"{side}_rr"] = sl_type, sl_level, rr
+            real_sl_type = None if sl_type == "none" else sl_type
             ret, d = _score_masked(side_dir, test_idx, open_, high, low, close, atr, n_hold,
-                                    sl_type, sl_level, rr)
+                                    real_sl_type, sl_level, rr)
             test_ret_parts.append(ret)
             test_dir_parts.append(d)
         fold_ret = np.concatenate(test_ret_parts)
@@ -411,8 +413,9 @@ def nested_walk_forward_pair(factor_a: pd.Series, mode_a: str, factor_b: pd.Seri
             sl_type, sl_level, rr = _inner_select_sl_tp(side_dir, train_idx, open_, high, low, close,
                                                          atr, n_hold, sl_configs)
             choice[f"{side}_sl_type"], choice[f"{side}_sl_level"], choice[f"{side}_rr"] = sl_type, sl_level, rr
+            real_sl_type = None if sl_type == "none" else sl_type
             ret, d = _score_masked(side_dir, test_idx, open_, high, low, close, atr, n_hold,
-                                    sl_type, sl_level, rr)
+                                    real_sl_type, sl_level, rr)
             test_ret_parts.append(ret)
             test_dir_parts.append(d)
         fold_ret = np.concatenate(test_ret_parts)

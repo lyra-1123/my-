@@ -11,6 +11,30 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 
+def compute_forward_mfe_mae(df: pd.DataFrame, forward_bars: int) -> tuple[pd.Series, pd.Series]:
+    """未来 forward_bars 根（不含当前bar）内的 MFE/MAE（美元），向量化，供逐 bar 基线对比用。"""
+    forward_high = df["high"].shift(-1).rolling(forward_bars).max().shift(-(forward_bars - 1))
+    forward_low = df["low"].shift(-1).rolling(forward_bars).min().shift(-(forward_bars - 1))
+    mfe = forward_high - df["close"]
+    mae = forward_low - df["close"]
+    return mfe, mae
+
+
+def baseline_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) -> dict:
+    """
+    对照组：不看任何信号，随便一根 bar 作为"入场点"，未来 forward_bars 内 MFE>=target_usd 的比例。
+    信号的命中率必须显著高于这个基线，否则说明信号毫无增益（甚至可能比瞎猜还差）。
+    """
+    mfe, mae = compute_forward_mfe_mae(df, forward_bars)
+    valid = mfe.notna()
+    return {
+        "hit_rate": (mfe[valid] >= target_usd).mean(),
+        "avg_mfe": mfe[valid].mean(),
+        "avg_mae": mae[valid].mean(),
+        "n_bars": int(valid.sum()),
+    }
+
+
 def evaluate_hit_rate(df: pd.DataFrame, target_usd: float, forward_bars: int) -> dict:
     """三件套 1：命中率与平均收益（MFE/MAE 口径：未来窗口内最高/最低价 - 入场价）"""
     signal_positions = np.flatnonzero(df["signal"].values == 1)
@@ -80,7 +104,7 @@ def evaluate_stability(df: pd.DataFrame, forward_bars: int, regime_window: int =
 
 
 def print_report(hit_report: dict, stability: pd.DataFrame, target_usd: float,
-                  min_hit_rate: float, min_avg_mfe: float) -> None:
+                  min_hit_rate: float, min_avg_mfe: float, baseline: dict | None = None) -> None:
     print("=" * 60)
     print("三件套 1：命中率与平均收益")
     print("=" * 60)
@@ -93,6 +117,14 @@ def print_report(hit_report: dict, stability: pd.DataFrame, target_usd: float,
     print(f"平均 MFE: ${hit_report['avg_mfe']:.2f} (std ${hit_report['std_mfe']:.2f})")
     print(f"平均 MAE: ${hit_report['avg_mae']:.2f}")
     print(f"逐笔 Sharpe 近似 (avg_mfe/std_mfe): {hit_report['sharpe_proxy']:.2f}")
+
+    if baseline is not None:
+        lift = hit_report["hit_rate"] - baseline["hit_rate"]
+        print(f"\n[对照组] 不看信号、随便一根bar的基线命中率: {baseline['hit_rate']*100:.1f}% "
+              f"(基线平均MFE ${baseline['avg_mfe']:.2f}，基于 {baseline['n_bars']} 根bar)")
+        print(f"[增益] 信号命中率 - 基线命中率 = {lift*100:+.1f} 个百分点"
+              + ("  ⚠️ 信号并不比随便找个时间点更好，说明信号没有实际增益"
+                 if lift <= 0 else ""))
 
     verdict_pass = hit_report["hit_rate"] >= min_hit_rate and hit_report["avg_mfe"] >= min_avg_mfe
     print(f"\n[假设可证伪判定] 命中率>={min_hit_rate*100:.0f}% 且 平均MFE>=${min_avg_mfe}: "

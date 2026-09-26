@@ -163,6 +163,23 @@ def walk_forward_oos_sharpe(df_factor: pd.Series, base_return: pd.Series, ic_sig
     }
 
 
+def fold_consistency_sharpe(returns: pd.Series, points: np.ndarray, n_folds: int = 5) -> dict:
+    """For an ALREADY-DETERMINED return series (e.g. gated by a fixed voting
+    rule with no per-fold parameter to refit) — NOT a genuine walk-forward
+    test like walk_forward_multi_fold, since there's no threshold being
+    fit-then-frozen here. Splits points into n_folds contiguous chunks,
+    scores Sharpe within each (consistency check), and pools all of them
+    for one overall Sharpe."""
+    chunks = np.array_split(points, n_folds)
+    fold_sharpes = np.array([_sharpe(returns.iloc[c].to_numpy()) for c in chunks])
+    pooled = returns.iloc[points]
+    return {
+        "oos_sharpe_pooled": _sharpe(pooled.to_numpy()),
+        "n_folds_positive": int(np.nansum(fold_sharpes > 0)),
+        "n_folds_total": int(np.sum(~np.isnan(fold_sharpes))),
+    }
+
+
 def walk_forward_multi_fold(df_factor: pd.Series, base_return: pd.Series, ic_sign: float,
                              points: np.ndarray, n_folds: int = 5) -> dict:
     """Expanding-window walk-forward over n_folds+1 contiguous chunks: fold i

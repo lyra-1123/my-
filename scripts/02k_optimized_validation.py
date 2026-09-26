@@ -131,7 +131,7 @@ def main():
         annual_rate = (wf["n_long"] + wf["n_short"]) / years
         ann_sharpe = wf["oos_sharpe_all"] * (annual_rate ** 0.5) if annual_rate > 0 else float("nan")
         pair_rows.append({
-            "variant_a": variant_name(*key_a, WINNERS[key_a][1]), "variant_b": variant_name(*key_b, WINNERS[key_b][1]),
+            "variant_a": variant_name(key_a[0], n_a, pw_a), "variant_b": variant_name(key_b[0], n_b, pw_b),
             "oos_sharpe_all": wf["oos_sharpe_all"], "ann_sharpe": ann_sharpe, "annual_rate": annual_rate,
             "n_folds_positive": wf["n_folds_positive"],
             "oos_sharpe_long": wf["oos_sharpe_long"], "oos_sharpe_short": wf["oos_sharpe_short"],

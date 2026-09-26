@@ -66,3 +66,74 @@ def cross_timeframe_signal(ltf_direction: pd.Series, htf_direction_aligned: pd.S
         "aligned": aligned, "misalign_streak": misalign_streak, "deferred": deferred,
         "direction": direction, "size": size,
     })
+
+
+def momentum_direction(factor: pd.Series, close: pd.Series, threshold: float) -> pd.Series:
+    """Generalizes step-2's condition B: direction = sign of the last bar's
+    move, but ONLY when `factor` is at/above `threshold` (i.e. the factor
+    is read as "momentum/trend regime active", and price's own recent
+    direction is trusted to continue). Fires both signs — no separate long/
+    short variant needed."""
+    active = factor >= threshold
+    direction = np.sign(close.diff())
+    return direction.where(active, 0.0)
+
+
+def reversion_direction(factor: pd.Series, lo: float, hi: float) -> pd.Series:
+    """Generalizes step-2's MFI condition to any factor: +1 when factor
+    crosses UP through `lo` (recovering from an extreme low = long), -1
+    when it crosses DOWN through `hi` (falling from an extreme high =
+    short). A crossover EVENT, not a static level."""
+    cross_up = (factor.shift(1) < lo) & (factor >= lo)
+    cross_down = (factor.shift(1) > hi) & (factor <= hi)
+    direction = pd.Series(0.0, index=factor.index)
+    direction[cross_up] = 1.0
+    direction[cross_down] = -1.0
+    return direction
+
+
+def _sharpe(x: np.ndarray) -> float:
+    x = x[~np.isnan(x)]
+    if len(x) < 10 or x.std(ddof=1) == 0:
+        return float("nan")
+    return x.mean() / x.std(ddof=1)
+
+
+def walk_forward_direction(factor: pd.Series, close: pd.Series, fwd_return: pd.Series,
+                            points: np.ndarray, mode: str, n_folds: int = 5,
+                            quantile: float = 0.8) -> dict:
+    """5-fold expanding-window walk-forward for momentum_direction/
+    reversion_direction: threshold(s) fit on training points only per fold,
+    frozen, applied to that fold's test points; all folds' test returns
+    pooled into one Sharpe (same convention as
+    factors.validation.walk_forward_multi_fold)."""
+    chunks = np.array_split(points, n_folds + 1)
+    pooled_ret, pooled_dir = [], []
+    fold_sharpes = []
+    for i in range(1, n_folds + 1):
+        train_points, test_points = np.concatenate(chunks[:i]), chunks[i]
+        if len(test_points) == 0:
+            continue
+        train_factor = factor.iloc[train_points]
+        if mode == "momentum":
+            direction = momentum_direction(factor, close, train_factor.quantile(quantile))
+        else:
+            direction = reversion_direction(
+                factor, train_factor.quantile(1 - quantile), train_factor.quantile(quantile)
+            )
+        test_ret = (direction * fwd_return).iloc[test_points]
+        pooled_ret.append(test_ret)
+        pooled_dir.append(direction.iloc[test_points])
+        fold_sharpes.append(_sharpe(test_ret.to_numpy()))
+
+    ret = pd.concat(pooled_ret) if pooled_ret else pd.Series(dtype=float)
+    dirn = pd.concat(pooled_dir) if pooled_dir else pd.Series(dtype=float)
+    fold_sharpes = np.array(fold_sharpes)
+    return {
+        "oos_sharpe_all": _sharpe(ret.to_numpy()),
+        "oos_sharpe_long": _sharpe(ret[dirn > 0].to_numpy()),
+        "oos_sharpe_short": _sharpe(ret[dirn < 0].to_numpy()),
+        "n_long": int((dirn > 0).sum()), "n_short": int((dirn < 0).sum()),
+        "n_folds_positive": int(np.nansum(fold_sharpes > 0)),
+        "n_folds_total": int(np.sum(~np.isnan(fold_sharpes))),
+    }

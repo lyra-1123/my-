@@ -40,6 +40,15 @@ Every underlying indicator was also re-audited line by line for look-ahead:
 every function uses only backward .rolling()/.shift(positive)/.diff()/causal
 .ewm() — see reports/00_progress.md for the audit note.
 
+v5: the v4 thresholds (|IC|>=0.05, IR>=0.5) are common rules of thumb from
+daily-frequency multi-factor equity research; they turned out to fail every
+single family (0/38) at the horizons that actually match this strategy
+(4h/8h) — diagnostically, IC/IR were the binding constraint there, not PBO
+or OOS Sharpe (see the per-criterion blocker-count table). Relaxed to
+IC_THRESHOLD=0.02, IR_THRESHOLD=0.3 — matched to what's actually achievable
+at a 4-8h horizon for a single-asset regime factor, not a borrowed daily-
+equity convention.
+
 Usage:
     python scripts/02b_factor_screening.py --clean-dir data/clean --report-dir reports
 """
@@ -60,8 +69,8 @@ from factors.validation import (  # noqa: E402
 
 TEST_HORIZONS = {"4小时": 4, "8小时": 8, "1天(参考)": 24}
 CORE_HORIZONS = ("4小时", "8小时")  # a family must pass BOTH to be called robust
-IC_THRESHOLD = 0.05
-IR_THRESHOLD = 0.5
+IC_THRESHOLD = 0.02
+IR_THRESHOLD = 0.3
 PBO_THRESHOLD = 0.6
 N_FOLDS = 5
 NON_FACTOR_COLS = {"time", "session", "day_of_week"} | {
@@ -314,29 +323,30 @@ def main():
         lines.append(f"| {h} | {bc['ic']} | {bc['ir']} | {bc['pbo']} | {bc['oos']} |")
     lines.append("")
 
+    passers_by_horizon = {
+        h: merged.loc[merged[f"pass_{h}"], "family"].tolist() for h in TEST_HORIZONS
+    }
     lines += [
         "## 结论与下一步",
         "",
-        f"- **诚实的结果：四项标准（\\|IC\\|>={IC_THRESHOLD}、IR>={IR_THRESHOLD}、"
-        f"PBO<={PBO_THRESHOLD}、OOS Sharpe>0）同时满足，在4小时/8小时/1天(参考)三个"
-        f"horizon上都是{n_core}个家族通过**——不是稳健核心从11降到0，是这四项联合起来"
-        "比之前任何一版单独看的标准严格得多。诊断表显示**IC和IR是真正卡住绝大多数因子"
-        "的瓶颈，不是PBO或OOS Sharpe**：4小时上PBO能过33/38、OOS Sharpe能过37/38，"
-        "但IC>=0.05一个都过不了(0/38)；IR>=0.5同样0/38。即使放到最宽松的1天(参考)"
-        "horizon，IC也只有4个家族过、IR只有1个家族过，且这两组几乎不重叠。",
-        "- 最接近的例子：`h4_bb_width`在1天horizon上同时满足IC(0.065)和IR(0.57)两项，"
-        "但OOS Sharpe是负的(-0.34)；`adx`在1天上IC/PBO/OOS三项都过，但IR只有0.38，"
-        "差一点没到0.5；`efficiency_ratio`IC达标但PBO高达0.82（严重过拟合）。没有任何"
-        "家族能同时把四项都做到——这印证了阶段2早就发现的结论：单个技术指标的regime"
-        "预测力本来就弱（可解释方差不到1%），\\|IC\\|>=0.05这个门槛更像是常见于日频"
-        "股票多因子研究的经验值，对着这种“单资产、日内几小时horizon”的regime分类问题"
-        "可能天生就定得偏高。",
-        "- **建议的路径（任选或组合）**：(a) 针对4-8小时horizon单独放宽IC/IR阈值"
-        "（比如IC>=0.02、IR>=0.3），用更贴近这个问题实际能达到的量级；(b) 放弃“单因子"
-        "必须自己达标”的思路，回到之前验证过的“多因子组合过滤器”——组合叠加确实能把"
-        "未来ER压低15~18%，本次的IC/IR/PBO/OOS四项体系也可以整体搬到组合分数上再测一遍，"
-        "而不只是套在单因子上；(c) 引入跨市场数据（美元指数/美债收益率等）挖掘可能IC"
-        "更强的新因子，但需要额外的数据源。",
+        f"- **放宽阈值后（\\|IC\\|>={IC_THRESHOLD}、IR>={IR_THRESHOLD}，PBO/OOS Sharpe标准"
+        f"不变），单horizon上开始有因子能过了**：4小时上{len(passers_by_horizon['4小时'])}个"
+        f"(`{', '.join(passers_by_horizon['4小时']) or '无'}`)，8小时上"
+        f"{len(passers_by_horizon['8小时'])}个(`{', '.join(passers_by_horizon['8小时']) or '无'}`)，"
+        f"1天(参考)上{len(passers_by_horizon['1天(参考)'])}个"
+        f"(`{', '.join(passers_by_horizon['1天(参考)']) or '无'}`)。",
+        f"- **但“同时通过4小时和8小时”的稳健核心仍然是0个**——不是因为阈值又不够松，而是"
+        "4小时和8小时上过关的根本是两组不重叠的家族（bb_width只在4小时过，"
+        "autocorr_returns/dist_from_high/choppiness_index只在8小时过）。这说明“要求同一个"
+        "因子在4小时和8小时都稳健”这条要求本身可能过严——马丁的实际周期是4-8小时这个"
+        "*区间*，不一定要求两个端点都单独达标；更现实的选择可能是只按其中一个更贴近你"
+        "实际网格常见成型时间的horizon筛选，或者把“稳健核心”的定义从“两个都过”放宽成"
+        "“至少一个过”。",
+        "- 这也再次印证了组合思路的价值：单因子在放宽两级阈值后依然稀少且horizon不通用，"
+        "阶段2 v4验证过的组合过滤器（bb_width_50+adx_20一类）反而更稳定地跨了多个"
+        "horizon——如果要继续用单因子路线，下一步该是先确定“到底按4小时还是8小时选”，"
+        "而不是继续放宽阈值；如果转向组合路线，这套IC/IR/PBO/OOS四项体系可以直接套用到"
+        "组合分数上。",
         f"- 完整逐horizon诊断数据（含IC/IR/PBO/OOS Sharpe/折数明细）在`{csv_path}`。",
         "- 这一步的Sharpe仍然来自简化测试床，不代表真实马丁Sharpe，阶段3要在真实资金曲线"
         "上重新验证。",

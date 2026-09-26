@@ -194,6 +194,54 @@ def mfi(df: pd.DataFrame, n: int) -> pd.Series:
     return 100 - 100 / (1 + ratio)
 
 
+def choppiness_index(df: pd.DataFrame, n: int) -> pd.Series:
+    """Purpose-built for exactly our question: 100 near choppy/range-bound,
+    0 near a strong sustained trend. tr_sum uses SUM of true range (not mean
+    like ATR) over the window, per the standard CHOP formula."""
+    tr_sum = _true_range(df).rolling(n).sum()
+    hi_lo_range = df["high"].rolling(n).max() - df["low"].rolling(n).min()
+    return 100 * np.log10(tr_sum / hi_lo_range.replace(0, np.nan)) / np.log10(n)
+
+
+def aroon_up(df: pd.DataFrame, n: int) -> pd.Series:
+    return df["high"].rolling(n + 1).apply(lambda x: 100 * x.argmax() / n, raw=True)
+
+
+def aroon_down(df: pd.DataFrame, n: int) -> pd.Series:
+    return df["low"].rolling(n + 1).apply(lambda x: 100 * x.argmin() / n, raw=True)
+
+
+def parkinson_vol(df: pd.DataFrame, n: int) -> pd.Series:
+    """Parkinson (1980) high-low range volatility estimator: more efficient
+    than close-to-close realized_vol since it uses the whole bar's range."""
+    hl = np.log(df["high"] / df["low"]) ** 2
+    return np.sqrt(hl.rolling(n).mean() / (4 * np.log(2)))
+
+
+def garman_klass_vol(df: pd.DataFrame, n: int) -> pd.Series:
+    """Garman-Klass (1980) OHLC volatility estimator: uses open/close as
+    well as the range, captures overnight-gap variance too."""
+    hl = 0.5 * np.log(df["high"] / df["low"]) ** 2
+    co = (2 * np.log(2) - 1) * np.log(df["close"] / df["open"]) ** 2
+    return np.sqrt((hl - co).rolling(n).mean())
+
+
+def linreg_r2(df: pd.DataFrame, n: int) -> pd.Series:
+    """R^2 of a linear (time-trend) fit to close over the trailing n bars:
+    how well a straight line explains the path, direction-agnostic — high
+    = persistent trend of either sign, low = choppy/directionless."""
+    idx = pd.Series(np.arange(len(df)), index=df.index, dtype=float)
+    return df["close"].rolling(n).corr(idx) ** 2
+
+
+def avg_gap(df: pd.DataFrame, n: int) -> pd.Series:
+    """Average bar-to-bar opening gap (|open_t - close_{t-1}|) over the
+    trailing n bars — a microstructure/discontinuity measure distinct from
+    ATR (which is dominated by intrabar range, not inter-bar jumps)."""
+    gap = (df["open"] - df["close"].shift(1)).abs() / df["close"].shift(1)
+    return gap.rolling(n).mean()
+
+
 def macd_histogram(df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.Series:
     ema_fast = df["close"].ewm(span=fast, adjust=False).mean()
     ema_slow = df["close"].ewm(span=slow, adjust=False).mean()
@@ -244,18 +292,23 @@ WINDOWED_FACTORS = {
     "skew_returns": skew_returns,
     "kurt_returns": kurt_returns,
     "mfi": mfi,
+    "choppiness_index": choppiness_index,
+    "aroon_up": aroon_up,
+    "aroon_down": aroon_down,
+    "parkinson_vol": parkinson_vol,
+    "garman_klass_vol": garman_klass_vol,
+    "linreg_r2": linreg_r2,
+    "avg_gap": avg_gap,
 }
 
-# Families whose raw level drifts with gold's price/regime over 18 years
-# (e.g. ATR in dollars means something different at $860 vs $5300 gold) —
-# for these we also add a percentile-rank version: "where does today's value
-# sit relative to its own trailing PCTRANK_WINDOWS-bar history", which is
-# regime-relative and comparable across the whole sample. adx/rsi/stochastic
-# etc are already bounded 0-100 and don't need this.
-PERCENTILE_RANK_FAMILIES = (
-    "atr", "realized_vol", "bb_width", "keltner_width", "vol_of_vol",
-    "adx", "efficiency_ratio", "mfi",
-)
+# Gold's price went from ~$860 to ~$5300+ over this sample, so any raw
+# dollar-denominated (or otherwise price-scale-dependent) factor level means
+# something different in 2009 vs 2026. We percentile-rank EVERY windowed
+# factor against its own trailing PCTRANK_WINDOWS-bar history, regardless of
+# whether it looks already-bounded (RSI, ADX etc. are conventionally 0-100,
+# but their *typical* range still drifts across volatility regimes) — v3
+# only did this for a hand-picked subset; v4 checks all of them rather than
+# assuming which ones need it.
 PCTRANK_WINDOWS = (500, 2000)  # ~3 weeks and ~12 weeks of H1 bars
 
 
@@ -267,7 +320,7 @@ def build_factor_table(df: pd.DataFrame, windows=WINDOWS) -> pd.DataFrame:
         for n in windows:
             cols[f"{name}_{n}"] = fn(df, n)
 
-    for name in PERCENTILE_RANK_FAMILIES:
+    for name in WINDOWED_FACTORS:
         for n in windows:
             base = cols[f"{name}_{n}"]
             for pw in PCTRANK_WINDOWS:

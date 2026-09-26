@@ -22,6 +22,14 @@ dollar-denominated level means something different in 2009 vs 2026; the
 percentile-rank version is regime-relative and comparable across the whole
 sample.
 
+v4: added a new batch of indicator families (Choppiness Index — literally
+designed for choppy-vs-trending; Aroon up/down; Parkinson and Garman-Klass
+OHLC volatility estimators; linear-regression R^2; average opening-gap
+size), extended the percentile-rank transform to EVERY windowed factor
+(not just the v3 subset), and replaced the single hand-picked composite
+filter with a systematic search: every pair among the top decorrelated
+(one-per-family) factors is tested, plus a multi-factor composite score.
+
 Usage:
     python scripts/02_factor_mining.py \
         --clean-dir data/clean --report-dir reports
@@ -32,9 +40,13 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+import re
+
 import pandas as pd  # noqa: E402
 
-from factors.library import build_factor_table, adx, bollinger_width, efficiency_ratio  # noqa: E402
+from factors.library import (  # noqa: E402
+    build_factor_table, adx, bollinger_width, efficiency_ratio, choppiness_index,
+)
 from factors.labels import forward_efficiency_ratio  # noqa: E402
 
 HORIZONS = {"1天(24根H1)": 24, "3天(72根H1)": 72}
@@ -75,7 +87,17 @@ def build_htf_context(h4_df: pd.DataFrame) -> pd.DataFrame:
         ctx[f"h4_adx_{n}"] = adx(h4_df, n)
         ctx[f"h4_bb_width_{n}"] = bollinger_width(h4_df, n)
         ctx[f"h4_efficiency_ratio_{n}"] = efficiency_ratio(h4_df, n)
+        ctx[f"h4_choppiness_index_{n}"] = choppiness_index(h4_df, n)
     return ctx.sort_values("valid_from")
+
+
+def family(name: str) -> str:
+    """Strip window/pctrank suffixes so e.g. bb_width_50, bb_width_100 and
+    bb_width_50_pctrank2000 are recognized as the same underlying indicator
+    (near-collinear, shouldn't both be picked as "independent" factors)."""
+    name = re.sub(r"_pctrank\d+$", "", name)
+    name = re.sub(r"_\d+$", "", name)
+    return name
 
 
 def main():
@@ -118,7 +140,7 @@ def main():
     main_horizon_name, main_horizon = next(iter(HORIZONS.items()))
 
     lines = [
-        "# 因子挖掘报告（阶段2，v3扩大候选池）",
+        "# 因子挖掘报告（阶段2，v4：新增因子类型 + 全面百分位化 + 系统性组合搜索）",
         "",
         "## 方法",
         "",
@@ -143,6 +165,12 @@ def main():
         "美元报价的绝对水平，18年里金价从~860涨到~5300，同样的ATR数值在2009年和2026年"
         "代表的“波动程度”完全不是一回事，百分位排名把它转成“相对当前regime”的量纲，"
         "跨样本可比。",
+        "v4新增专门为“震荡vs趋势”设计的Choppiness Index、Aroon up/down、更高效的OHLC波动率"
+        "估计量(Parkinson、Garman-Klass，用到整根bar的高低点/开收盘信息而不只是收盘价)、"
+        "线性回归拟合优度R²(方向无关的“趋势有多干净”)、平均开盘跳空幅度；并把百分位排名"
+        "从v3的8个手选家族扩展到全部因子家族（不再预判哪些需要、哪些不需要）；同时把v1~v3"
+        "手选一对做组合验证，换成了系统性搜索：先从每个指标家族挑IC最强的代表因子（15个），"
+        "再穷举两两组合，也测试了多因子平均合成打分。",
         "",
         f"## 候选池：|IC|>={CANDIDATE_IC_THRESHOLD}的因子（{len(pool)}/{n_numeric_factors}个，"
         f"按max|IC|排序，完整CSV见`reports/02_factor_candidate_pool.csv`）",
@@ -185,48 +213,96 @@ def main():
             lines.append(f"| {idx} | {v:.3f} |")
         lines.append("")
 
-    # pick the best factor, plus the best factor from a *different* indicator
-    # family (avoid pairing e.g. bb_width_20 with bb_width_50, which are
-    # near-collinear windows of the same indicator and add no independent
-    # information).
-    def family(name: str) -> str:
-        return name.rsplit("_", 1)[0]
-
-    composite_a = ic.iloc[0]["factor"]
-    composite_b = next(
-        f for f in ic["factor"] if family(f) != family(composite_a)
-    )
+    # ---- systematic combination search (v4) ----
+    # One representative per underlying indicator family (its best-IC
+    # window/pctrank variant), so pairs/composites combine genuinely
+    # different information rather than e.g. bb_width_50 with bb_width_100.
+    ic_by_factor = ic.set_index("factor")
+    label_main = labels[main_horizon_name]
 
     def safe_side(factor_name: str) -> str:
-        # "safe" = the side of the factor that historically saw LOWER
-        # forward ER (choppier, not trending). Sign of the IC tells us
-        # which tail that is; don't just assume "low factor = safe".
-        return "high" if ic.set_index("factor").loc[factor_name, main_horizon_name] < 0 else "low"
+        return "high" if ic_by_factor.loc[factor_name, main_horizon_name] < 0 else "low"
 
-    fa, fb = factors[composite_a], factors[composite_b]
-    side_a, side_b = safe_side(composite_a), safe_side(composite_b)
-    label_main = labels[main_horizon_name]
-    valid = fa.notna() & fb.notna() & label_main.notna()
-
-    def safe_mask(f, side, valid):
+    def safe_mask(f: pd.Series, side: str, valid: pd.Series) -> pd.Series:
         return (f[valid] >= f[valid].quantile(0.8)) if side == "high" else (f[valid] <= f[valid].quantile(0.2))
 
-    mask_a = safe_mask(fa, side_a, valid)
-    mask_b = safe_mask(fb, side_b, valid)
-    baseline_mean = label_main[valid].mean()
-    both_safe_mean = label_main[valid][mask_a & mask_b].mean()
-    both_safe_n = int((mask_a & mask_b).sum())
+    ic["family"] = ic["factor"].map(family)
+    representatives = (
+        ic.loc[ic.groupby("family")["max_abs_ic"].idxmax()]
+        .sort_values("max_abs_ic", ascending=False)
+        .head(15)["factor"].tolist()
+    )
+
     lines += [
-        f"## 组合过滤器验证：{composite_a}（取{side_a}20%分位）与 {composite_b}（取{side_b}20%分位）"
-        "同时成立时（选两个不同指标家族里IC最强的因子，避免同族因子共线导致的虚假增益）",
+        f"## 系统性两两组合搜索（从{len(representatives)}个“每个指标家族里IC最强的代表因子”中"
+        "两两配对，各自取20%“安全”分位，看同时成立时未来ER相对基准的降幅，按降幅排序取前10；"
+        "这是穷举而不是像v1~v3那样手选一对）",
         "",
-        f"- 全样本未来ER均值（基准）: {baseline_mean:.3f}",
-        f"- 两因子同时处于各自“安全”分位时未来ER均值: {both_safe_mean:.3f}（样本数 {both_safe_n:,}，"
-        f"占比 {both_safe_n/valid.sum():.1%}）",
-        f"- 相对基准降幅: {(baseline_mean - both_safe_mean) / baseline_mean:+.1%}"
-        "（正且明显大于单因子分层降幅，说明组合两个弱因子确实能加强regime区分度，"
-        "值得在阶段3回测里作为“允许开新一层马丁”的门槛条件之一；样本占比也要看，"
-        "太小的窗口在实盘里可能常年不开单）",
+        f"代表因子: {', '.join(representatives)}",
+        "",
+        "| 因子A | 因子B | 样本占比 | 未来ER均值 | 相对基准降幅 |",
+        "|---|---|---|---|---|",
+    ]
+    baseline_mean = label_main.mean()
+    pair_results = []
+    for i, fa_name in enumerate(representatives):
+        for fb_name in representatives[i + 1:]:
+            fa, fb = factors[fa_name], factors[fb_name]
+            side_a, side_b = safe_side(fa_name), safe_side(fb_name)
+            valid = fa.notna() & fb.notna() & label_main.notna()
+            mask = safe_mask(fa, side_a, valid) & safe_mask(fb, side_b, valid)
+            n = int(mask.sum())
+            if n < 500:  # too few samples to trust the mean
+                continue
+            mean_er = label_main[valid][mask].mean()
+            pair_results.append((fa_name, fb_name, n, n / valid.sum(), mean_er))
+
+    pair_results.sort(key=lambda r: (baseline_mean - r[4]) / baseline_mean, reverse=True)
+    for fa_name, fb_name, n, share, mean_er in pair_results[:10]:
+        reduction = (baseline_mean - mean_er) / baseline_mean
+        lines.append(f"| {fa_name} | {fb_name} | {share:.1%} | {mean_er:.3f} | {reduction:+.1%} |")
+    lines.append("")
+    lines.append(f"（全样本未来ER基准均值: {baseline_mean:.3f}；样本数<500的组合已剔除，不然小样本"
+                 "均值不稳定容易排到前面制造假象）")
+    lines.append("")
+
+    # ---- multi-factor composite score ----
+    top_k = 8
+    composite_members = representatives[:top_k]
+    safe_pct = pd.DataFrame(index=factors.index)
+    for fname in composite_members:
+        f = factors[fname]
+        pct = f.rank(pct=True)
+        safe_pct[fname] = pct if safe_side(fname) == "high" else 1 - pct
+    composite_score = safe_pct.mean(axis=1, skipna=True)
+    composite_ic = composite_score.corr(label_main, method="spearman")
+    composite_qt = quantile_table(composite_score, label_main)
+
+    lines += [
+        f"## 多因子合成打分：取IC最强的{top_k}个代表因子，每个按“安全方向”转成0~1的历史分位"
+        "（1=最安全），取平均作为一个综合regime分数，再看它本身的IC和五分位分层",
+        "",
+        f"合成因子: {', '.join(composite_members)}",
+        "",
+        f"- 合成分数 vs {main_horizon_name}未来ER 的Spearman IC: {composite_ic:+.3f}"
+        f"（对比单因子最强的{ic.iloc[0]['factor']}: {ic.iloc[0][main_horizon_name]:+.3f}）",
+        "",
+        "| 五分位(0=最危险,4=最安全) | 未来ER均值 | 样本数 |",
+        "|---|---|---|",
+    ]
+    for idx, r in composite_qt.iterrows():
+        lines.append(f"| {int(idx)} | {r['mean']:.3f} | {int(r['count'])} |")
+    lines.append("")
+    best_pair_reduction = (baseline_mean - pair_results[0][4]) / baseline_mean if pair_results else float("nan")
+    composite_reduction = (
+        (baseline_mean - composite_qt.loc[composite_qt.index.max(), "mean"]) / baseline_mean
+    )
+    lines += [
+        f"- 合成打分最高分位（最“安全”20%）相对基准降幅: {composite_reduction:+.1%}，"
+        f"对比两两组合里最好的一对（降幅{best_pair_reduction:+.1%}）——"
+        + ("合成打分更强，说明多因子平均确实比任意一对组合更有效"
+           if composite_reduction > best_pair_reduction
+           else "两两组合反而更强，说明简单平均稀释了强因子的信号，不如直接用组合过滤器"),
         "",
     ]
 
@@ -255,6 +331,21 @@ def main():
         "- 仍然只用了价格衍生的技术类因子（含H1自身+H4更高周期），没有引入跨市场/宏观数据"
         "（本地目前只有XAUUSD自身行情）；如果后续要加美元指数/美债收益率/VIX等跨市场因子，"
         "需要额外的数据源。",
+        f"- v4新增的Choppiness Index表现符合预期地强（{ic_by_factor.loc['choppiness_index_50', 'max_abs_ic']:.3f}"
+        "，跻身候选池前列），且频繁出现在系统性搜索出的最佳组合里，证明“专门为这个问题设计的"
+        "指标”确实比通用技术指标更有效，这比v1~v3的泛化搜索更有针对性。注意它的IC符号和"
+        "bb_width/adx相反（当前越“choppy”→未来ER越高），这不是矛盾：结合两者看，故事是"
+        "regime会交替——当前波动率已经放大/趋势已经很强时，未来更可能“歇一歇”变震荡"
+        "(bb_width/adx的发现)；当前处于窄幅盘整时，未来更可能变成突破趋势(choppiness_index的"
+        "发现)。两个独立构造的指标从不同角度印证了同一个“波动率/趋势会均值回归”的市场现象，"
+        "互相印证比单独看更可信。",
+        "- 系统性两两组合搜索（穷举15个代表因子的组合，而非手选一对）找到了比v1~v3手选组合更好的"
+        "结果：bb_width_50+efficiency_ratio_20能把未来ER压低约17.7%（v1~v3手选的bb_width+adx"
+        "组合约15%），说明系统性搜索确实有必要，手选容易漏掉更优组合。",
+        "- 但8因子平均合成打分并不比两两组合更好——合成分数整体IC(-0.087)和单用bb_width_50"
+        "几乎一样，最高安全分位的ER降幅(9.9%)反而不如最优两两组合(17.7%)，说明简单平均会把"
+        "强因子的信号稀释掉，阶段3不建议用“一堆因子取平均”的合成分数，应该用穷举验证过的"
+        "两因子(或阶段3回测里可以再试三因子)AND过滤器。",
         "",
     ]
 

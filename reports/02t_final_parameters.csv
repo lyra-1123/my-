@@ -1,0 +1,13 @@
+name,n_hold_median,n_hold_min,n_hold_max,n_hold_stable,long_sl_type,long_sl_level,long_rr,long_agreement,short_sl_type,short_sl_level,short_rr,short_agreement
+vol_of_vol_100,24.0,12,192,False,pct,0.005,2.0,1.0,atr,0.5,2.0,0.8
+adx_50_pctrank24000,192.0,96,192,True,pct,0.01,2.0,1.0,atr,0.5,1.5,1.0
+bb_width_100,48.0,12,192,False,pct,0.005,2.0,0.8,atr,0.5,2.0,1.0
+bb_width_300_pctrank6000,48.0,24,192,False,pct,0.003,2.0,1.0,pct,0.002,1.0,0.6
+garman_klass_vol_20_pctrank6000,24.0,6,24,False,pct,0.005,1.5,1.0,atr,0.5,2.0,1.0
+garman_klass_vol_240,192.0,6,192,False,pct,0.01,1.75,0.8,atr,1.5,1.5,0.6
+adx_50_pctrank2000+autocorr_returns_50_pctrank2000,12.0,12,192,False,pct,0.002,1.0,0.8,atr,2.0,1.5,0.8
+kurt_returns_100+mean_reversion_speed_50_pctrank500,48.0,6,192,False,pct,0.01,1.5,0.6,atr,1.5,1.5,0.6
+realized_vol_100_pctrank2000+variance_ratio_2_50_pctrank2000,12.0,12,24,True,pct,0.01,1.0,0.6,atr,1.5,1.0,0.6
+parkinson_vol_100_pctrank2000+aroon_up_10_pctrank500,6.0,6,192,False,pct,0.004,1.5,0.8,atr,0.5,1.5,1.0
+avg_gap_50+roc_10,12.0,6,192,False,atr,1.5,1.5,0.6,pct,0.01,1.5,0.6
+stochastic_d_100_pctrank2000+keltner_width_20,24.0,6,48,False,pct,0.003,1.0,0.6,atr,1.0,2.0,0.6

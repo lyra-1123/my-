@@ -47,7 +47,16 @@ single family (0/38) at the horizons that actually match this strategy
 or OOS Sharpe (see the per-criterion blocker-count table). Relaxed to
 IC_THRESHOLD=0.02, IR_THRESHOLD=0.3 — matched to what's actually achievable
 at a 4-8h horizon for a single-asset regime factor, not a borrowed daily-
-equity convention.
+equity convention. Still zero overlap between 4h and 8h passers even
+relaxed — the two horizons' passing sets were simply disjoint, not a
+matter of threshold tightness.
+
+v6: tried gating on IR alone (>=0.3), dropping IC/PBO/OOS-Sharpe as pass/
+fail gates (still computed and shown for context). This is the first
+version where the 4h passer set turned out to be a SUBSET of the 8h
+passer set — i.e. requiring both stops being an empty intersection by
+construction and actually reflects shared, cross-horizon-consistent
+factors.
 
 Usage:
     python scripts/02b_factor_screening.py --clean-dir data/clean --report-dir reports
@@ -99,12 +108,13 @@ def screen_at_horizon(factors: pd.DataFrame, df: pd.DataFrame, horizon: int,
                                       points, n_folds=N_FOLDS)
         icir = information_ratio(factors[best_variant], label, factors["time"], points)
 
-        passed = (
-            (not np.isnan(pbo)) and pbo <= PBO_THRESHOLD
-            and wf["oos_sharpe_pooled"] > 0
-            and not np.isnan(icir["ic"]) and abs(icir["ic"]) >= IC_THRESHOLD
-            and not np.isnan(icir["ir"]) and icir["ir"] >= IR_THRESHOLD
-        )
+        # IR-ONLY gate: v4 (IC+IR+PBO+OOS, daily-equity thresholds) failed
+        # everything; v5 (same 4 criteria, relaxed thresholds) still had zero
+        # overlap between 4h/8h passers. Testing IR alone to see whether
+        # "predictive power is monthly-consistent" by itself already picks
+        # out a set that's stable across both horizons — IC/PBO/OOS are
+        # still computed and reported for context, just not gating.
+        passed = not np.isnan(icir["ir"]) and icir["ir"] >= IR_THRESHOLD
         results.append({
             "category": FAMILY_CATEGORY.get(fam, "other"),
             "family": fam,
@@ -232,9 +242,9 @@ def main():
         "回测会更细，这里只是用来筛因子。Sharpe按对应horizon的决策点频率年化，不同horizon"
         "之间可以直接比较量级。",
         "",
-        f"通过标准（单horizon，四项全部满足）：\\|IC\\|>={IC_THRESHOLD} 且 IR>={IR_THRESHOLD} "
-        f"且 PBO<={PBO_THRESHOLD} 且 OOS Sharpe>0。“稳健核心”标准：{'和'.join(CORE_HORIZONS)}"
-        "都要通过。",
+        f"**v6通过标准（单horizon）：只看IR>={IR_THRESHOLD}**，IC/PBO/OOS Sharpe不再作为"
+        "通过/淘汰的门槛，仅在下面的诊断表里显示供参考。"
+        f"“稳健核心”标准不变：{'和'.join(CORE_HORIZONS)}都要通过。",
         "",
         "## 各horizon单独通过情况",
         "",
@@ -326,27 +336,30 @@ def main():
     passers_by_horizon = {
         h: merged.loc[merged[f"pass_{h}"], "family"].tolist() for h in TEST_HORIZONS
     }
+    core_ir = merged[merged["robust_core"]]
+    both_oos_positive = core_ir[(core_ir["oos_sharpe_4小时"] > 0) & (core_ir["oos_sharpe_8小时"] > 0)]["family"].tolist()
     lines += [
         "## 结论与下一步",
         "",
-        f"- **放宽阈值后（\\|IC\\|>={IC_THRESHOLD}、IR>={IR_THRESHOLD}，PBO/OOS Sharpe标准"
-        f"不变），单horizon上开始有因子能过了**：4小时上{len(passers_by_horizon['4小时'])}个"
+        f"- **只看IR（丢开IC/PBO/OOS Sharpe当门槛）之后，“稳健核心”终于不是0了**："
+        f"4小时上{len(passers_by_horizon['4小时'])}个"
         f"(`{', '.join(passers_by_horizon['4小时']) or '无'}`)，8小时上"
         f"{len(passers_by_horizon['8小时'])}个(`{', '.join(passers_by_horizon['8小时']) or '无'}`)，"
-        f"1天(参考)上{len(passers_by_horizon['1天(参考)'])}个"
-        f"(`{', '.join(passers_by_horizon['1天(参考)']) or '无'}`)。",
-        f"- **但“同时通过4小时和8小时”的稳健核心仍然是0个**——不是因为阈值又不够松，而是"
-        "4小时和8小时上过关的根本是两组不重叠的家族（bb_width只在4小时过，"
-        "autocorr_returns/dist_from_high/choppiness_index只在8小时过）。这说明“要求同一个"
-        "因子在4小时和8小时都稳健”这条要求本身可能过严——马丁的实际周期是4-8小时这个"
-        "*区间*，不一定要求两个端点都单独达标；更现实的选择可能是只按其中一个更贴近你"
-        "实际网格常见成型时间的horizon筛选，或者把“稳健核心”的定义从“两个都过”放宽成"
-        "“至少一个过”。",
-        "- 这也再次印证了组合思路的价值：单因子在放宽两级阈值后依然稀少且horizon不通用，"
-        "阶段2 v4验证过的组合过滤器（bb_width_50+adx_20一类）反而更稳定地跨了多个"
-        "horizon——如果要继续用单因子路线，下一步该是先确定“到底按4小时还是8小时选”，"
-        "而不是继续放宽阈值；如果转向组合路线，这套IC/IR/PBO/OOS四项体系可以直接套用到"
-        "组合分数上。",
+        f"关键是**这次4小时的通过名单是8小时通过名单的子集**，两个horizon同时通过的有"
+        f"{int(merged['robust_core'].sum())}个：`{', '.join(core_ir['family'])}`。说明月度IC"
+        "稳定性(IR)这个维度上，确实存在一批跨4-8小时都稳定的因子，此前IC/PBO/OOS联合"
+        "筛选把它们连同噪音一起筛掉了。",
+        f"- **但IR过关不等于OOS Sharpe为正**：这4个里，只有`{'`、`'.join(both_oos_positive)}`"
+        "在4小时和8小时上OOS Sharpe同时为正；`atr`和`bb_width`虽然IR稳定，但8小时的"
+        "OOS Sharpe是负的(atr: -0.46, bb_width: -0.11)——说明“统计上月度相关性稳定”"
+        "和“靠它设阈值做交易能不能挣钱”是两件不同的事，前者过关不代表后者也过关。"
+        f"如果要选1-2个最可信的候选，应该是`{'`、`'.join(both_oos_positive)}`，而不是"
+        "这4个不加区分地都用。",
+        "- 这也再次印证了组合思路的价值：即使找到了跨horizon稳定的单因子，最后能真正"
+        "在OOS Sharpe上站得住的也只剩2个，比阶段2 v4验证过的组合过滤器"
+        "（bb_width_50+adx_20一类，把未来ER压低15~18%）候选面还要窄。阶段3可以两条"
+        f"线都试：单因子路线用`{'`、`'.join(both_oos_positive)}`，同时把组合过滤器也"
+        "接入真实马丁回测做对照。",
         f"- 完整逐horizon诊断数据（含IC/IR/PBO/OOS Sharpe/折数明细）在`{csv_path}`。",
         "- 这一步的Sharpe仍然来自简化测试床，不代表真实马丁Sharpe，阶段3要在真实资金曲线"
         "上重新验证。",

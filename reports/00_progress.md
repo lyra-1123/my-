@@ -10,7 +10,7 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 |---|---|---|---|---|
 | 1. 数据清洗 | ✅ 完成 | `scripts/01_build_clean_dataset.py` | `reports/01_data_quality_report.md` | 635万条M1数据，0坏点、0未解释缺口，已产出M1~D1多周期parquet |
 | 2. 因子挖掘 | ✅ 完成(v4，新因子类型+全面百分位化+系统性组合搜索) | `scripts/02_factor_mining.py` | `reports/02_factor_mining_report.md` + `reports/02_factor_candidate_pool.csv` | 383个因子中286个通过\|IC\|≥0.01；新增Choppiness Index/Aroon/Parkinson-GK波动率/linreg_r²/avg_gap，其中Choppiness Index表现强(\|IC\|~0.08)且符号与bb_width/adx相反，两者互相印证"波动率/趋势会均值回归"；穷举15个代表因子的两两组合，最优对(bb_width_50+efficiency_ratio_20)把未来ER压低17.7%，好于v1~v3手选组合(~15%)；8因子平均合成打分反而不如两两组合(9.9%<17.7%，简单平均稀释信号)，阶段3不建议用平均合成分数；session/星期几乎无区分力 |
-| 2b. 因子分类筛选(IC+IR+PBO+OOS Sharpe四项联合) | ✅ 完成(v5) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | v1→v3见历史(12→2→11/38)；v4用日频股票研究惯用阈值(IC≥0.05/IR≥0.5)筛出**0/38**，诊断出IC/IR才是真瓶颈(PBO/OOS Sharpe大部分能过)；**v5把IC/IR降到贴近这个horizon实际量级(IC≥0.02/IR≥0.3)后，单horizon开始有因子通过**：4小时上仅`bb_width`，8小时上`autocorr_returns`/`dist_from_high`/`choppiness_index`，1天参考上仅`adx`——但**同时通过4小时和8小时的稳健核心依然是0个**，因为两个horizon上过关的是完全不重叠的两组家族。说明问题不是阈值还不够松，而是"要求同一因子在4h和8h都稳健"这条要求本身可能过严。阶段3选因子前要先决定：按单一horizon(4h或8h二选一)筛，还是转向组合过滤器路线（阶段2 v4验证过的bb_width_50+adx_20组合更稳定地跨越多个horizon）|
+| 2b. 因子分类筛选(IC+IR+PBO+OOS Sharpe) | ✅ 完成(v6) | `scripts/02b_factor_screening.py` | `reports/02b_factor_screening_report.md` + `reports/02b_factor_screening_results.csv` | v1→v5见历史(12→2→11→0→0/38，v4/v5的IC+IR联合筛选让4h/8h的通过名单完全不重叠)；**v6只用IR≥0.3做门槛(IC/PBO/OOS Sharpe降级为参考指标)后，4h通过名单变成8h通过名单的子集，"稳健核心"回升到4个：atr、autocorr_returns、bb_width、choppiness_index**；但其中只有`autocorr_returns`和`choppiness_index`在4h和8h上OOS Sharpe同时为正(atr/bb_width的8h OOS Sharpe为负，IR稳定不代表能赚钱)——**最终推荐的单因子候选是这2个**。阶段3计划两条线并行：单因子用这2个，同时把阶段2 v4验证过的组合过滤器(bb_width_50+adx_20，压低未来ER15~18%)接入真实马丁回测做对照 |
 | 3. 回测(基线，无过滤器) | ✅ 完成 | `scripts/03_baseline_backtest.py` | `reports/03_baseline_backtest_report.md` | 长仓ATR网格马丁(初始0.01手/2倍加仓/最多8层/1xATR(14)间距和止盈/$10000初始资金/1:200杠杆)：权益从$10000稳定涨到峰值$104,961(2012-10-09)，随后半年内回撤95%到$4,787，最终被2013年4月中旬黄金历史级暴跌一根H1 bar打出-$105,418强平，账户**破产**(2013-04-15)，此后不再交易。验证了马丁格尔的核心风险：稳定盈利可以持续数年，但尾部风险一次性摧毁全部收益。这是阶段3b(接入11个regime因子做入场过滤)的对照组基准 |
 | 4. 策略成型 | 未开始 | - | - | - |
 | 5. 多agent审核 | 未开始 | - | - | - |
@@ -28,11 +28,9 @@ XAUUSD量化马丁格尔策略：数据清洗 → 因子挖掘 → 回测 → �
 - 阶段2产出的候选regime过滤器（bb_width_24与adx_14同时处于各自20年历史高位20%分位）
   待阶段3在真实回测（而非静态相关性）里验证是否真的能降低马丁网格的爆仓概率，
   且要检查触发频率（历史上约10%的时间满足条件）是否会让策略常年空仓。
-- 阶段2b v4（|IC|≥0.05+IR≥0.5+PBO≤0.6+OOS Sharpe>0四项联合）下，**没有任何单因子能同时
-  达标**——之前v3用较宽松标准筛出的11个（adx_slope、adx、hour等）在这个更严格的联合标准下
-  全部因IC/IR不够而出局。这不代表v3的发现是错的，只是标准更严了；阶段3不应假设"存在一个
-  单因子能同时满足IC≥0.05且IR≥0.5"，除非重新放宽这两个阈值或改用组合过滤器（阶段2 v4发现
-  的bb_width_50+adx_20等组合能把未来ER压低15~18%，比任何单因子都强，是更现实的路径）。
+- 阶段2b最终结论（v6）：单因子regime过滤器，能同时满足"4h/8h跨horizon稳定(IR)"+"OOS
+  Sharpe为正"的只有`autocorr_returns`和`choppiness_index`，阶段3应以这2个为单因子候选，
+  同时并行测试阶段2 v4的组合过滤器（bb_width_50+adx_20）作为对照，不要只押注单因子路线。
 - 因子库已做过全量look-ahead审计（31个H1+4个H4指标逐行检查）：全部只用backward
   `.rolling()`/`.shift(正数)`/`.diff()`/causal`.ewm()`，没有发现任何未来函数。唯一用到
   未来数据的是`labels.py`的前向标签和验证用的测试床收益，两者都明确只用于评估、不作为

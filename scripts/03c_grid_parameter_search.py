@@ -53,7 +53,6 @@ def summarize(name, df, result, extra):
         "max_layers_long": result.max_layers_long, "max_layers_short": result.max_layers_short,
         "n_take_profit": int((result.trades["type"] == "take_profit").sum()) if len(result.trades) else 0,
         "n_stop_out": int((result.trades["type"] == "stop_out").sum()) if len(result.trades) else 0,
-        "n_forced_reversal": len(result.forced_reversals),
     }
     row.update(extra)
     return row

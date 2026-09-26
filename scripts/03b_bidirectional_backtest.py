@@ -48,13 +48,11 @@ def main():
     n_tp_long = int(((result.trades["type"] == "take_profit") & (result.trades["side"] == "long")).sum()) if len(result.trades) else 0
     n_tp_short = int(((result.trades["type"] == "take_profit") & (result.trades["side"] == "short")).sum()) if len(result.trades) else 0
     n_stop_out = int((result.trades["type"] == "stop_out").sum()) if len(result.trades) else 0
-    n_reversal = len(result.forced_reversals)
     final_equity = eq.iloc[-1]
 
     print(f"      peak equity ${peak_equity:,.0f} on {peak_time}, final equity ${final_equity:,.0f}")
     print(f"      max drawdown {mdd:.1%}, max layers long/short {result.max_layers_long}/{result.max_layers_short}")
-    print(f"      take-profits long/short {n_tp_long}/{n_tp_short}, stop-outs {n_stop_out}, "
-          f"forced reversals {n_reversal}")
+    print(f"      take-profits long/short {n_tp_long}/{n_tp_short}, stop-outs {n_stop_out}")
     print(f"      ruined: {result.ruin_time}")
 
     print("[3/3] Writing report ...")
@@ -64,11 +62,13 @@ def main():
         "把信号设计track验证的12个候选(见`02v_final_signal_specification.md`)合并出的"
         "方向门(`03b_build_direction_gate.py`)接入新的双向网格引擎"
         "(`src/backtest/martingale_bidirectional.py`)：方向门允许做多时开多头网格，"
-        "允许做空时开空头网格；反向信号会强平当前网格再开新方向；网格自身的加仓/止盈"
-        "逻辑跟阶段3基线一致(ATR间距/ATR止盈/2倍加仓/最多8层)，只是现在M5原生运行、"
-        "双向对称。参数(初始手数0.01/2倍加仓/最多8层/1xATR(14)间距和止盈/$10000初始"
-        "资金/1:200杠杆)直接沿用阶段3基线的默认值，尚未针对M5+双向重新调优——这是"
-        "第一次跑通，不是最终优化版本。", "",
+        "允许做空时开空头网格；**信号反手只冻结旧方向的新增层，不强平**(第一版曾"
+        "尝试反手强平，结果在网格最深、浮亏最大的时刻剁仓，一个月就爆仓，已改为"
+        "更保守的\"冻结不强平\"策略，两个方向的网格可以同时存在)。网格自身的加仓/"
+        "止盈逻辑跟阶段3基线一致(ATR间距/ATR止盈/2倍加仓/最多8层)，只是现在M5"
+        "原生运行、双向对称。参数(初始手数0.01/2倍加仓/最多8层/1xATR(14)间距和"
+        "止盈/$10000初始资金/1:200杠杆)直接沿用阶段3基线的默认值，尚未针对M5+"
+        "双向重新调优——这是第一次跑通，不是最终优化版本。", "",
         "**空头过夜利息(+2.0美元/手/天)是假设值**，不是从具体经纪商校准的，实盘前需要"
         "核实。", "",
         "## 结果", "",
@@ -78,7 +78,6 @@ def main():
         f"- 最多同时层数：多头{result.max_layers_long}层 / 空头{result.max_layers_short}层",
         f"- 止盈次数：多头{n_tp_long}次 / 空头{n_tp_short}次",
         f"- 强平(爆仓)次数：{n_stop_out}",
-        f"- 反向强平次数(信号反手导致的强制平仓，不是爆仓)：{n_reversal}",
         f"- 是否破产：{'是，' + str(result.ruin_time) if result.ruin_time else '否，全程存活'}",
         "",
         "## 对照：阶段3基线(纯多头/H1/无过滤器)", "",

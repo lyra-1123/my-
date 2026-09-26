@@ -9,19 +9,23 @@ Design:
     falling grid_atr_mult*ATR below the last layer, takes profit on price
     rising tp_atr_mult*ATR above the lot-weighted average; short is the
     mirror (adds on price rising, takes profit on price falling).
-  - `direction`: a signed Series (+1 = only long entries allowed, -1 = only
-    short, 0 = neither) built from the 12 candidates' reconciled net
-    position (see scripts/03b_build_direction_gate.py). This is NOT just a
-    permission gate like v1's `allow_entry` -- a signal FLIP (long ->
-    short or vice versa) force-closes whatever grid is currently open, at
-    the current bar's close, before the new direction's grid is allowed to
-    start (mirrors the "opposing signal closes first" interlock policy
-    chosen in signal design step 5, now applied at the grid level). A
-    transition to/from 0 (flat) does NOT force-close anything -- an existing
-    grid still manages its own TP/stop-out normally; only NEW layers are
-    gated off while direction is 0, exactly like v1's `allow_entry`.
-  - Both directions share one account (equity, margin); a forced reversal
-    close realizes whatever P&L the closed grid had at that moment.
+  - `direction`: a signed Series (+1 = long entries allowed, -1 = short,
+    0 = neither) built from the 12 candidates' reconciled net position
+    (see scripts/03b_build_direction_gate.py). Used exactly like v1's
+    `allow_entry`, independently per side: allow_long = direction > 0,
+    allow_short = direction < 0 gate whether a NEW layer (initial or
+    additional) may open on that side; an already-open grid on either side
+    keeps managing its own TP/stop-out normally regardless of the current
+    direction value -- it is never force-closed by a signal change.
+    v1's first design forced a close on every signal flip (mirroring signal
+    design step 5's single-trade interlock policy), but that turned out
+    catastrophic here: a grid flips direction (adds layers) precisely
+    because price has moved against it, so forcing a close on a reversal
+    signal closes it at close to its worst point, right when patience
+    (riding to the grid's own take-profit or, worst case, its own
+    stop-out) would have been the sane martingale response. So both
+    directions' grids CAN be open at once (a hedge) -- the account simply
+    carries whatever margin that costs.
   - Everything else (spread, swap, contract size, leverage, stop-out) is
     the same model as v1, with an added `swap_per_lot_per_day_short` since
     financing cost is not symmetric between long and short gold positions
@@ -60,7 +64,6 @@ class BidirectionalResult:
     equity_curve: pd.Series
     trades: pd.DataFrame
     blowups: pd.DataFrame
-    forced_reversals: pd.DataFrame
     max_layers_long: int
     max_layers_short: int
     ruin_time: pd.Timestamp | None
@@ -89,12 +92,7 @@ def run_bidirectional_backtest(df: pd.DataFrame, atr: pd.Series, direction: pd.S
     ruin_time = None
 
     equity_curve = np.empty(n)
-    trade_records, blowup_records, reversal_records = [], [], []
-
-    def close_grid(layers, side, exit_price, t, reason):
-        pnl = _grid_pnl(layers, exit_price, side, cfg.contract_size)
-        return pnl, {"time": t, "type": reason, "side": "long" if side > 0 else "short",
-                     "n_layers": len(layers), "pnl": pnl}
+    trade_records, blowup_records = [], []
 
     for i in range(n):
         c, h, lo, a = close[i], high[i], low[i], atr_vals[i]
@@ -116,22 +114,6 @@ def run_bidirectional_backtest(df: pd.DataFrame, atr: pd.Series, direction: pd.S
                 if layers_short:
                     equity += cfg.swap_per_lot_per_day_short * sum(l for _, l in layers_short)
                 last_rollover_day = day
-
-        # forced reversal: an opposing signal closes whatever grid is open right now
-        if d > 0 and layers_short:
-            pnl, rec = close_grid(layers_short, -1, c, t, "forced_reversal")
-            equity += pnl
-            rec["forced_by"] = "long_signal"
-            reversal_records.append(rec)
-            trade_records.append({**rec, "type": "forced_reversal"})
-            layers_short = []
-        elif d < 0 and layers_long:
-            pnl, rec = close_grid(layers_long, 1, c, t, "forced_reversal")
-            equity += pnl
-            rec["forced_by"] = "short_signal"
-            reversal_records.append(rec)
-            trade_records.append({**rec, "type": "forced_reversal"})
-            layers_long = []
 
         # long grid: open / add / take-profit
         if not layers_long:
@@ -207,7 +189,6 @@ def run_bidirectional_backtest(df: pd.DataFrame, atr: pd.Series, direction: pd.S
         equity_curve=pd.Series(equity_curve, index=df.index),
         trades=pd.DataFrame(trade_records),
         blowups=pd.DataFrame(blowup_records),
-        forced_reversals=pd.DataFrame(reversal_records),
         max_layers_long=max_layers_long,
         max_layers_short=max_layers_short,
         ruin_time=ruin_time,

@@ -81,6 +81,59 @@ def simulate_trades(direction: pd.Series, open_: pd.Series, high: pd.Series, low
     return d * (exit_price - entry_price) / entry_price, d
 
 
+def trade_windows(direction: pd.Series, open_: pd.Series, high: pd.Series, low: pd.Series,
+                   close: pd.Series, atr: pd.Series, n_hold: int,
+                   sl_type: str | None = None, sl_level: float | None = None,
+                   rr_ratio: float | None = None) -> pd.DataFrame:
+    """Same rules as simulate_trades, but returns each trade's (entry_idx,
+    exit_idx, direction) bar-index window instead of its return -- for step
+    5's overlap/interlock analysis (does a new trigger arrive while a
+    previous trade from the same or another candidate is still open)."""
+    d_all = direction.to_numpy()
+    trig_idx = np.flatnonzero(d_all != 0)
+    entry_idx = trig_idx + 1
+    n_rows = len(d_all)
+    valid = entry_idx + n_hold - 1 < n_rows
+    trig_idx, entry_idx = trig_idx[valid], entry_idx[valid]
+    if len(entry_idx) == 0:
+        return pd.DataFrame(columns=["entry_idx", "exit_idx", "direction"])
+
+    d = d_all[trig_idx]
+    o, h, l = open_.to_numpy(), high.to_numpy(), low.to_numpy()
+    entry_price = o[entry_idx]
+
+    if sl_type is None:
+        exit_idx = entry_idx + n_hold - 1
+        return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d})
+
+    if sl_type == "atr":
+        sl_dist = sl_level * atr.to_numpy()[trig_idx]
+    elif sl_type == "pct":
+        sl_dist = sl_level * entry_price
+    else:
+        raise ValueError(f"unknown sl_type {sl_type!r}")
+    tp_dist = sl_dist * rr_ratio
+
+    offsets = np.arange(n_hold)
+    window_idx = entry_idx[:, None] + offsets[None, :]
+    highs = h[window_idx].astype(np.float32)
+    lows = l[window_idx].astype(np.float32)
+
+    is_long = d > 0
+    sl_price = np.where(is_long, entry_price - sl_dist, entry_price + sl_dist)
+    tp_price = np.where(is_long, entry_price + tp_dist, entry_price - tp_dist)
+    sl_hit = np.where(is_long[:, None], lows <= sl_price[:, None], highs >= sl_price[:, None])
+    tp_hit = np.where(is_long[:, None], highs >= tp_price[:, None], lows <= tp_price[:, None])
+
+    any_sl, any_tp = sl_hit.any(axis=1), tp_hit.any(axis=1)
+    first_sl = np.where(any_sl, sl_hit.argmax(axis=1), n_hold)
+    first_tp = np.where(any_tp, tp_hit.argmax(axis=1), n_hold)
+    sl_wins = first_sl <= first_tp
+    exit_offset = np.where(sl_wins, np.minimum(first_sl, n_hold - 1), np.minimum(first_tp, n_hold - 1))
+    exit_idx = entry_idx + exit_offset
+    return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d})
+
+
 def _sharpe(x: np.ndarray) -> float:
     x = x[~np.isnan(x)]
     if len(x) < 10 or x.std(ddof=1) == 0:

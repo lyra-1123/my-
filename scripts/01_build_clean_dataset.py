@@ -3,7 +3,7 @@
 yearly Dukascopy-format CSVs.
 
 Usage:
-    python scripts/build_clean_dataset.py \
+    python scripts/01_build_clean_dataset.py \
         --raw-dir data/raw --out-dir data/clean --report-dir reports
 """
 import argparse
@@ -50,7 +50,7 @@ def main():
         tf_df.to_parquet(tf_path, index=False)
         print(f"      Wrote {tf_path} ({len(tf_df):,} rows)")
 
-    report_path = os.path.join(args.report_dir, "data_quality_report.md")
+    report_path = os.path.join(args.report_dir, "01_data_quality_report.md")
     with open(report_path, "w") as f:
         f.write(report.to_markdown())
     print(f"[4/4] Wrote {report_path}")

@@ -99,12 +99,14 @@ def trade_windows(direction: pd.Series, open_: pd.Series, high: pd.Series, low: 
         return pd.DataFrame(columns=["entry_idx", "exit_idx", "direction"])
 
     d = d_all[trig_idx]
-    o, h, l = open_.to_numpy(), high.to_numpy(), low.to_numpy()
+    o, h, l, c = open_.to_numpy(), high.to_numpy(), low.to_numpy(), close.to_numpy()
     entry_price = o[entry_idx]
 
     if sl_type is None:
         exit_idx = entry_idx + n_hold - 1
-        return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d})
+        exit_price = c[exit_idx]
+        return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d,
+                              "entry_price": entry_price, "exit_price": exit_price})
 
     if sl_type == "atr":
         sl_dist = sl_level * atr.to_numpy()[trig_idx]
@@ -129,9 +131,62 @@ def trade_windows(direction: pd.Series, open_: pd.Series, high: pd.Series, low: 
     first_sl = np.where(any_sl, sl_hit.argmax(axis=1), n_hold)
     first_tp = np.where(any_tp, tp_hit.argmax(axis=1), n_hold)
     sl_wins = first_sl <= first_tp
+    hit_either = (first_sl < n_hold) | (first_tp < n_hold)
     exit_offset = np.where(sl_wins, np.minimum(first_sl, n_hold - 1), np.minimum(first_tp, n_hold - 1))
     exit_idx = entry_idx + exit_offset
-    return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d})
+    exit_price = np.where(hit_either, np.where(sl_wins, sl_price, tp_price), c[entry_idx + n_hold - 1])
+    return pd.DataFrame({"entry_idx": entry_idx, "exit_idx": exit_idx, "direction": d,
+                          "entry_price": entry_price, "exit_price": exit_price})
+
+
+def simulate_net_position(trades: pd.DataFrame) -> pd.DataFrame:
+    """Reconciles overlapping trades from possibly many sources (candidates,
+    or a single candidate's own long+short streams) into a SINGLE net
+    position over time -- step 5's "opposing signal closes first" interlock
+    policy. `trades` needs columns entry_idx, entry_price, direction,
+    exit_idx, exit_price (its NATURAL exit if never interrupted; e.g. from
+    `trade_windows`), and `source` (candidate name, for attribution).
+
+    Rule: a new trigger in the position's existing direction is ignored
+    (position already running, no size added); a new trigger in the
+    OPPOSITE direction force-closes the current position immediately at the
+    new trigger's own entry bar/price (this is a reversal), then opens the
+    new one. A position that never meets a conflicting trigger before its
+    own natural exit closes there instead. Simultaneous same-bar entries
+    from different sources are resolved by input order (documented
+    limitation, not a real tie-break rule). Returns one row per REALIZED
+    trade, with `forced_close` marking ones cut short by a reversal."""
+    trades = trades.sort_values("entry_idx", kind="stable").reset_index(drop=True)
+    realized = []
+    current = None
+    for row in trades.itertuples(index=False):
+        if current is not None:
+            if current["exit_idx"] < row.entry_idx:
+                current["actual_exit_idx"] = current["exit_idx"]
+                current["actual_exit_price"] = current["exit_price"]
+                current["forced_close"] = False
+                realized.append(current)
+                current = None
+            elif np.sign(current["direction"]) == np.sign(row.direction):
+                continue
+            else:
+                current["actual_exit_idx"] = row.entry_idx
+                current["actual_exit_price"] = row.entry_price
+                current["forced_close"] = True
+                realized.append(current)
+                current = None
+        if current is None:
+            current = {"entry_idx": row.entry_idx, "entry_price": row.entry_price,
+                       "direction": row.direction, "exit_idx": row.exit_idx,
+                       "exit_price": row.exit_price, "source": row.source}
+    if current is not None:
+        current["actual_exit_idx"] = current["exit_idx"]
+        current["actual_exit_price"] = current["exit_price"]
+        current["forced_close"] = False
+        realized.append(current)
+    out = pd.DataFrame(realized)
+    out["ret"] = out["direction"] * (out["actual_exit_price"] - out["entry_price"]) / out["entry_price"]
+    return out
 
 
 def _sharpe(x: np.ndarray) -> float:

@@ -107,7 +107,9 @@ def walk_forward_oos_sharpe(df_factor: pd.Series, base_return: pd.Series, ic_sig
     """Chronological walk-forward: fit the safe-zone threshold on the first
     is_frac of decision points only, apply that SAME fixed threshold to the
     held-out remainder — no look-ahead in either the threshold or the
-    selection it's used for."""
+    selection it's used for. A SINGLE split, so it's sensitive to whatever
+    happens to land in that one held-out slice; see walk_forward_multi_fold
+    for the more robust, multi-window version."""
     split = int(len(points) * is_frac)
     is_points, oos_points = points[:split], points[split:]
 
@@ -122,4 +124,41 @@ def walk_forward_oos_sharpe(df_factor: pd.Series, base_return: pd.Series, ic_sig
         "oos_sharpe": _sharpe(oos_ret.to_numpy()),
         "oos_n_active": int((oos_ret != 0).sum()),
         "oos_n_total": len(oos_points),
+    }
+
+
+def walk_forward_multi_fold(df_factor: pd.Series, base_return: pd.Series, ic_sign: float,
+                             points: np.ndarray, n_folds: int = 5) -> dict:
+    """Expanding-window walk-forward over n_folds+1 contiguous chunks: fold i
+    trains on chunks [0..i) and tests on chunk i, each time refitting the
+    safe-zone threshold on ONLY the training chunks and freezing it for that
+    fold's test chunk (no look-ahead). All folds' held-out returns are then
+    pooled into one track record and scored with a single Sharpe — this is
+    much less sensitive to which specific sub-period a single 70/30 split
+    happens to hold out (a regime shift landing entirely in one held-out
+    slice can otherwise make a genuinely robust factor look broken, or vice
+    versa) than the single-split walk_forward_oos_sharpe.
+    """
+    chunks = np.array_split(points, n_folds + 1)
+    pooled_oos = []
+    fold_sharpes = []
+    for i in range(1, n_folds + 1):
+        train_points = np.concatenate(chunks[:i])
+        test_points = chunks[i]
+        if len(test_points) == 0:
+            continue
+        train_factor = df_factor.iloc[train_points]
+        lo, hi = train_factor.quantile(0.2), train_factor.quantile(0.8)
+        test_ret = conditional_returns(df_factor.iloc[test_points], ic_sign, base_return.iloc[test_points], lo, hi)
+        pooled_oos.append(test_ret)
+        fold_sharpes.append(_sharpe(test_ret.to_numpy()))
+
+    pooled = pd.concat(pooled_oos) if pooled_oos else pd.Series(dtype=float)
+    fold_sharpes = np.array(fold_sharpes)
+    return {
+        "oos_sharpe_pooled": _sharpe(pooled.to_numpy()),
+        "n_folds_positive": int(np.nansum(fold_sharpes > 0)),
+        "n_folds_total": int(np.sum(~np.isnan(fold_sharpes))),
+        "oos_n_active": int((pooled != 0).sum()),
+        "oos_n_total": len(pooled),
     }

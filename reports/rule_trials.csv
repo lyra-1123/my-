@@ -91,3 +91,7 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,结算 12:30~13:30（主） 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0224,,0.0049,0.68,8,事件研究 t 内/外 1.05/0.27；列为每笔去漂移 ATR（非美元）；未通过
 2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,对照 10:30~11:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0473,,0.0091,2.99,8,事件研究 t 内/外 1.7/0.29；列为每笔去漂移 ATR（非美元）；未通过
 2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,对照 14:30~15:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0442,,-0.0128,0.79,8,事件研究 t 内/外 2.63/-0.6；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,TT30-EW-v1 仓位分级,30MIN,trend-tail,sizing,S1 入场定档 |z|<2:1 / 2~2.5:2 / ≥2.5:3,PRE-REGISTERED (reports/sizing_hedge_prereg.md),0.189,,0.757,,,2,引擎口径日度夏普（真实历史成本）；S0=0.227/0.916；随机对照分位 0.42/0.24；未通过
+2026-09-27,TT30-EW-v1 仓位分级,30MIN,trend-tail,sizing,S2 动态跟随当前 |z| 档位,PRE-REGISTERED (reports/sizing_hedge_prereg.md),-0.124,,0.43,,,2,引擎口径；加减仓次数翻倍；未通过
+2026-09-27,HA1H-v1 仓位分级,1H,high-anchor,sizing,S1 入场定档 |z|<2:1 / 2~2.5:2 / ≥2.5:3,PRE-REGISTERED (reports/sizing_hedge_prereg.md),0.621,,0.56,,,2,S0=0.510/0.553；随机对照分位 0.92/0.66（<0.95）；未通过
+2026-09-27,HA1H-v1 仓位分级,1H,high-anchor,sizing,S2 动态跟随当前 |z| 档位,PRE-REGISTERED (reports/sizing_hedge_prereg.md),0.666,,0.705,,,2,高于 S0，但样本外 0.705 < 随机对照 95% 分位 0.774；未通过

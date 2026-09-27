@@ -1,0 +1,61 @@
+  c /= stddev[:, None]
+  c /= stddev[None, :]
+[1] 日内'因子×频率' 161 个；与在跑组合样本内外都负相关 51 个；其中自身夏普样本内外都 > 0：0 个
+    全部相关分布（样本外）：分位 [5%,50%,95%] = [-0.471  0.146  0.609]
+
+    负相关的全部因子（按样本外相关排序）：
+                                  相关内    相关外   夏普内   夏普外
+因子|频率                                                   
+RSIReversion|1H                -0.690 -0.689 -0.68 -0.41
+DPOReversion|1H                -0.666 -0.665 -0.63 -0.87
+DPOReversion|30MIN             -0.676 -0.603 -0.55 -0.57
+RSIReversion|30MIN             -0.613 -0.592 -0.57 -0.18
+IntradayReversalCore|1H        -0.598 -0.587 -0.66 -0.58
+IntradayReversalCore|30MIN     -0.592 -0.571 -0.75 -0.36
+BollingerReversion|1H          -0.502 -0.524 -0.68 -0.72
+CCIReversion|1H                -0.539 -0.490 -1.07 -0.95
+StochReversion|1H              -0.538 -0.471 -1.23 -1.07
+MFIReversion|1H                -0.487 -0.465 -0.85 -0.86
+UltimateOscReversion|1H        -0.464 -0.460 -0.15 -0.36
+BollingerReversion|30MIN       -0.445 -0.435 -0.31 -0.15
+CCIReversion|30MIN             -0.415 -0.421 -0.51 -0.54
+RealizedSkewReversal|30MIN     -0.419 -0.418 -0.02 -0.88
+DPOReversion|15MIN             -0.438 -0.406 -0.54  0.05
+RealizedSkewReversal|15MIN     -0.375 -0.399 -0.19 -0.63
+RangeVWAPReversion|30MIN       -0.398 -0.392 -0.82 -0.22
+RSIReversion|15MIN             -0.448 -0.371 -0.03 -0.30
+RealizedSkewReversal|1H        -0.398 -0.370 -0.39 -0.14
+MFIReversion|30MIN             -0.398 -0.350 -0.29 -0.52
+IntradayReversalCore|15MIN     -0.386 -0.345 -0.36  0.16
+RangeVWAPReversion|1H          -0.386 -0.335 -0.72 -0.50
+StochReversion|30MIN           -0.420 -0.323 -0.63 -0.26
+CCIReversion|15MIN             -0.324 -0.320 -0.25 -0.65
+UltimateOscReversion|30MIN     -0.385 -0.319 -0.08  0.04
+BollingerReversion|15MIN       -0.305 -0.266  0.11 -0.28
+MFIReversion|15MIN             -0.258 -0.263 -0.27 -0.62
+VolumeClimaxReversal|1H        -0.284 -0.250 -0.24 -0.05
+UltimateOscReversion|15MIN     -0.289 -0.242 -0.08  0.20
+StochReversion|15MIN           -0.328 -0.211 -0.02  0.07
+AsiaSessionReversion|1H        -0.132 -0.209 -0.32 -0.62
+VolumeClimaxReversal|30MIN     -0.267 -0.194 -0.54 -0.98
+UptrendDipReversion|30MIN      -0.124 -0.193 -0.24 -0.17
+AnchoredVWAPBandReversion|5MIN -0.244 -0.187 -0.93 -1.08
+AsiaSessionReversion|30MIN     -0.107 -0.167 -0.28 -0.61
+RangeVWAPReversion|15MIN       -0.201 -0.164 -0.42  0.33
+UptrendDipReversion|1H         -0.113 -0.163 -0.07 -0.52
+AsiaSessionReversion|15MIN     -0.078 -0.154 -0.05 -0.71
+VolumeClimaxReversal|15MIN     -0.149 -0.138 -0.66 -0.44
+IntradayReversalCore|5MIN      -0.201 -0.135  0.37 -0.05
+ThreePushWedgeReversal|15MIN   -0.097 -0.102 -0.55 -0.57
+ThreePushWedgeReversal|5MIN    -0.073 -0.097 -0.76 -0.81
+ThreePushWedgeReversal|1H      -0.078 -0.092  0.24 -0.38
+ThreePushWedgeReversal|30MIN   -0.077 -0.083 -0.19 -1.48
+ThreePushNoDecay|15MIN         -0.018 -0.071  0.16 -0.55
+RangeVWAPReversion|5MIN        -0.066 -0.056 -0.38  0.17
+WeekendGapReversion|30MIN      -0.052 -0.045 -0.15 -0.52
+WeekendGapReversion|15MIN      -0.028 -0.045 -0.17 -0.38
+WeekendGapReversion|1H         -0.049 -0.043 -0.17 -0.56
+VolumeClimaxReversal|5MIN      -0.039 -0.024 -0.22 -0.57
+ThreePushNoDecay|5MIN          -0.032 -0.023  0.23 -0.61
+
+结论：没有因子同时满足负相关与正期望。

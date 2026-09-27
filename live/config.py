@@ -31,10 +31,11 @@ MIN_BARS = {"30MIN": 6000, "1H": 6500}
 # ---------------- 执行与风控 ----------------
 BAR_CLOSE_DELAY_SEC = 8         # K 线收盘后等待几秒再取数据（确保最后一根已完整）
 DEVIATION_POINTS = 30           # 市价单允许的最大滑点（点）
-MAX_SPREAD_USD = 0.60           # 点差超过该值时不开新仓（平仓不受限）
+MAX_SPREAD_USD = 1.00           # 点差超过该值时不开新仓（平仓不受限）。模拟账户点差比实盘（0.2）大，设宽一些，避免因模拟盘点差造成与模型的偏离；上实盘时改回 0.6 左右
 MAX_DATA_AGE_MIN = 35           # 最新完整 K 线距现在超过该分钟数时不交易（数据中断保护）
 DEMO_ONLY = True                # 只允许在模拟账户上运行
 KILL_FILE = "live/STOP"         # 存在此文件时：平掉本程序的全部仓位并暂停
 DAILY_LOSS_LIMIT_USD = None     # 组合熔断：当日（纽约 17:00 起）本程序全部策略的已实现 + 浮动亏损超过该值时平仓并暂停到下一交易日；None 为关闭
 ALIGN_ON_START = False          # 启动时是否立即按目标仓位对齐（False：等到下一根 K 线收盘再操作，与模型成交时点一致）
 LOG_DIR = "live/logs"
+AUTO_DAILY_REVIEW = True        # 每个交易日收盘后自动生成复盘数据报告 live/reports/review_<日期>.md（python -m live.daily_review 可手动补做）

@@ -10,7 +10,7 @@ import pandas as pd
 from live import config as C
 from live.mt5_api import mt5
 
-TF = {"30MIN": "TIMEFRAME_M30", "1H": "TIMEFRAME_H1", "1D": "TIMEFRAME_D1", "1MIN": "TIMEFRAME_M1"}
+TF = {"30MIN": "TIMEFRAME_M30", "1H": "TIMEFRAME_H1", "1D": "TIMEFRAME_D1", "5MIN": "TIMEFRAME_M5", "1MIN": "TIMEFRAME_M1"}
 DUR = {"30MIN": pd.Timedelta("30min"), "1H": pd.Timedelta("1h"), "1D": pd.Timedelta("1D"), "1MIN": pd.Timedelta("1min")}
 
 
@@ -74,3 +74,46 @@ def latest_contiguous(bars: pd.DataFrame, max_gap_days: float = C.MAX_GAP_DAYS) 
     if gaps.any():
         bars = bars[bars.index >= gaps[gaps].index[-1]]
     return bars
+
+
+def utc_to_server(ts_utc: pd.Timestamp) -> pd.Timestamp:
+    """UTC（无时区）→ 服务器时间（无时区）。"""
+    mode = C.SERVER_TZ
+    if mode == "ny+7":
+        return pd.Timestamp(ts_utc).tz_localize("UTC").tz_convert("America/New_York").tz_localize(None) + pd.Timedelta(hours=7)
+    if mode.startswith("fixed:"):
+        return pd.Timestamp(ts_utc) + pd.Timedelta(hours=float(mode.split(":")[1]))
+    raise ValueError(f"未知 SERVER_TZ：{mode}")
+
+
+def _srv_arg(ts_server: pd.Timestamp):
+    # MetaTrader5 包把 datetime 参数当作"秒数"使用；传带 UTC 时区的对象，避免被本机时区再换算一次
+    return pd.Timestamp(ts_server).tz_localize("UTC").to_pydatetime()
+
+
+def deals_between(utc_a: pd.Timestamp, utc_b: pd.Timestamp) -> pd.DataFrame:
+    """[utc_a, utc_b) 内本品种的全部成交，时间换算为 UTC。查询窗口两边各放宽 2 天再精确过滤，不依赖终端对时间参数的解释。"""
+    a, b = utc_to_server(utc_a) - pd.Timedelta(days=2), utc_to_server(utc_b) + pd.Timedelta(days=2)
+    ds = mt5.history_deals_get(_srv_arg(a), _srv_arg(b)) or ()
+    cols = ["ticket", "order", "time", "time_msc", "type", "entry", "magic", "position_id", "reason", "volume", "price",
+            "commission", "swap", "profit", "fee", "symbol", "comment"]
+    df = pd.DataFrame([{k: getattr(d, k, 0) for k in cols} for d in ds], columns=cols)
+    df = df[df["symbol"] == C.SYMBOL].copy()
+    if df.empty:
+        df["utc"] = pd.Series(dtype="datetime64[ns]")
+        return df
+    df["utc"] = server_to_utc(pd.to_datetime(df["time_msc"], unit="ms"))
+    return df[(df["utc"] >= utc_a) & (df["utc"] < utc_b)].sort_values("time_msc").reset_index(drop=True)
+
+
+def bars_range(freq: str, utc_a: pd.Timestamp, utc_b: pd.Timestamp) -> pd.DataFrame:
+    """[utc_a, utc_b) 内已走完的 K 线（用于计算单笔交易的最大浮盈/浮亏）。"""
+    a, b = utc_to_server(utc_a) - pd.Timedelta(hours=1), utc_to_server(utc_b) + pd.Timedelta(hours=1)
+    rates = mt5.copy_rates_range(C.SYMBOL, getattr(mt5, TF[freq]), _srv_arg(a), _srv_arg(b))
+    if rates is None or len(rates) == 0:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+    df = pd.DataFrame(rates)
+    idx = server_to_utc(pd.to_datetime(df["time"], unit="s"))
+    out = pd.DataFrame({"open": df["open"].to_numpy(), "high": df["high"].to_numpy(), "low": df["low"].to_numpy(),
+                        "close": df["close"].to_numpy()}, index=idx)
+    return out[(out.index >= utc_a) & (out.index < utc_b)]

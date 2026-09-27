@@ -147,6 +147,19 @@ def cycle(state: dict, force=False):
                 log_decision({"utc_time": str(now_utc), "strategy": sid, "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                               "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
                               "note": repr(e)})
+    # 每个交易日收盘（纽约 17:00）后的第一次运行：自动生成前一交易日的复盘数据报告
+    if C.AUTO_DAILY_REVIEW:
+        try:
+            from live.daily_review import last_closed_day, run_review
+            day = last_closed_day(now_utc)
+            if state.get("last_review") != str(day.date()):
+                path = run_review(day, now_utc)
+                state["last_review"] = str(day.date())
+                print(f"已生成复盘报告：{path}")
+        except Exception as e:
+            log_decision({"utc_time": str(now_utc), "strategy": "DAILY_REVIEW", "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
+                          "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
+                          "note": repr(e)})
     save_state(state)
 
 

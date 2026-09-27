@@ -9,6 +9,7 @@
 | `live/check_mt5.py` | 上线前第 1 步：检查账户、合约、时区、历史深度，可选与 Dukascopy 对齐 |
 | `live/compare_signals.py` | 上线前第 2 步：同一段时间用 MT5 数据和 Dukascopy 数据分别算信号，比较是否一致 |
 | `live/runner.py` | 实时程序：每根 30 分钟 K 线收盘后运行一次 |
+| `live/daily_review.py` | 每日复盘数据层：读取 MT5 成交记录，与模型逐笔对照，输出 `live/reports/review_<交易日>.md` 和 `daily_summary.csv` |
 | `live/selftest.py` | 自测（不需要 MT5，用 Dukascopy 数据模拟服务器），在云端/任何机器上都能跑 |
 | `live/logs/` | `decisions.csv`（每次决策）、`orders.csv`（每笔订单与回执）、`state.json` |
 
@@ -81,3 +82,9 @@ python -m live.runner
 2. **成交价**：模型按下一根开盘价、固定点差 0.2 计；实盘是市价单真实成交，含滑点和经纪商的实际点差和过夜费。
 3. **影子版本 HA1H-TS2 的止损**：模型按 1H 最高/最低价触发，实盘由服务器按 tick 触发，结果基本一致。新开仓时，模型的初始止损以"下一根开盘价"为基准，实盘以开仓时的 BID 为基准。
 4. **30MIN/1H 策略每天纽约 17:00 前平仓**（避开过夜费），与模型一致。
+
+## 每日复盘
+- runner 在每个交易日收盘（纽约 17:00，北京时间夏令时 05:00 / 冬令时 06:00）后的第一次运行，自动生成前一交易日的 `live/reports/review_<交易日>.md`（`AUTO_DAILY_REVIEW=True`）。
+- 手动生成或补做：`python -m live.daily_review --day 2026-09-29`（不带 `--day` = 最近一个已收盘交易日）。
+- 内容：当日行情；各策略实际 / 按 0.2 点差折算 / 模型盈亏；规则检查（手动干预、报错、下单失败、过夜、仓位一致率、滑点、延迟，阈值写死）；逐笔明细（参考价、延迟、扣点差后的滑点、MFE/MAE、兑现率、R）；上线以来累计 vs 登记区间；必须解释的偏离。
+- 深度复盘：把报告全文贴给 Claude，或提交推送 `live/reports/` 后让 Claude 读取，按 `.claude/skills/mt5-daily-review/SKILL.md` 写教练评语。

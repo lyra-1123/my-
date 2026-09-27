@@ -23,7 +23,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from backtest_engine import calc_sharpe, run_backtest, summarize_trades
+from backtest_engine import ExitRule, calc_sharpe, run_backtest, summarize_trades
+from backtest_engine import Market
 from cost_model import SimpleCostModel
 from cscv_pbo import build_returns_matrix, calc_dsr, calc_pbo
 from regime_split import multi_regime_validation, regime_by_trend, regime_by_volatility
@@ -34,7 +35,7 @@ from wf_runner import design_wf_windows, is_window_pass, rolling_wf_pass
 class Variant:
     name: str
     signal: pd.Series
-    target: pd.Series
+    exit_rule: ExitRule
 
 
 def _slice(trades: pd.DataFrame, start_idx: int, end_idx: int) -> pd.DataFrame:
@@ -65,19 +66,20 @@ def judge_strategy(pbo: float, dsr: float, sharpe_oos_annual: float,
             "verdict": verdict, "recommendation": recommendation}
 
 
-def run_chapter5_validation(df: pd.DataFrame, candidate: Variant, variants: list[Variant],
-                            forward_bars: int, n_trials_prior: int,
+def run_chapter5_validation(df: pd.DataFrame, market: Market, candidate: Variant,
+                            variants: list[Variant], n_trials_prior: int,
                             cost_model: SimpleCostModel | None = None,
                             min_oos_trades: int = 300, is_oos_ratio: float = 1.0,
                             cscv_splits: int = 16, min_oos_days: int = 30) -> dict:
     """
-    n_trials_prior: 在跑本流水线之前，本项目已经正式验证过的策略定义数（含candidate本身）。
-                    DSR 用的 n_trials = n_trials_prior + 变体家族里除candidate外的新变体数。
+    market: goldq.exits.prepare_market(df, ...) 的结果（含指标反转出场所需的布尔序列）。
+    n_trials_prior: 本次变体家族之前，本项目已正式验证过的策略定义数（不含本家族任何成员）。
+                    DSR 用的 n_trials = n_trials_prior + 本家族变体数。
     """
     cost_model = cost_model or SimpleCostModel()
     all_variants = variants if any(v.name == candidate.name for v in variants) else [candidate] + variants
 
-    trades_by_name = {v.name: run_backtest(df, v.signal, v.target, forward_bars, cost_model)
+    trades_by_name = {v.name: run_backtest(df, market, v.signal, v.exit_rule, cost_model)
                       for v in all_variants}
     cand_trades = trades_by_name[candidate.name]
     if cand_trades.empty:
@@ -122,7 +124,7 @@ def run_chapter5_validation(df: pd.DataFrame, candidate: Variant, variants: list
     pbo = calc_pbo(matrix, cscv_splits)
 
     # 4. DSR
-    n_trials = n_trials_prior + len(all_variants) - 1
+    n_trials = n_trials_prior + len(all_variants)
     dsr = calc_dsr(cand_trades["return_pct"].to_numpy(), n_trials)
 
     # 5. 多 Regime
@@ -162,6 +164,7 @@ def print_chapter5_report(result: dict, candidate_name: str) -> None:
     for name, s in result["variant_summaries"].items():
         rows.append({"variant": name, "n": s.get("n_trades", 0), "win_rate": s.get("win_rate"),
                      "gross_pnl": s.get("gross_pnl"), "total_pnl": s.get("total_pnl"),
+                     "R/笔(成本前)": s.get("avg_raw_r"), "R/笔(成本后)": s.get("avg_net_r"),
                      "sharpe/笔": s.get("sharpe")})
     print(pd.DataFrame(rows).to_string(index=False))
 
@@ -170,7 +173,8 @@ def print_chapter5_report(result: dict, candidate_name: str) -> None:
           f"总PnL ${c['total_pnl']:.1f}/oz，逐笔Sharpe {c['sharpe']:.3f}，最大回撤 ${c['max_drawdown']:.1f}/oz")
     print(f"出场原因分布：{c['exit_reason_counts']}，年均成交 {result['trades_per_year']:.0f} 笔")
     print(f"成本前PnL ${c['gross_pnl']:.1f}/oz - 成本 ${c['total_cost']:.1f}/oz = 成本后 ${c['total_pnl']:.1f}/oz")
-    print(f"同bar SL/TP双触发 {c['n_ambiguous']} 笔（已按SL记）；全部改判TP的乐观上界：${c['pnl_if_ambiguous_tp']:.1f}/oz")
+    print(f"平均每笔 {c['avg_raw_r']:+.3f}R（成本前） / {c['avg_net_r']:+.3f}R（成本后），平均持仓 {c['avg_bars_held']:.1f} 根")
+    print(f"同bar止损与止盈/分批都触及 {c['n_ambiguous']} 笔（已按止损记，偏保守）")
 
     cfg = result["wf_config"]
     print(f"\n{line}\n1. Walk-Forward（固定参数滚动OOS）\n{line}")

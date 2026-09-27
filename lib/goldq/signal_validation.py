@@ -4,11 +4,16 @@
 三件套 1：命中率与平均收益（MFE/MAE 口径）
 三件套 2：信号稳定性（滚动 regime IC）
 三件套 3（信号相互独立性）：多信号场景才需要，本模块不提供（各自按需实现）。
+
+补充（Trap-002 之后）：evaluate_exit_direction() 在"同一批信号bar"上用真实出场规则比较
+信号方向与随机方向的逐笔R，把"挑时段（波动变大）"和"判方向"两件事分开。
 """
 
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
+
+from goldq.exits import ExitRule, Market, simulate_trade
 
 
 def compute_forward_mfe_mae(df: pd.DataFrame, forward_bars: int) -> tuple[pd.Series, pd.Series]:
@@ -156,6 +161,10 @@ def print_report(hit_report: dict, stability: pd.DataFrame, target_usd,
     print(f"命中率 (未来窗口MFE>={label}): {hit_report['hit_rate']*100:.1f}%")
     print(f"平均 MFE: ${hit_report['avg_mfe']:.2f} (std ${hit_report['std_mfe']:.2f})")
     print(f"平均 MAE: ${hit_report['avg_mae']:.2f}")
+    ratio = hit_report["avg_mfe"] / abs(hit_report["avg_mae"]) if hit_report["avg_mae"] else float("nan")
+    print(f"平均 MFE/|MAE|: {ratio:.2f}"
+          + ("  ⚠️ 接近1：有利和不利波动一样大，命中率高可能只是波动变大，不是方向对了（Trap-002）"
+             if ratio < 1.2 else ""))
     print(f"逐笔 Sharpe 近似 (avg_mfe/std_mfe): {hit_report['sharpe_proxy']:.2f}")
 
     if baseline is not None:
@@ -186,3 +195,63 @@ def print_report(hit_report: dict, stability: pd.DataFrame, target_usd,
             print("[⚠️] 信号可能只在个别 regime 有效，存在 regime 依赖，需要在第5章做多 Regime 验证")
 
     print("\n三件套 3（信号相互独立性）：单信号场景不适用，跳过。")
+
+
+def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
+                            cost_usd: float = 0.0) -> dict:
+    """
+    同一批信号bar上，按 rule 分别模拟"信号方向"和"反方向"，随机方向的期望 = 两者平均（抛硬币的精确期望，
+    不用抽样）。方向边际 = 信号方向R - 随机方向R，逐笔配对做 t 检验。
+    不做持仓去重（第4章衡量每个信号本身），成本用 cost_usd/风险距离 折成 R。
+    """
+    sig = signal.to_numpy()
+    rows = []
+    for pos in np.flatnonzero(sig != 0):
+        d = 1 if sig[pos] > 0 else -1
+        t = simulate_trade(market, int(pos), d, rule)
+        o = simulate_trade(market, int(pos), -d, rule)
+        if t is None or o is None:
+            continue
+        rows.append({"r": t["raw_r"], "r_opp": o["raw_r"], "cost_r": cost_usd / t["risk"],
+                     "win": t["raw_pnl"] - cost_usd > 0, "reason": t["exit_reason"],
+                     "ambiguous": t["ambiguous"], "bars": t["bars_held"]})
+    if not rows:
+        return {"n": 0}
+    r = pd.DataFrame(rows)
+    r_rand = 0.5 * (r["r"] + r["r_opp"])
+    edge = r["r"] - r_rand
+    se = edge.std() / np.sqrt(len(r)) if len(r) > 1 else float("nan")
+    return {
+        "n": len(r),
+        "win_rate": r["win"].mean(),
+        "r_signal": r["r"].mean(),
+        "r_random": r_rand.mean(),
+        "edge_r": edge.mean(),
+        "edge_t": edge.mean() / se if se and se > 0 else float("nan"),
+        "cost_r": r["cost_r"].mean(),
+        "net_r": (r["r"] - r["cost_r"]).mean(),
+        "ambiguous_pct": r["ambiguous"].mean(),
+        "avg_bars": r["bars"].mean(),
+        "reasons": r["reason"].value_counts().to_dict(),
+    }
+
+
+def print_exit_direction_table(results: dict, min_edge_t: float = 2.0) -> list[str]:
+    """打印各出场规则的方向性筛选结果，返回通过筛选（方向边际 t>=min_edge_t 且成本后R>0）的规则名。"""
+    print("=" * 60)
+    print("方向性筛选：同一批信号bar，信号方向 vs 随机方向（同一出场规则）")
+    print("=" * 60)
+    table = pd.DataFrame({name: {k: v for k, v in res.items() if k != "reasons"}
+                          for name, res in results.items()}).T
+    cols = ["n", "win_rate", "r_signal", "r_random", "edge_r", "edge_t", "cost_r", "net_r",
+            "ambiguous_pct", "avg_bars"]
+    print(table[cols].to_string(float_format=lambda x: f"{x:.3f}"))
+    print("\nr_signal/r_random：成本前每笔平均R；edge_r = 两者之差（方向判断力），edge_t 为其t值；"
+          "\ncost_r：成本折成R；net_r = r_signal - cost_r（成本后每笔平均R）")
+    for name, res in results.items():
+        print(f"  {name} 出场原因: {res.get('reasons')}")
+    passed = [name for name, res in results.items()
+              if res.get("n", 0) and res["edge_t"] >= min_edge_t and res["net_r"] > 0]
+    print(f"\n[筛选标准] 方向边际 t >= {min_edge_t} 且 成本后R > 0："
+          + (f"✅ 通过 {passed}" if passed else "❌ 没有任何出场规则通过"))
+    return passed

@@ -51,3 +51,11 @@
 - 回测报告新增：成本前PnL / 成本拆分、同bar SL/TP双触发计数及乐观上界、"全部变体亏损时PBO无意义"提示。
 - **累计正式验证的策略定义数 = 16**（8 + 本轮9个变体中新增的8个），下一个假设的
   `N_TRIALS_PRIOR` 从 16 起算。
+- 新增 `lib/goldq/exits.py`：出场规则唯一实现，第4、5章共用（结构止损 / ATR移动止损 × 2R / 不设止盈 /
+  指标反转 / 1R分批，2小时上限，缺口平仓，跳空按开盘价成交）。`backtest_engine.run_backtest` 改为调用它；
+  `chapter5_pipeline.Variant` 改为携带 `exit_rule`；`n_trials_prior` 改为"不含本家族"口径
+  （旧 ATR v2 脚本相应改为 7，结果不变，n_trials 仍为 16）。
+- 第4章补 Trap-002 防御：`print_report` 显示 MFE/|MAE|，新增 `evaluate_exit_direction()`
+  （同一批信号bar，信号方向 vs 随机方向，配对 t 检验）。
+- ATR动量v2 按用户决定用新出场规则复测，脚本 `04_策略研究/validate_exits_atr_momentum_v2.py`
+  → `03_回测引擎/validate_ch5_atr_momentum_v2_exits.py`。本家族 7 个出场变体，累计策略定义数 → 23。

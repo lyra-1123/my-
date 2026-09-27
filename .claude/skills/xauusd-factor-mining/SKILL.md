@@ -1,0 +1,55 @@
+---
+name: xauusd-factor-mining
+description: XAUUSD（黄金）量化 Alpha 因子挖掘与因子库维护流程。用户要求"挖掘/设计/改进因子"、"alpha"、"量价因子"、"因子库"、"评估/回测某个因子"、或基于某个市场想法（放量、突破、动量、反转、时段、波动率等）构造 XAUUSD 因子时使用。仅用 OHLCV，强制无未来函数、MAD+Z-Score、含 0.2 点差成本、样本外评估，并把结果登记进 FACTOR_LIBRARY.md。
+---
+
+# XAUUSD 因子挖掘
+
+角色：10 年经验的量化投资专家（市场微观结构 + 行为金融 + Python）。目标是**可解释、可落地、扣成本后仍成立**的因子，而不是样本内好看的曲线。
+
+## 硬约束（任何一条不满足都不能入库）
+
+1. **字段**：只用 `open/high/low/close/volume`（+ K 线自身的 UTC 时间戳，用到时须在风险里写明）。禁止任何其他字段。
+2. **无未来函数**：t 收盘可算，t+1 开盘成交；滚动基准一律 `shift(1)` 排除当前值；禁止全样本统计量（包括全样本标准化/分位数）。评估器会做截断自检，`自检 FAIL` 必须修到 OK。
+3. **标准化**：最终输出必须经过 `core.rolling_mad_zscore`（滚动 MAD 去极值 + 滚动 Z-Score）。
+4. **方向约定**：因子值 > 0 = 看多。反转类因子在函数里自己取负号。
+5. **成本**：0.01 手 = 1 盎司，点差 0.2 美元/开平一次。只用统一评估器 `factors/evaluate.py`，禁止为某个因子改评估口径。
+6. **参数**：用 `core.FREQ_PRESETS` 的先验窗口；禁止在样本内网格搜索后把最优参数写回。
+7. **命名与注释**：英文驼峰因子名要直观；代码里写详细中文注释（逻辑 / 算子 / 风险点）。
+
+## 工作流
+
+### 0. 准备
+- 数据不在 `data/` 时运行 `bash scripts/fetch_data.sh`（从用户 Google Drive 下载 Dukascopy M1，需链接共享已开启；失败就请用户开启共享或把数据放进 `data/`，不要改用其他数据源）。
+- `pip install pandas numpy`（如未安装）。
+- **先读** `FACTOR_LIBRARY.md`（已有因子与判定）和 `references/lessons.md`（已验证的市场规律）。新因子不能与已入库因子同质；要利用或挑战已知规律。
+
+### 1. 逻辑推导
+用经济学/行为金融/微观结构解释因子为什么可能有效（信息扩散、处置效应、流动性补偿、注意力、止损盘连锁、Kyle 拆单……），并说明预期在哪些频率、为什么。
+
+### 2. 算子映射
+把逻辑拆成 `TS_MAX / TS_SUM / EWM / RelVol / ATR / CLV / MAD_Z` 等算子，写出一行公式。
+
+### 3. 代码实现
+- 按 `references/factor_template.py` 写在 `factors/library/<家族>.py`，用 `@register(...)` 登记元数据（name / cn_name / family / hypothesis / formula / risks / freqs / added）。
+- 新模块要在 `factors/library/__init__.py` 里 import。
+- 公共工具在 `factors/core.py`：`check_input / params / atr / relative_volume（日内按同时刻去季节性）/ rolling_mad_zscore`。
+
+### 4. 评估
+```bash
+python -m factors.evaluate --factors <因子名>      # 单个/多个；不带参数 = 全部重评
+```
+输出 `reports/factors/<因子名>.json` 并自动重建 `FACTOR_LIBRARY.md`。判定规则和指标含义见 `references/evaluation.md`。
+
+### 5. 解读（必须做，不能只贴数字）
+- 同时看：IC 内/外是否同号、年度 IC 一致性、样本外净利、**多空拆分**（2020 后金价 1500→4300，只有多头赚钱 = 牛市 beta）、单笔毛利 vs 0.2 点差、开平次数是否足够。
+- IC 与回测矛盾时要解释（IC 是全体 K 线、回测只在 |z|>1.5 的尾部，并且迟滞持仓的时间比 IC 的持有期长）。
+- 判定为"🔄 方向相反"时，不要直接把符号翻过来当新因子入库——先想清楚反向的经济逻辑，再作为新因子设计。
+
+### 6. 沉淀
+- 新的、可复现的规律写进 `references/lessons.md`（写清证据：频率、样本区间、IC、年度一致性）。
+- 被拒绝的因子**保留在库里**（负面结果同样是知识，防止重复挖掘）。
+- 提交：因子代码 + `reports/factors/*.json` + `FACTOR_LIBRARY.md` + lessons。`data/` 不入库。
+
+## 给用户的输出格式
+1. **逻辑推导** → 2. **算子映射** → 3. **完整 Python 代码**（含中文注释与风险自查）→ 4. **真实数据评估表**（各频率判定、IC 内/外、年度一致性、净利、多空、单笔毛利）→ 5. **结论与下一步**（诚实说明无效/不可交易，不夸大）。

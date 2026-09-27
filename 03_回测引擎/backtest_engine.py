@@ -47,12 +47,14 @@ def run_backtest(df: pd.DataFrame, signal: pd.Series, target: pd.Series,
             continue
 
         exit_price, exit_reason, exit_idx = None, None, None
+        ambiguous = False
         for j in range(pos + 1, pos + 1 + forward_bars):
             if direction == 1:
                 hit_sl = (low[j] - entry_price) <= -dist
                 hit_tp = (high[j] - entry_price) >= dist
                 if hit_sl:
                     exit_price, exit_reason, exit_idx = entry_price - dist, "SL", j
+                    ambiguous = bool(hit_tp)
                     break
                 if hit_tp:
                     exit_price, exit_reason, exit_idx = entry_price + dist, "TP", j
@@ -62,6 +64,7 @@ def run_backtest(df: pd.DataFrame, signal: pd.Series, target: pd.Series,
                 hit_tp = (entry_price - low[j]) >= dist
                 if hit_sl:
                     exit_price, exit_reason, exit_idx = entry_price + dist, "SL", j
+                    ambiguous = bool(hit_tp)
                     break
                 if hit_tp:
                     exit_price, exit_reason, exit_idx = entry_price - dist, "TP", j
@@ -90,6 +93,7 @@ def run_backtest(df: pd.DataFrame, signal: pd.Series, target: pd.Series,
             "return_pct": net_pnl / entry_price,
             "bars_held": exit_idx - pos,
             "exit_reason": exit_reason,
+            "ambiguous": ambiguous,  # 同一根bar内SL和TP都碰到，按SL记（M5内部先后顺序未知）
         })
 
     return pd.DataFrame(trades)
@@ -121,4 +125,9 @@ def summarize_trades(trades: pd.DataFrame) -> dict:
         "max_drawdown": calc_max_drawdown(trades["pnl"]),
         "avg_bars_held": trades["bars_held"].mean(),
         "exit_reason_counts": trades["exit_reason"].value_counts().to_dict(),
+        "gross_pnl": trades["raw_pnl"].sum(),
+        "total_cost": (trades["raw_pnl"] - trades["pnl"]).sum(),
+        "n_ambiguous": int(trades["ambiguous"].sum()),
+        # 乐观上界：把所有"同bar双触发"都改判为TP（SL->TP 每笔多出 2*target）
+        "pnl_if_ambiguous_tp": trades["pnl"].sum() + 2 * trades.loc[trades["ambiguous"], "target"].sum(),
     }

@@ -40,3 +40,14 @@
   数据上调的第6个变体，存在多重检验风险，**下一步是送进第5章Walk-Forward/CSCV做
   过拟合检验，而不是直接采信**。泛化了 `signal_validation.py` 支持逐bar不同的目标
   （pd.Series，比如ATR），新增 `compute_mfi()`。
+
+## 2026-09-27
+
+- 新增 `03_回测引擎/` 第5章通用验证框架（回测引擎/成本模型/WF窗口按成交频率反推/WF选择法/
+  CSCV-PBO/DSR/多Regime/5项综合判定），后续假设写一个 `validate_ch5_<名>.py` 即可接入。
+- `hypothesis_atr_momentum_v2` 第5章 **FAIL（2/5），REJECTED**：4313笔，成本后 $-1788.5/oz，
+  成本前≈$-63/oz（≈0边际），13个WF窗口全亏，DSR=0，OOS年化Sharpe -2.65。第4章的+5.7pp来自
+  ATR扩张后的波动率聚集（MFE与MAE同时变大），不是方向判断力，记为 Trap-002。ATR动量方向结案。
+- 回测报告新增：成本前PnL / 成本拆分、同bar SL/TP双触发计数及乐观上界、"全部变体亏损时PBO无意义"提示。
+- **累计正式验证的策略定义数 = 16**（8 + 本轮9个变体中新增的8个），下一个假设的
+  `N_TRIALS_PRIOR` 从 16 起算。

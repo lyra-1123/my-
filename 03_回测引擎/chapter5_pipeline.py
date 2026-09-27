@@ -161,13 +161,16 @@ def print_chapter5_report(result: dict, candidate_name: str) -> None:
     rows = []
     for name, s in result["variant_summaries"].items():
         rows.append({"variant": name, "n": s.get("n_trades", 0), "win_rate": s.get("win_rate"),
-                     "total_pnl": s.get("total_pnl"), "sharpe/笔": s.get("sharpe")})
+                     "gross_pnl": s.get("gross_pnl"), "total_pnl": s.get("total_pnl"),
+                     "sharpe/笔": s.get("sharpe")})
     print(pd.DataFrame(rows).to_string(index=False))
 
     c = result["candidate_full_sample"]
     print(f"\n候选 [{candidate_name}] 全样本：{c['n_trades']} 笔，胜率 {c['win_rate']*100:.1f}%，"
           f"总PnL ${c['total_pnl']:.1f}/oz，逐笔Sharpe {c['sharpe']:.3f}，最大回撤 ${c['max_drawdown']:.1f}/oz")
     print(f"出场原因分布：{c['exit_reason_counts']}，年均成交 {result['trades_per_year']:.0f} 笔")
+    print(f"成本前PnL ${c['gross_pnl']:.1f}/oz - 成本 ${c['total_cost']:.1f}/oz = 成本后 ${c['total_pnl']:.1f}/oz")
+    print(f"同bar SL/TP双触发 {c['n_ambiguous']} 笔（已按SL记）；全部改判TP的乐观上界：${c['pnl_if_ambiguous_tp']:.1f}/oz")
 
     cfg = result["wf_config"]
     print(f"\n{line}\n1. Walk-Forward（固定参数滚动OOS）\n{line}")
@@ -192,6 +195,9 @@ def print_chapter5_report(result: dict, candidate_name: str) -> None:
     print(f"\n{line}\n3. CSCV / PBO（变体家族 {p.get('n_strategies')} 个，{p.get('n_splits')} 折，"
           f"{p.get('n_combinations')} 种IS/OOS组合）\n{line}")
     print(f"PBO = {p.get('pbo', float('nan'))*100:.1f}%  →  {p.get('interpretation', p.get('note'))}")
+    if all(s.get("total_pnl", 0) <= 0 for s in result["variant_summaries"].values()):
+        print("⚠️ 家族内所有变体全样本都不赚钱：PBO 只衡量相对排名是否稳定，此时低PBO只说明"
+              "'亏得少的一直亏得少'，不代表存在正向边际")
 
     d = result["dsr"]
     print(f"\n{line}\n4. DSR（多重检验折扣，n_trials = {d.get('n_trials')}）\n{line}")

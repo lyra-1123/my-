@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+"""
+上线前第 1 步：python -m live.check_mt5 [--dukascopy-dir 路径]
+检查：连接与账户（模拟？对冲？）、品种合约（0.01 手是否 = 1 盎司）、服务器时区偏移、历史深度；
+可选：与 Dukascopy 的 30MIN 收益做滞后相关，确认时区对齐（最佳滞后应为 0）。
+"""
+import argparse
+import time
+
+import numpy as np
+import pandas as pd
+
+from live import config as C
+from live.mt5_api import mt5
+from live.mt5_data import connect, fetch_bars, server_to_utc
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dukascopy-dir", default=None)
+    args = ap.parse_args()
+    connect()
+    acc, info, tick = mt5.account_info(), mt5.symbol_info(C.SYMBOL), mt5.symbol_info_tick(C.SYMBOL)
+    print("== 账户")
+    print(f"  登录 {acc.login}，服务器 {acc.server}，模拟账户：{acc.trade_mode == mt5.ACCOUNT_TRADE_MODE_DEMO}，"
+          f"对冲模式：{acc.margin_mode == mt5.ACCOUNT_MARGIN_MODE_RETAIL_HEDGING}，余额 {acc.balance} {acc.currency}")
+    print("== 品种", C.SYMBOL)
+    print(f"  合约大小 {info.trade_contract_size}（0.01 手 = {info.trade_contract_size * 0.01:g} 盎司），小数位 {info.digits}，"
+          f"最小手数 {info.volume_min}，步长 {info.volume_step}，止损最小距离 {info.trade_stops_level} 点，成交方式 {info.filling_mode}")
+    print(f"  当前点差 {tick.ask - tick.bid:.3f}（配置的上限 {C.MAX_SPREAD_USD}）")
+    srv = pd.Timestamp(tick.time, unit="s"); utc = pd.Timestamp(time.time(), unit="s")
+    off = (srv - utc).total_seconds() / 3600
+    pred = (srv - server_to_utc(pd.DatetimeIndex([srv]))[0]).total_seconds() / 3600
+    print("== 时区")
+    print(f"  最新报价服务器时间 {srv}，本机 UTC {utc}，实测偏移约 {off:+.2f} 小时（休市时不可靠）；"
+          f"按 SERVER_TZ='{C.SERVER_TZ}' 推算的偏移 {pred:+.0f} 小时 → {'一致' if abs(round(off) - pred) < 0.5 else '不一致，请修改 SERVER_TZ'}")
+    print("== 历史深度（需要：30MIN ≥ 6000 根，1H ≥ 7000 根）")
+    for fq in ("30MIN", "1H"):
+        b = fetch_bars(fq, C.HISTORY_BARS[fq])
+        print(f"  {fq}: {len(b)} 根，{b.index[0]} ~ {b.index[-1]} UTC → {'足够' if len(b) >= {'30MIN': 6000, '1H': 7000}[fq] else '不足，请调大图表最大 K 线数'}")
+    if args.dukascopy_dir:
+        from factors.data_loader import load_m1, resample_ohlcv
+        d = resample_ohlcv(load_m1(args.dukascopy_dir), "30MIN")
+        m = fetch_bars("30MIN", C.HISTORY_BARS["30MIN"])
+        rd, rm = np.log(d["close"]).diff(), np.log(m["close"]).diff()
+        print("== 与 Dukascopy 的对齐（30MIN 收益在不同滞后下的相关，最佳应为 0 小时）")
+        for lag in range(-6, 7):
+            x = pd.concat([rd, rm.shift(lag)], axis=1).dropna()
+            print(f"  滞后 {lag * 0.5:+.1f} 小时：相关 {x.corr().iloc[0, 1]:.3f}（{len(x)} 根重叠）")
+        both = pd.concat([d["close"], m["close"]], axis=1, keys=["duka", "mt5"]).dropna()
+        print(f"  同一时刻收盘价差：中位 {(both.mt5 - both.duka).median():+.3f}，绝对值 95% 分位 {(both.mt5 - both.duka).abs().quantile(.95):.3f}")
+        vd, vm = d["volume"].reindex(both.index), m["volume"].reindex(both.index)
+        print(f"  成交量相关（Dukascopy volume vs MT5 tick_volume）：{np.corrcoef(np.log1p(vd), np.log1p(vm))[0, 1]:.3f}")
+    mt5.shutdown()
+
+
+if __name__ == "__main__":
+    main()

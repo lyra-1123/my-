@@ -105,6 +105,7 @@ def compute_rule(spec: StrategySpec, bars: pd.DataFrame) -> pd.DataFrame:
     out["net_R"] = (pnl - dpos * SPREAD / 2 - sw) / out["atr_prev"]
     out["stop_fill"] = stop_fill
     out["next_stop"] = next_stop
+    out["trail_dist"] = kw.get("trail", 2.0) * atrd   # 实盘用：刚开仓时（下一根开盘价未知）按成交价 ∓ 该距离设初始止损
     return out
 
 

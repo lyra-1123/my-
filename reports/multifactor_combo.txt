@@ -1,0 +1,42 @@
+
+####################################################################################################
+30MIN：成分池 17 个 → 8 个簇
+  簇1: TSMomentumVolScaled★(+0.235), TrendEfficiencyVolume(+0.151), VWAPDeviation(+0.196), MTFTrendResonance(+0.196), ADXTrend(+0.081), AroonTrend(+0.136), IchimokuTrend(+0.184), KeltnerBreakout(+0.050), ForceIndex(+0.068)
+  簇2: OBVMomentum★(+0.100)
+  簇3: CMFFlow★(+0.046)
+  簇4: VolWeightedCloseThrust(+0.030), PSARTrend★(+0.096)
+  簇5: SqueezeReleaseMomentum★(+0.013)
+  簇6: TrendPullbackLowVolume★(+0.070)
+  簇7: PullbackSwing★(+0.225)
+  簇8: HTFTrendLTFBreakout★(+0.130)
+                      夏普内   夏普外  夏普全期  美元内   美元外  多头外   空头外  年正(全期) 选中
+组合                                                                    
+A 全部等权               0.66  0.48  0.60  213  1303  403  1054    0.89   
+B 簇代表等权              1.24  0.72  1.06  939  1234  791   602    0.84  ★
+C 策略层等权              0.67  0.45  0.59  -86   328  281   120    0.79   
+D 单因子 IchimokuTrend  0.71  1.00  0.81  400  1437  549  1020    0.84   
+  CSCV（4 个组合方式 + 17 个单因子，共 21）：PBO=0.028，样本内最优在样本外夏普中位 +0.97
+
+####################################################################################################
+1H：成分池 22 个 → 10 个簇
+  簇1: HighAnchorMomentum★(+0.228), QuietTrend(+0.101)
+  簇2: RSI2PullbackInTrend★(+0.040)
+  簇3: TSMomentumVolScaled(+0.194), TrendEfficiencyVolume(+0.079), VWAPDeviation(+0.163), ADXTrend(+0.122), AroonTrend(+0.109), IchimokuTrend★(+0.232), PSARTrend(+0.180), KeltnerBreakout(+0.133), DonchianTrend(+0.114), VortexTrend(+0.160), ForceIndex(+0.106)
+  簇4: OBVMomentum(+0.068), CMFFlow★(+0.173)
+  簇5: TRIXMomentum★(+0.041)
+  簇6: VolWeightedCloseThrust★(+0.064)
+  簇7: SqueezeReleaseMomentum★(+0.019)
+  簇8: HTFTrendLTFBreakout★(+0.176)
+  簇9: MTFPullbackResonance★(+0.050)
+  簇10: LondonNYSessionMomentum★(+0.068)
+                夏普内   夏普外  夏普全期  美元内   美元外  多头外  空头外  年正(全期) 选中
+组合                                                             
+A 全部等权         0.89  0.41  0.72  718   305  -32  434    0.79  ★
+B 簇代表等权        0.80  0.49  0.70  708   952   64  991    0.74   
+C 策略层等权        0.84  0.82  0.83  229   591  363  291    0.84   
+D 单因子 CMFFlow  0.81  0.56  0.73  744  1137  583  659    0.79   
+  CSCV（4 个组合方式 + 22 个单因子，共 26）：PBO=0.549，样本内最优在样本外夏普中位 +0.50
+
+DSR（研究层 N_eff≈19.8，另报告加上登记试验 78）
+  30MIN 样本内选中 B 簇代表等权：全期夏普 0.99  DSR@N_eff 0.932  DSR@N_eff+登记 0.641
+  1H 样本内选中 A 全部等权：全期夏普 0.68  DSR@N_eff 0.473  DSR@N_eff+登记 0.119

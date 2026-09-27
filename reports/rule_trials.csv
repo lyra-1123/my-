@@ -56,3 +56,13 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=10,2009-2014 sharpe_usd,0.2,49,0.76,1999,,5,验证2015-2019 净利-204 夏普-0.51
 2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=12.5,2009-2014 sharpe_usd,0.33,196,0.71,1870,,5,SELECTED 验证2015-2019 净利-12 夏普+0.01
 2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=15,2009-2014 sharpe_usd,0.16,60,0.73,1929,,5,验证2015-2019 净利-70 夏普-0.28
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E0 信号出场,IS sharpe_atr_now (must beat E0),0.51,123,1.04,2018,,10,E0 信号出场
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E1 信号+移动止损 k=2,IS sharpe_atr_now (must beat E0),0.27,-283,0.59,282,,10,E1 信号+移动止损 k=2
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E1 信号+移动止损 k=3,IS sharpe_atr_now (must beat E0),0.53,21,0.91,847,,10,E1 信号+移动止损 k=3
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E1 信号+移动止损 k=4,IS sharpe_atr_now (must beat E0),0.72,411,1.02,1842,,10,E1 信号+移动止损 k=4
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E2 信号+固定止损 k=1.5,IS sharpe_atr_now (must beat E0),0.33,-196,0.94,1257,,10,E2 信号+固定止损 k=1.5
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E2 信号+固定止损 k=2.5,IS sharpe_atr_now (must beat E0),0.66,343,1.13,1613,,10,E2 信号+固定止损 k=2.5
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E3 只用移动止损 k=3,IS sharpe_atr_now (must beat E0),0.55,34,0.91,874,,10,E3 只用移动止损 k=3
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E3 只用移动止损 k=4,IS sharpe_atr_now (must beat E0),0.88,620,0.85,1654,,10,SELECTED E3 只用移动止损 k=4
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E4 信号+固定止盈 k=3,IS sharpe_atr_now (must beat E0),0.17,-331,0.84,1251,,10,E4 信号+固定止盈 k=3
+2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E4 信号+固定止盈 k=5,IS sharpe_atr_now (must beat E0),0.4,-25,0.87,1280,,10,E4 信号+固定止盈 k=5

@@ -1,0 +1,10 @@
+# 数据文件和输出不入库
+data/
+*.xlsx
+*.xls
+*.CSV
+reconcile_detail*.csv
+__pycache__/
+# 策略源码不入库(仓库是公开的)：运行时放到 strategy_eval/ 下或用 --engine 指定路径
+strategy_eval/monitor_15min_signal.py
+strategy_eval/engine_v6.py

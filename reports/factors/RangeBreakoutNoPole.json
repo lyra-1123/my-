@@ -1,0 +1,522 @@
+{
+ "name": "RangeBreakoutNoPole",
+ "evaluated": "2026-09-27",
+ "split": "2020-01-01",
+ "results": {
+  "4H": {
+   "freq": "4H",
+   "main_h": 3,
+   "lookahead_ok": true,
+   "cost_hurdle": 0.027,
+   "ic": {
+    "1": [
+     NaN,
+     0.083
+    ],
+    "3": [
+     NaN,
+     0.0529
+    ],
+    "6": [
+     NaN,
+     0.0909
+    ]
+   },
+   "ic_in": NaN,
+   "ic_oos": 0.0529,
+   "icir": {
+    "ic_mean": NaN,
+    "icir": NaN,
+    "ic_t": NaN,
+    "n_periods": 0
+   },
+   "icir_in": {
+    "ic_mean": NaN,
+    "icir": NaN,
+    "ic_t": NaN,
+    "n_periods": 0
+   },
+   "icir_oos": {
+    "ic_mean": NaN,
+    "icir": NaN,
+    "ic_t": NaN,
+    "n_periods": 0
+   },
+   "ic_year": {
+    "2008": NaN,
+    "2009": NaN,
+    "2010": NaN,
+    "2011": NaN,
+    "2012": NaN,
+    "2013": NaN,
+    "2014": NaN,
+    "2015": NaN,
+    "2016": NaN,
+    "2017": NaN,
+    "2018": NaN,
+    "2019": NaN,
+    "2020": NaN,
+    "2021": NaN,
+    "2022": NaN,
+    "2023": NaN,
+    "2024": NaN,
+    "2025": NaN,
+    "2026": NaN
+   },
+   "ic_year_pos_ratio": NaN,
+   "bt_oos": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "bt_oos_reversed": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "signal_coverage": 0.0,
+   "atr_edge": {
+    "per_trip_atr_in": NaN,
+    "per_trip_atr_oos": NaN,
+    "per_trip_atr_recent3y": NaN,
+    "per_trip_atr_year": {},
+    "per_trip_atr_year_pos_ratio": NaN,
+    "swap_units_per_trip": 0.0,
+    "cost_now_atr": 0.0054
+   },
+   "verdict": "⚪ 数据不足"
+  },
+  "1H": {
+   "freq": "1H",
+   "main_h": 4,
+   "lookahead_ok": true,
+   "cost_hurdle": 0.054,
+   "ic": {
+    "1": [
+     0.0003,
+     0.0413
+    ],
+    "4": [
+     0.0206,
+     0.0409
+    ],
+    "12": [
+     -0.0297,
+     0.1352
+    ]
+   },
+   "ic_in": 0.0206,
+   "ic_oos": 0.0409,
+   "icir": {
+    "ic_mean": 0.0582,
+    "icir": 0.198,
+    "ic_t": 1.48,
+    "n_periods": 56
+   },
+   "icir_in": {
+    "ic_mean": 0.0723,
+    "icir": 0.276,
+    "ic_t": 1.79,
+    "n_periods": 42
+   },
+   "icir_oos": {
+    "ic_mean": 0.0161,
+    "icir": 0.042,
+    "ic_t": 0.16,
+    "n_periods": 14
+   },
+   "ic_year": {
+    "2008": NaN,
+    "2009": NaN,
+    "2010": 0.0028,
+    "2011": 0.0305,
+    "2012": 0.1488,
+    "2013": -0.141,
+    "2014": -0.0004,
+    "2015": 0.1965,
+    "2016": 0.2091,
+    "2017": 0.1088,
+    "2018": 0.0137,
+    "2019": -0.04,
+    "2020": -0.0087,
+    "2021": 0.0181,
+    "2022": 0.0458,
+    "2023": 0.0289,
+    "2024": -0.2201,
+    "2025": -0.0085,
+    "2026": -0.0135
+   },
+   "ic_year_pos_ratio": 0.59,
+   "bt_oos": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "bt_oos_reversed": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "signal_coverage": 0.0,
+   "atr_edge": {
+    "per_trip_atr_in": NaN,
+    "per_trip_atr_oos": NaN,
+    "per_trip_atr_recent3y": NaN,
+    "per_trip_atr_year": {},
+    "per_trip_atr_year_pos_ratio": NaN,
+    "swap_units_per_trip": 0.0,
+    "cost_now_atr": 0.0105
+   },
+   "verdict": "❌ 拒绝"
+  },
+  "30MIN": {
+   "freq": "30MIN",
+   "main_h": 4,
+   "lookahead_ok": true,
+   "cost_hurdle": 0.078,
+   "ic": {
+    "1": [
+     -0.0442,
+     -0.0294
+    ],
+    "4": [
+     -0.0632,
+     -0.0318
+    ],
+    "12": [
+     -0.0441,
+     -0.008
+    ]
+   },
+   "ic_in": -0.0632,
+   "ic_oos": -0.0318,
+   "icir": {
+    "ic_mean": -0.0125,
+    "icir": -0.055,
+    "ic_t": -0.77,
+    "n_periods": 197
+   },
+   "icir_in": {
+    "ic_mean": -0.0237,
+    "icir": -0.103,
+    "ic_t": -1.15,
+    "n_periods": 125
+   },
+   "icir_oos": {
+    "ic_mean": 0.007,
+    "icir": 0.031,
+    "ic_t": 0.27,
+    "n_periods": 72
+   },
+   "ic_year": {
+    "2008": NaN,
+    "2009": -0.0439,
+    "2010": -0.1135,
+    "2011": -0.0743,
+    "2012": -0.0117,
+    "2013": -0.1848,
+    "2014": -0.0132,
+    "2015": -0.0495,
+    "2016": 0.0423,
+    "2017": -0.0011,
+    "2018": 0.0507,
+    "2019": 0.0289,
+    "2020": 0.009,
+    "2021": 0.0203,
+    "2022": -0.0514,
+    "2023": -0.0943,
+    "2024": -0.0452,
+    "2025": 0.0536,
+    "2026": 0.0624
+   },
+   "ic_year_pos_ratio": 0.39,
+   "bt_oos": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "bt_oos_reversed": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "signal_coverage": 0.0,
+   "atr_edge": {
+    "per_trip_atr_in": NaN,
+    "per_trip_atr_oos": NaN,
+    "per_trip_atr_recent3y": NaN,
+    "per_trip_atr_year": {},
+    "per_trip_atr_year_pos_ratio": NaN,
+    "swap_units_per_trip": 0.0,
+    "cost_now_atr": 0.0151
+   },
+   "verdict": "❌ 拒绝"
+  },
+  "15MIN": {
+   "freq": "15MIN",
+   "main_h": 4,
+   "lookahead_ok": true,
+   "cost_hurdle": 0.113,
+   "ic": {
+    "1": [
+     -0.0365,
+     -0.0334
+    ],
+    "4": [
+     -0.0557,
+     -0.0298
+    ],
+    "16": [
+     -0.0663,
+     -0.0266
+    ]
+   },
+   "ic_in": -0.0557,
+   "ic_oos": -0.0298,
+   "icir": {
+    "ic_mean": -0.0352,
+    "icir": -0.228,
+    "ic_t": -3.31,
+    "n_periods": 211
+   },
+   "icir_in": {
+    "ic_mean": -0.0442,
+    "icir": -0.295,
+    "ic_t": -3.36,
+    "n_periods": 130
+   },
+   "icir_oos": {
+    "ic_mean": -0.0208,
+    "icir": -0.129,
+    "ic_t": -1.16,
+    "n_periods": 81
+   },
+   "ic_year": {
+    "2008": NaN,
+    "2009": -0.1156,
+    "2010": -0.0925,
+    "2011": -0.0305,
+    "2012": -0.0237,
+    "2013": -0.0916,
+    "2014": -0.0523,
+    "2015": -0.0308,
+    "2016": -0.0131,
+    "2017": 0.0191,
+    "2018": -0.0242,
+    "2019": -0.0972,
+    "2020": -0.0157,
+    "2021": -0.0613,
+    "2022": 0.054,
+    "2023": -0.0126,
+    "2024": 0.009,
+    "2025": -0.0369,
+    "2026": -0.0352
+   },
+   "ic_year_pos_ratio": 0.17,
+   "bt_oos": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "bt_oos_reversed": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "signal_coverage": 0.0,
+   "atr_edge": {
+    "per_trip_atr_in": NaN,
+    "per_trip_atr_oos": NaN,
+    "per_trip_atr_recent3y": NaN,
+    "per_trip_atr_year": {},
+    "per_trip_atr_year_pos_ratio": NaN,
+    "swap_units_per_trip": 0.0,
+    "cost_now_atr": 0.0217
+   },
+   "verdict": "🔄 方向相反"
+  },
+  "5MIN": {
+   "freq": "5MIN",
+   "main_h": 6,
+   "lookahead_ok": true,
+   "cost_hurdle": 0.202,
+   "ic": {
+    "1": [
+     -0.0165,
+     -0.0227
+    ],
+    "6": [
+     -0.0441,
+     -0.0348
+    ],
+    "24": [
+     -0.0678,
+     -0.035
+    ]
+   },
+   "ic_in": -0.0441,
+   "ic_oos": -0.0348,
+   "icir": {
+    "ic_mean": -0.0277,
+    "icir": -0.304,
+    "ic_t": -4.43,
+    "n_periods": 213
+   },
+   "icir_in": {
+    "ic_mean": -0.0346,
+    "icir": -0.381,
+    "ic_t": -4.37,
+    "n_periods": 132
+   },
+   "icir_oos": {
+    "ic_mean": -0.0164,
+    "icir": -0.181,
+    "ic_t": -1.62,
+    "n_periods": 81
+   },
+   "ic_year": {
+    "2008": NaN,
+    "2009": -0.1202,
+    "2010": -0.0463,
+    "2011": -0.0144,
+    "2012": -0.0252,
+    "2013": -0.0219,
+    "2014": -0.0349,
+    "2015": -0.0543,
+    "2016": -0.0166,
+    "2017": -0.0565,
+    "2018": -0.0896,
+    "2019": -0.0199,
+    "2020": -0.0399,
+    "2021": -0.0587,
+    "2022": -0.0218,
+    "2023": -0.0008,
+    "2024": -0.0509,
+    "2025": 0.0039,
+    "2026": -0.0231
+   },
+   "ic_year_pos_ratio": 0.06,
+   "bt_oos": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "bt_oos_reversed": {
+    "gross": 0.0,
+    "cost": 0.0,
+    "spread_cost": 0.0,
+    "swap_cost": 0.0,
+    "net": 0.0,
+    "net_ex_drift": 0.0,
+    "long_gross": 0.0,
+    "short_gross": 0.0,
+    "trips": 0,
+    "gross_per_trip": 0.0,
+    "time_in_mkt": 0.0,
+    "mdd": 0.0,
+    "sharpe": NaN
+   },
+   "signal_coverage": 0.0,
+   "atr_edge": {
+    "per_trip_atr_in": NaN,
+    "per_trip_atr_oos": NaN,
+    "per_trip_atr_recent3y": NaN,
+    "per_trip_atr_year": {},
+    "per_trip_atr_year_pos_ratio": NaN,
+    "swap_units_per_trip": 0.0,
+    "cost_now_atr": 0.0387
+   },
+   "verdict": "🔄 方向相反"
+  }
+ }
+}

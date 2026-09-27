@@ -1,0 +1,22 @@
+SecondEntryH2                 4H  IC内 +0.0231  IC外 +0.0024  ICIR +0.18/-0.01 t=+0.3  年度>0 0.65  净利     +278  去漂移     +281  次数    29  自检 OK  ❌ 拒绝
+SecondEntryH2                 1H  IC内 -0.0264  IC外 -0.0015  ICIR -0.23/-0.08 t=-2.5  年度>0 0.44  净利      +96  去漂移     +100  次数   133  自检 OK  ❌ 拒绝
+SecondEntryH2              30MIN  IC内 -0.0258  IC外 -0.0010  ICIR -0.30/-0.16 t=-3.6  年度>0 0.39  净利     +261  去漂移     +262  次数   271  自检 OK  ❌ 拒绝
+SecondEntryH2              15MIN  IC内 -0.0518  IC外 -0.0228  ICIR -0.52/-0.26 t=-6.0  年度>0 0.22  净利      +20  去漂移      +23  次数   453  自检 OK  ⏳ 当前波动下可行
+SecondEntryH2               5MIN  IC内 -0.0656  IC外 -0.0341  ICIR -0.84/-0.49 t=-10.2  年度>0 0.00  净利      -79  去漂移      -76  次数  1225  自检 OK  🔄 方向相反
+FirstEntryH1                  4H  IC内 -0.0138  IC外 +0.0122  ICIR -0.36/-0.04 t=-1.0  年度>0 0.44  净利     +395  去漂移     +403  次数    63  自检 OK  ❌ 拒绝
+FirstEntryH1                  1H  IC内 -0.0376  IC外 -0.0159  ICIR -0.37/-0.26 t=-4.8  年度>0 0.17  净利      +88  去漂移      +96  次数   236  自检 OK  🔄 方向相反
+FirstEntryH1               30MIN  IC内 -0.0404  IC外 -0.0104  ICIR -0.51/-0.23 t=-5.8  年度>0 0.28  净利     +165  去漂移     +169  次数   424  自检 OK  🔄 方向相反
+FirstEntryH1               15MIN  IC内 -0.0546  IC外 -0.0293  ICIR -0.72/-0.37 t=-8.4  年度>0 0.00  净利     -133  去漂移     -126  次数   759  自检 OK  🔄 方向相反
+FirstEntryH1                5MIN  IC内 -0.0726  IC外 -0.0323  ICIR -1.15/-0.57 t=-13.1  年度>0 0.00  净利      -51  去漂移      -48  次数  2324  自检 OK  🔄 方向相反
+FlagBreakout                  4H  IC内 +nan  IC外 +0.1413  ICIR +nan/+nan t=+nan  年度>0 nan  净利       +0  去漂移       +0  次数     0  自检 OK  ⚪ 数据不足
+FlagBreakout                  1H  IC内 -0.0558  IC外 +0.0748  ICIR +nan/+nan t=+nan  年度>0 0.56  净利      -25  去漂移      -22  次数     7  自检 OK  ❌ 拒绝
+FlagBreakout               30MIN  IC内 -0.1469  IC外 -0.1271  ICIR +nan/+nan t=+nan  年度>0 0.19  净利       -9  去漂移       -9  次数     3  自检 OK  🔄 方向相反（反向可盈利）
+FlagBreakout               15MIN  IC内 -0.0648  IC外 -0.0644  ICIR -0.09/-0.69 t=-1.2  年度>0 0.39  净利      -41  去漂移      -40  次数    19  自检 OK  ❌ 拒绝
+FlagBreakout                5MIN  IC内 -0.0874  IC外 +0.0160  ICIR -0.33/-0.13 t=-2.8  年度>0 0.39  净利      +31  去漂移      +32  次数    30  自检 OK  ❌ 拒绝
+RangeBreakoutNoPole           4H  IC内 +nan  IC外 +0.0529  ICIR +nan/+nan t=+nan  年度>0 nan  净利       +0  去漂移       +0  次数     0  自检 OK  ⚪ 数据不足
+RangeBreakoutNoPole           1H  IC内 +0.0206  IC外 +0.0409  ICIR +0.28/+0.04 t=+1.5  年度>0 0.59  净利       +0  去漂移       +0  次数     0  自检 OK  ❌ 拒绝
+RangeBreakoutNoPole        30MIN  IC内 -0.0632  IC外 -0.0318  ICIR -0.10/+0.03 t=-0.8  年度>0 0.39  净利       +0  去漂移       +0  次数     0  自检 OK  ❌ 拒绝
+RangeBreakoutNoPole        15MIN  IC内 -0.0557  IC外 -0.0298  ICIR -0.29/-0.13 t=-3.3  年度>0 0.17  净利       +0  去漂移       +0  次数     0  自检 OK  🔄 方向相反
+RangeBreakoutNoPole         5MIN  IC内 -0.0441  IC外 -0.0348  ICIR -0.38/-0.18 t=-4.4  年度>0 0.06  净利       +0  去漂移       +0  次数     0  自检 OK  🔄 方向相反
+
+因子库已更新: /home/user/my-/FACTOR_LIBRARY.md

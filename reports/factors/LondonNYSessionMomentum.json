@@ -24,6 +24,24 @@
    },
    "ic_in": 0.0128,
    "ic_oos": 0.0164,
+   "icir": {
+    "ic_mean": 0.0123,
+    "icir": 0.195,
+    "ic_t": 0.83,
+    "n_periods": 18
+   },
+   "icir_in": {
+    "ic_mean": 0.0105,
+    "icir": 0.136,
+    "ic_t": 0.45,
+    "n_periods": 11
+   },
+   "icir_oos": {
+    "ic_mean": 0.0152,
+    "icir": 0.411,
+    "ic_t": 1.09,
+    "n_periods": 7
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0861,
@@ -58,7 +76,8 @@
     "trips": 240,
     "gross_per_trip": 1.135,
     "time_in_mkt": 0.022,
-    "mdd": -238.9
+    "mdd": -238.9,
+    "sharpe": 0.32
    },
    "bt_oos_reversed": {
     "gross": -272.4,
@@ -72,7 +91,8 @@
     "trips": 240,
     "gross_per_trip": -1.135,
     "time_in_mkt": 0.022,
-    "mdd": -338.4
+    "mdd": -338.4,
+    "sharpe": -0.46
    },
    "signal_coverage": 0.0223,
    "atr_edge": {
@@ -126,6 +146,24 @@
    },
    "ic_in": -0.0012,
    "ic_oos": 0.012,
+   "icir": {
+    "ic_mean": -0.0064,
+    "icir": -0.039,
+    "ic_t": -0.56,
+    "n_periods": 209
+   },
+   "icir_in": {
+    "ic_mean": -0.0067,
+    "icir": -0.04,
+    "ic_t": -0.45,
+    "n_periods": 128
+   },
+   "icir_oos": {
+    "ic_mean": -0.0059,
+    "icir": -0.036,
+    "ic_t": -0.33,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0832,
@@ -160,7 +198,8 @@
     "trips": 245,
     "gross_per_trip": 2.151,
     "time_in_mkt": 0.025,
-    "mdd": -263.9
+    "mdd": -263.9,
+    "sharpe": 0.39
    },
    "bt_oos_reversed": {
     "gross": -527.0,
@@ -174,7 +213,8 @@
     "trips": 245,
     "gross_per_trip": -2.151,
     "time_in_mkt": 0.025,
-    "mdd": -657.5
+    "mdd": -657.5,
+    "sharpe": -0.47
    },
    "signal_coverage": 0.0236,
    "atr_edge": {
@@ -228,6 +268,24 @@
    },
    "ic_in": -0.0022,
    "ic_oos": 0.0107,
+   "icir": {
+    "ic_mean": -0.009,
+    "icir": -0.067,
+    "ic_t": -0.97,
+    "n_periods": 210
+   },
+   "icir_in": {
+    "ic_mean": -0.0129,
+    "icir": -0.094,
+    "ic_t": -1.06,
+    "n_periods": 129
+   },
+   "icir_oos": {
+    "ic_mean": -0.0028,
+    "icir": -0.022,
+    "ic_t": -0.19,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0705,
@@ -262,7 +320,8 @@
     "trips": 245,
     "gross_per_trip": 3.048,
     "time_in_mkt": 0.025,
-    "mdd": -224.5
+    "mdd": -224.5,
+    "sharpe": 0.61
    },
    "bt_oos_reversed": {
     "gross": -746.7,
@@ -276,7 +335,8 @@
     "trips": 245,
     "gross_per_trip": -3.048,
     "time_in_mkt": 0.025,
-    "mdd": -863.0
+    "mdd": -863.0,
+    "sharpe": -0.69
    },
    "signal_coverage": 0.0237,
    "atr_edge": {
@@ -330,6 +390,24 @@
    },
    "ic_in": -0.0095,
    "ic_oos": 0.01,
+   "icir": {
+    "ic_mean": -0.0099,
+    "icir": -0.107,
+    "ic_t": -1.54,
+    "n_periods": 210
+   },
+   "icir_in": {
+    "ic_mean": -0.0172,
+    "icir": -0.189,
+    "ic_t": -2.15,
+    "n_periods": 129
+   },
+   "icir_oos": {
+    "ic_mean": 0.0018,
+    "icir": 0.019,
+    "ic_t": 0.17,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0492,
@@ -364,7 +442,8 @@
     "trips": 245,
     "gross_per_trip": 3.468,
     "time_in_mkt": 0.025,
-    "mdd": -321.0
+    "mdd": -321.0,
+    "sharpe": 0.71
    },
    "bt_oos_reversed": {
     "gross": -849.6,
@@ -378,7 +457,8 @@
     "trips": 245,
     "gross_per_trip": -3.468,
     "time_in_mkt": 0.025,
-    "mdd": -1005.0
+    "mdd": -1005.0,
+    "sharpe": -0.8
    },
    "signal_coverage": 0.0238,
    "atr_edge": {
@@ -432,6 +512,24 @@
    },
    "ic_in": -0.0113,
    "ic_oos": 0.0044,
+   "icir": {
+    "ic_mean": -0.0105,
+    "icir": -0.158,
+    "ic_t": -2.29,
+    "n_periods": 210
+   },
+   "icir_in": {
+    "ic_mean": -0.0167,
+    "icir": -0.261,
+    "ic_t": -2.97,
+    "n_periods": 129
+   },
+   "icir_oos": {
+    "ic_mean": -0.0005,
+    "icir": -0.007,
+    "ic_t": -0.06,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0333,
@@ -466,7 +564,8 @@
     "trips": 245,
     "gross_per_trip": 3.255,
     "time_in_mkt": 0.025,
-    "mdd": -388.4
+    "mdd": -388.4,
+    "sharpe": 0.61
    },
    "bt_oos_reversed": {
     "gross": -797.6,
@@ -480,7 +579,8 @@
     "trips": 245,
     "gross_per_trip": -3.255,
     "time_in_mkt": 0.025,
-    "mdd": -1012.8
+    "mdd": -1012.8,
+    "sharpe": -0.69
    },
    "signal_coverage": 0.0243,
    "atr_edge": {

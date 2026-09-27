@@ -61,6 +61,24 @@ def rank_ic(f: pd.Series, y: pd.Series) -> float:
     return float(x.iloc[:, 0].rank().corr(x.iloc[:, 1].rank()))
 
 
+def ic_stats(f: pd.Series, y: pd.Series, freq: str, mask=None) -> dict:
+    """
+    ICIR：按期计算 Rank IC，ICIR = mean(IC)/std(IC)，t = ICIR*sqrt(期数)。
+    衡量信号稳定性：|ICIR| 越大，IC 的方向和大小越稳定。
+    计算周期必须远长于因子的持续时间：≤1H 用月度（约 213 期）；4H/1D 的趋势类因子回看达数周，
+    月内几乎不变，月度 IC 只反映"月内偏离"而漏掉跨月信息，因此用年度（18 期，统计功效较低）。
+    """
+    if mask is not None:
+        f, y = f[mask], y[mask]
+    key = f.index.to_period("Y" if freq in ("4H", "1D") else "M")
+    ics = pd.Series({k: rank_ic(f[key == k], y[key == k]) for k in key.unique()}).dropna()
+    if len(ics) < 6 or ics.std() == 0:
+        return {"ic_mean": float("nan"), "icir": float("nan"), "ic_t": float("nan"), "n_periods": int(len(ics))}
+    icir = ics.mean() / ics.std()
+    return {"ic_mean": round(float(ics.mean()), 4), "icir": round(float(icir), 3),
+            "ic_t": round(float(icir * np.sqrt(len(ics))), 2), "n_periods": int(len(ics))}
+
+
 def positions(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Series:
     """迟滞信号 -> 实际持仓（已 shift 到 t+1 开盘执行）。"""
     raw = pd.Series(np.nan, index=z.index)
@@ -116,6 +134,9 @@ def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float =
     net = (bar - cost).fillna(0.0)
     trips = float(pos.diff().abs().sum() / 2.0)
     eq = net.cumsum()
+    daily = net.groupby(net.index.normalize()).sum()
+    daily = daily[daily.index.dayofweek < 5]
+    sharpe = float(daily.mean() / daily.std() * np.sqrt(252)) if daily.std() > 0 else float("nan")
     return {
         "gross": round(float(bar.sum()), 1),
         "cost": round(float(cost.sum()), 1),
@@ -129,6 +150,7 @@ def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float =
         "gross_per_trip": round(float(bar.sum() / max(trips, 1)), 3),
         "time_in_mkt": round(float((pos != 0).mean()), 3),
         "mdd": round(float((eq - eq.cummax()).min()), 1),
+        "sharpe": round(sharpe, 2),
     }
 
 
@@ -207,6 +229,7 @@ def evaluate_freq(spec: FactorSpec, df: pd.DataFrame, freq: str, split: pd.Times
         y = forward_return(df, h)
         ic[h] = (rank_ic(fac[ins], y[ins]), rank_ic(fac[oos], y[oos]))
     y = forward_return(df, main_h)
+    icir_all, icir_in, icir_oos = ic_stats(fac, y, freq), ic_stats(fac, y, freq, ins), ic_stats(fac, y, freq, oos)
     years = sorted(set(df.index.year))
     ic_year = {int(yr): rank_ic(fac[df.index.year == yr], y[df.index.year == yr]) for yr in years}
     valid = [v for v in ic_year.values() if not np.isnan(v)]
@@ -216,6 +239,7 @@ def evaluate_freq(spec: FactorSpec, df: pd.DataFrame, freq: str, split: pd.Times
         "cost_hurdle": round(float(SPREAD / atr(check_input(df), params(freq)["atr"]).median()), 3),
         "ic": {str(h): [round(a, 4), round(b, 4)] for h, (a, b) in ic.items()},
         "ic_in": round(ic[main_h][0], 4), "ic_oos": round(ic[main_h][1], 4),
+        "icir": icir_all, "icir_in": icir_in, "icir_oos": icir_oos,
         "ic_year": {k: round(v, 4) for k, v in ic_year.items()},
         "ic_year_pos_ratio": round(float(np.mean([v > 0 for v in valid])), 2) if valid else float("nan"),
         "bt_oos": backtest(df[oos], zx[oos]),
@@ -248,16 +272,18 @@ def build_library_md() -> str:
         verdicts = " ".join(f"{f}:{res[f]['verdict'].split()[0]}" for f in res)
         rows.append(f"| [{name}](#{name.lower()}) | {spec.cn_name} | {spec.family} | {verdicts} | "
                     f"{best['freq']} ({best['bt_oos']['net']:+.0f}$) | {rep['evaluated']} |")
-        t = ["| 频率 | 判定 | IC内 | IC外 | 年度IC>0占比 | 样本外净利$ | 去漂移净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 每笔毛利ATR 内/外/近3年 | 年度ATR毛利>0 | 当前成本ATR(点差+过夜) |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        t = ["| 频率 | 判定 | IC内 | IC外 | ICIR内/外(t) | 年度IC>0占比 | 样本外净利$ | 去漂移净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 每笔毛利ATR 内/外/近3年 | 年度ATR毛利>0 | 当前成本ATR(点差+过夜) | 夏普外 |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for f, m in res.items():
             b, r = m["bt_oos"], m["bt_oos_reversed"]
             t.append(f"| {f} (h={m['main_h']}) | {m['verdict']} | {_fmt(m['ic_in'],4)} | {_fmt(m['ic_oos'],4)} | "
+                     f"{_fmt(m['icir_in']['icir'],2)} / {_fmt(m['icir_oos']['icir'],2)} ({_fmt(m['icir']['ic_t'],1)}) | "
                      f"{_fmt(m['ic_year_pos_ratio'],2)} | {b['net']:+.0f} | {b.get('net_ex_drift', float('nan')):+.0f} | {b['long_gross']:+.0f} | {b['short_gross']:+.0f} | "
                      f"{b['trips']} | {b['gross_per_trip']:+.3f} | {r['net']:+.0f} | "
                      + (f"{e['per_trip_atr_in']:+.3f} / {e['per_trip_atr_oos']:+.3f} / {e['per_trip_atr_recent3y']:+.3f} | "
                         f"{_fmt(e['per_trip_atr_year_pos_ratio'],2)} | {e['cost_now_atr']:.3f} |"
-                        if (e := m.get("atr_edge")) else "— | — | — |"))
+                        if (e := m.get("atr_edge")) else "— | — | — |")
+                     + f" {_fmt(b.get('sharpe'), 2)} |")
         la = all(m["lookahead_ok"] for m in res.values())
         cards.append("\n".join([
             f"### {name}", "",
@@ -320,10 +346,15 @@ def main() -> None:
                 res[freq] = m
                 b = m["bt_oos"]
                 print(f"{spec.name:<26}{freq:>6}  IC内 {m['ic_in']:+.4f}  IC外 {m['ic_oos']:+.4f}  "
+                      f"ICIR {m['icir_in']['icir']:+.2f}/{m['icir_oos']['icir']:+.2f} t={m['icir']['ic_t']:+.1f}  "
                       f"年度>0 {m['ic_year_pos_ratio']:.2f}  净利 {b['net']:+8.0f}  去漂移 {b['net_ex_drift']:+8.0f}  次数 {b['trips']:>5}  "
                       f"自检 {'OK' if m['lookahead_ok'] else 'FAIL'}  {m['verdict']}")
+            out = os.path.join(REPORT_DIR, f"{spec.name}.json")
+            if os.path.exists(out):                       # 只重跑部分频率时，保留其他频率的已有结果
+                prev = json.load(open(out, encoding="utf-8"))["results"]
+                res = {f: res.get(f, prev.get(f)) for f in ALL_FREQS if f in res or f in prev}
             rep = {"name": spec.name, "evaluated": str(date.today()), "split": args.split, "results": res}
-            with open(os.path.join(REPORT_DIR, f"{spec.name}.json"), "w", encoding="utf-8") as fh:
+            with open(out, "w", encoding="utf-8") as fh:
                 json.dump(rep, fh, ensure_ascii=False, indent=1)
 
     with open(LIBRARY_MD, "w", encoding="utf-8") as fh:

@@ -24,6 +24,24 @@
    },
    "ic_in": -0.0222,
    "ic_oos": -0.008,
+   "icir": {
+    "ic_mean": -0.0656,
+    "icir": -0.632,
+    "ic_t": -2.68,
+    "n_periods": 18
+   },
+   "icir_in": {
+    "ic_mean": -0.0736,
+    "icir": -0.578,
+    "ic_t": -1.92,
+    "n_periods": 11
+   },
+   "icir_oos": {
+    "ic_mean": -0.0531,
+    "icir": -0.93,
+    "ic_t": -2.46,
+    "n_periods": 7
+   },
    "ic_year": {
     "2008": NaN,
     "2009": 0.0088,
@@ -58,7 +76,8 @@
     "trips": 29,
     "gross_per_trip": 10.54,
     "time_in_mkt": 0.444,
-    "mdd": -1091.1
+    "mdd": -1091.1,
+    "sharpe": -0.06
    },
    "bt_oos_reversed": {
     "gross": -305.7,
@@ -72,7 +91,8 @@
     "trips": 29,
     "gross_per_trip": -10.54,
     "time_in_mkt": 0.444,
-    "mdd": -1632.6
+    "mdd": -1632.6,
+    "sharpe": -0.23
    },
    "signal_coverage": 0.2001,
    "atr_edge": {
@@ -126,6 +146,24 @@
    },
    "ic_in": -0.0056,
    "ic_oos": 0.0053,
+   "icir": {
+    "ic_mean": -0.0031,
+    "icir": -0.084,
+    "ic_t": -0.36,
+    "n_periods": 18
+   },
+   "icir_in": {
+    "ic_mean": -0.0059,
+    "icir": -0.149,
+    "ic_t": -0.49,
+    "n_periods": 11
+   },
+   "icir_oos": {
+    "ic_mean": 0.0013,
+    "icir": 0.035,
+    "ic_t": 0.09,
+    "n_periods": 7
+   },
    "ic_year": {
     "2008": NaN,
     "2009": 0.0234,
@@ -160,7 +198,8 @@
     "trips": 80,
     "gross_per_trip": 14.081,
     "time_in_mkt": 0.379,
-    "mdd": -963.9
+    "mdd": -963.9,
+    "sharpe": 0.15
    },
    "bt_oos_reversed": {
     "gross": -1126.5,
@@ -174,7 +213,8 @@
     "trips": 80,
     "gross_per_trip": -14.081,
     "time_in_mkt": 0.379,
-    "mdd": -2351.0
+    "mdd": -2351.0,
+    "sharpe": -0.4
    },
    "signal_coverage": 0.174,
    "atr_edge": {
@@ -228,6 +268,24 @@
    },
    "ic_in": -0.0097,
    "ic_oos": -0.0014,
+   "icir": {
+    "ic_mean": -0.0427,
+    "icir": -0.553,
+    "ic_t": -8.07,
+    "n_periods": 213
+   },
+   "icir_in": {
+    "ic_mean": -0.0474,
+    "icir": -0.641,
+    "ic_t": -7.37,
+    "n_periods": 132
+   },
+   "icir_oos": {
+    "ic_mean": -0.0351,
+    "icir": -0.426,
+    "ic_t": -3.84,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": 0.0146,
@@ -262,7 +320,8 @@
     "trips": 740,
     "gross_per_trip": 0.665,
     "time_in_mkt": 0.273,
-    "mdd": -820.0
+    "mdd": -820.0,
+    "sharpe": 0.15
    },
    "bt_oos_reversed": {
     "gross": -492.1,
@@ -276,7 +335,8 @@
     "trips": 740,
     "gross_per_trip": -0.665,
     "time_in_mkt": 0.273,
-    "mdd": -1228.5
+    "mdd": -1228.5,
+    "sharpe": -0.3
    },
    "signal_coverage": 0.1875,
    "atr_edge": {
@@ -330,6 +390,24 @@
    },
    "ic_in": -0.0148,
    "ic_oos": -0.0019,
+   "icir": {
+    "ic_mean": -0.0311,
+    "icir": -0.54,
+    "ic_t": -7.89,
+    "n_periods": 213
+   },
+   "icir_in": {
+    "ic_mean": -0.0355,
+    "icir": -0.658,
+    "ic_t": -7.56,
+    "n_periods": 132
+   },
+   "icir_oos": {
+    "ic_mean": -0.024,
+    "icir": -0.382,
+    "ic_t": -3.44,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.018,
@@ -364,7 +442,8 @@
     "trips": 1012,
     "gross_per_trip": 0.607,
     "time_in_mkt": 0.3,
-    "mdd": -754.2
+    "mdd": -754.2,
+    "sharpe": 0.14
    },
    "bt_oos_reversed": {
     "gross": -614.5,
@@ -378,7 +457,8 @@
     "trips": 1012,
     "gross_per_trip": -0.607,
     "time_in_mkt": 0.3,
-    "mdd": -1429.5
+    "mdd": -1429.5,
+    "sharpe": -0.32
    },
    "signal_coverage": 0.1943,
    "atr_edge": {
@@ -432,6 +512,24 @@
    },
    "ic_in": -0.0269,
    "ic_oos": -0.0085,
+   "icir": {
+    "ic_mean": -0.0258,
+    "icir": -0.709,
+    "ic_t": -10.35,
+    "n_periods": 213
+   },
+   "icir_in": {
+    "ic_mean": -0.0318,
+    "icir": -0.929,
+    "ic_t": -10.68,
+    "n_periods": 132
+   },
+   "icir_oos": {
+    "ic_mean": -0.0159,
+    "icir": -0.423,
+    "ic_t": -3.8,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0336,
@@ -466,7 +564,8 @@
     "trips": 1761,
     "gross_per_trip": 0.655,
     "time_in_mkt": 0.31,
-    "mdd": -671.9
+    "mdd": -671.9,
+    "sharpe": 0.22
    },
    "bt_oos_reversed": {
     "gross": -1153.4,
@@ -480,7 +579,8 @@
     "trips": 1761,
     "gross_per_trip": -0.655,
     "time_in_mkt": 0.31,
-    "mdd": -1948.5
+    "mdd": -1948.5,
+    "sharpe": -0.51
    },
    "signal_coverage": 0.1799,
    "atr_edge": {
@@ -534,6 +634,24 @@
    },
    "ic_in": -0.035,
    "ic_oos": -0.0158,
+   "icir": {
+    "ic_mean": -0.0292,
+    "icir": -0.991,
+    "ic_t": -14.46,
+    "n_periods": 213
+   },
+   "icir_in": {
+    "ic_mean": -0.0359,
+    "icir": -1.253,
+    "ic_t": -14.39,
+    "n_periods": 132
+   },
+   "icir_oos": {
+    "ic_mean": -0.0182,
+    "icir": -0.663,
+    "ic_t": -5.96,
+    "n_periods": 81
+   },
    "ic_year": {
     "2008": NaN,
     "2009": -0.0455,
@@ -568,7 +686,8 @@
     "trips": 4042,
     "gross_per_trip": 0.374,
     "time_in_mkt": 0.344,
-    "mdd": -893.5
+    "mdd": -893.5,
+    "sharpe": 0.2
    },
    "bt_oos_reversed": {
     "gross": -1513.2,
@@ -582,7 +701,8 @@
     "trips": 4042,
     "gross_per_trip": -0.374,
     "time_in_mkt": 0.344,
-    "mdd": -2505.9
+    "mdd": -2505.9,
+    "sharpe": -0.82
    },
    "signal_coverage": 0.2014,
    "atr_edge": {

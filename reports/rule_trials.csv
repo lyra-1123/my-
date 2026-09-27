@@ -1,0 +1,1 @@
+date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_sharpe,oos_net_ex_drift,oos_atr_edge_ratio,n_trials_for_factor,note

@@ -69,7 +69,9 @@ def positions(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Ser
 
 def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float = 1.0) -> dict:
     pos = positions(z)
-    bar = pos * (df["open"].shift(-1) - df["open"]) * oz
+    move = df["open"].shift(-1) - df["open"]
+    bar = pos * move * oz
+    bar_ex = pos * (move - move.mean()) * oz          # 去掉样本期平均漂移（牛市 beta）后的毛利
     cost = pos.diff().abs().fillna(pos.abs()) * spread / 2.0 * oz
     net = (bar - cost).fillna(0.0)
     trips = float(pos.diff().abs().sum() / 2.0)
@@ -78,12 +80,43 @@ def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float =
         "gross": round(float(bar.sum()), 1),
         "cost": round(float(cost.sum()), 1),
         "net": round(float(net.sum()), 1),
+        "net_ex_drift": round(float((bar_ex - cost).sum()), 1),
         "long_gross": round(float(bar[pos > 0].sum()), 1),
         "short_gross": round(float(bar[pos < 0].sum()), 1),
         "trips": int(round(trips)),
         "gross_per_trip": round(float(bar.sum() / max(trips, 1)), 3),
         "time_in_mkt": round(float((pos != 0).mean()), 3),
         "mdd": round(float((eq - eq.cummax()).min()), 1),
+    }
+
+
+def atr_edge(df: pd.DataFrame, z: pd.Series, freq: str) -> dict:
+    """
+    以 ATR 为单位、逐年去漂移后的每笔毛利（与价格水平/波动率无关），逐年统计。
+    固定 0.2 美元点差在不同波动时期对应的 ATR 成本差异巨大（2015 年 15MIN≈0.15 ATR，2026 年≈0.02 ATR），
+    因此还要与"当前"成本（最近 1 年点差/ATR 中位数）比较，判断信号在当下是否可交易。
+    """
+    a = atr(df, params(freq)["atr"]).shift(1)
+    pos = positions(z)
+    yr = df.index.year
+    m_atr = (df["open"].shift(-1) - df["open"]) / a
+    m_atr = m_atr - m_atr.groupby(yr).transform("mean")      # 逐年去漂移（剔除当年金价单边行情的 beta）
+    g = pos * m_atr
+    trips = pos.diff().abs() / 2
+    per_year = (g.groupby(yr).sum() / trips.groupby(yr).sum().replace(0, np.nan)).dropna()
+    last = df.index >= df.index[-1] - pd.Timedelta(days=365)
+    recent = df.index >= df.index[-1] - pd.Timedelta(days=3 * 365)
+    split = pd.Timestamp(SPLIT_DEFAULT)
+    ins, oos = df.index < split, df.index >= split
+
+    def pt(m):
+        n = float(trips[m].sum())
+        return round(float(g[m].sum() / n), 4) if n > 0 else float("nan")
+    return {
+        "per_trip_atr_in": pt(ins), "per_trip_atr_oos": pt(oos), "per_trip_atr_recent3y": pt(recent),
+        "per_trip_atr_year": {int(k): round(float(v), 4) for k, v in per_year.items()},
+        "per_trip_atr_year_pos_ratio": round(float((per_year > 0).mean()), 2) if len(per_year) else float("nan"),
+        "cost_now_atr": round(float((SPREAD / a[last]).median()), 4),
     }
 
 
@@ -102,11 +135,16 @@ def verdict(m: dict) -> str:
     if any(pd.isna(v) for v in (ii, io, cons)):
         return "⚪ 数据不足"
     ic_ok = ii > 0.01 and io > 0.01 and cons >= 0.7
-    if ic_ok and bt["net"] > 0 and bt["trips"] >= 100 and bt["long_gross"] > 0 and bt["short_gross"] > 0:
+    if (ic_ok and bt["net"] > 0 and bt.get("net_ex_drift", 0) > 0 and bt["trips"] >= 100
+            and bt["long_gross"] > 0 and bt["short_gross"] > 0):
         return "✅ 候选"
     if ic_ok and bt["net"] <= 0:
         return "💸 有效但成本不可行"
-    if ii > 0 and io > 0 and bt["net"] > 0 and bt["trips"] >= 30:
+    e = m.get("atr_edge")
+    if (e and e["per_trip_atr_in"] > 0 and e["per_trip_atr_oos"] > 0 and e["per_trip_atr_year_pos_ratio"] >= 0.75
+            and e["per_trip_atr_recent3y"] > 1.5 * e["cost_now_atr"] and bt["trips"] >= 100):
+        return "⏳ 当前波动下可行"
+    if ii > 0 and io > 0 and bt["net"] > 0 and bt.get("net_ex_drift", 0) > 0 and bt["trips"] >= 30:
         return "🟡 观察"
     if ii < -0.01 and io < -0.01 and cons <= 0.3:
         return "🔄 方向相反" + ("（反向可盈利）" if rv["net"] > 0 else "")
@@ -137,6 +175,7 @@ def evaluate_freq(spec: FactorSpec, df: pd.DataFrame, freq: str, split: pd.Times
         "bt_oos": backtest(df[oos], fac[oos]),
         "bt_oos_reversed": backtest(df[oos], -fac[oos]),
         "signal_coverage": round(float((fac.abs() > ENTRY).mean()), 4),
+        "atr_edge": atr_edge(df, fac, freq),
     }
     m["verdict"] = verdict(m)
     return m
@@ -163,13 +202,16 @@ def build_library_md() -> str:
         verdicts = " ".join(f"{f}:{res[f]['verdict'].split()[0]}" for f in res)
         rows.append(f"| [{name}](#{name.lower()}) | {spec.cn_name} | {spec.family} | {verdicts} | "
                     f"{best['freq']} ({best['bt_oos']['net']:+.0f}$) | {rep['evaluated']} |")
-        t = ["| 频率 | 判定 | IC内 | IC外 | 年度IC>0占比 | 样本外净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 点差/ATR |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        t = ["| 频率 | 判定 | IC内 | IC外 | 年度IC>0占比 | 样本外净利$ | 去漂移净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 每笔毛利ATR 内/外/近3年 | 年度ATR毛利>0 | 当前点差ATR |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for f, m in res.items():
             b, r = m["bt_oos"], m["bt_oos_reversed"]
             t.append(f"| {f} (h={m['main_h']}) | {m['verdict']} | {_fmt(m['ic_in'],4)} | {_fmt(m['ic_oos'],4)} | "
-                     f"{_fmt(m['ic_year_pos_ratio'],2)} | {b['net']:+.0f} | {b['long_gross']:+.0f} | {b['short_gross']:+.0f} | "
-                     f"{b['trips']} | {b['gross_per_trip']:+.3f} | {r['net']:+.0f} | {m['cost_hurdle']:.3f} |")
+                     f"{_fmt(m['ic_year_pos_ratio'],2)} | {b['net']:+.0f} | {b.get('net_ex_drift', float('nan')):+.0f} | {b['long_gross']:+.0f} | {b['short_gross']:+.0f} | "
+                     f"{b['trips']} | {b['gross_per_trip']:+.3f} | {r['net']:+.0f} | "
+                     + (f"{e['per_trip_atr_in']:+.3f} / {e['per_trip_atr_oos']:+.3f} / {e['per_trip_atr_recent3y']:+.3f} | "
+                        f"{_fmt(e['per_trip_atr_year_pos_ratio'],2)} | {e['cost_now_atr']:.3f} |"
+                        if (e := m.get("atr_edge")) else "— | — | — |"))
         la = all(m["lookahead_ok"] for m in res.values())
         cards.append("\n".join([
             f"### {name}", "",
@@ -185,7 +227,7 @@ def build_library_md() -> str:
         "> 本文件由 `python -m factors.evaluate` 自动生成，请勿手改。",
         f"> 数据：Dukascopy XAUUSD M1（BID，UTC），样本内 < {SPLIT_DEFAULT} ≤ 样本外。"
         "成本：0.01 手点差 0.2 美元；开仓 |z|>1.5、平仓 |z|<0.3；信号 t 收盘、t+1 开盘成交。", "",
-        "判定：✅ 候选 · 🟡 观察 · 💸 有效但成本不可行 · 🔄 方向相反 · ❌ 拒绝 · ⚪ 数据不足"
+        "判定：✅ 候选 · ⏳ 当前波动下可行 · 🟡 观察 · 💸 有效但成本不可行 · 🔄 方向相反 · ❌ 拒绝 · ⚪ 数据不足"
         "（规则见 `.claude/skills/xauusd-factor-mining/references/evaluation.md`）", "",
         "## 总表", "",
         "| 因子 | 中文名 | 家族 | 各频率判定 | 样本外最佳（净利/0.01手） | 评估日期 |",
@@ -232,7 +274,7 @@ def main() -> None:
                 res[freq] = m
                 b = m["bt_oos"]
                 print(f"{spec.name:<26}{freq:>6}  IC内 {m['ic_in']:+.4f}  IC外 {m['ic_oos']:+.4f}  "
-                      f"年度>0 {m['ic_year_pos_ratio']:.2f}  净利 {b['net']:+8.0f}  次数 {b['trips']:>5}  "
+                      f"年度>0 {m['ic_year_pos_ratio']:.2f}  净利 {b['net']:+8.0f}  去漂移 {b['net_ex_drift']:+8.0f}  次数 {b['trips']:>5}  "
                       f"自检 {'OK' if m['lookahead_ok'] else 'FAIL'}  {m['verdict']}")
             rep = {"name": spec.name, "evaluated": str(date.today()), "split": args.split, "results": res}
             with open(os.path.join(REPORT_DIR, f"{spec.name}.json"), "w", encoding="utf-8") as fh:

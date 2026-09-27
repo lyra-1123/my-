@@ -1,0 +1,10 @@
+IntradaySeasonality        15MIN  IC内 +0.0272  IC外 -0.0065  ICIR +0.48/-0.27 t=+3.2  年度>0 0.61  净利    -1972  去漂移    -2121  次数 10234  自检 OK  ❌ 拒绝
+IntradaySeasonality        30MIN  IC内 +0.0291  IC外 +0.0012  ICIR +0.42/-0.06 t=+3.6  年度>0 0.67  净利    -1330  去漂移    -1279  次数  4816  自检 OK  ❌ 拒绝
+IntradaySeasonality           1H  IC内 +0.0320  IC外 -0.0002  ICIR +0.29/-0.14 t=+2.0  年度>0 0.67  净利     -238  去漂移     -127  次数  2517  自检 OK  ❌ 拒绝
+SettlementMomentum         15MIN  IC内 +0.0037  IC外 -0.0116  ICIR +0.04/-0.13 t=-0.4  年度>0 0.61  净利     +184  去漂移     +186  次数   297  自检 OK  ❌ 拒绝
+SettlementMomentum         30MIN  IC内 +0.0007  IC外 -0.0111  ICIR -0.03/-0.15 t=-1.1  年度>0 0.61  净利     +184  去漂移     +186  次数   297  自检 OK  ❌ 拒绝
+RealizedSkewReversal       15MIN  IC内 +0.0135  IC外 +0.0033  ICIR +0.51/+0.20 t=+5.5  年度>0 0.78  净利    -1559  去漂移    -1547  次数   794  自检 OK  ❌ 拒绝
+RealizedSkewReversal       30MIN  IC内 +0.0118  IC外 +0.0032  ICIR +0.38/+0.16 t=+4.1  年度>0 0.72  净利    -1102  去漂移    -1126  次数   739  自检 OK  ❌ 拒绝
+RealizedSkewReversal          1H  IC内 +0.0071  IC外 +0.0127  ICIR +0.26/+0.29 t=+4.0  年度>0 0.72  净利     -723  去漂移     -730  次数   728  自检 OK  ❌ 拒绝
+
+因子库已更新: /home/user/my-/FACTOR_LIBRARY.md

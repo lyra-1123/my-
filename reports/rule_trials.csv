@@ -77,3 +77,17 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,overnight exit=0.6,IS sharpe_atr_now (must beat strict 0.3),0.31,-313,0.4,795,,11,overnight exit=0.6
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 2×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.56,708,0.75,1742,,11,state exit=0.3 + 移动止损 2×日ATR
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 3×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.43,468,0.55,1382,,11,state exit=0.3 + 移动止损 3×日ATR
+2026-09-27,IntradaySeasonality,15MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.038,-0.88,-2120.8,-0.97,3,❌ 拒绝；ICIR t=3.22；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,IntradaySeasonality,30MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0412,-0.6,-1279.2,-0.79,3,❌ 拒绝；ICIR t=3.61；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,IntradaySeasonality,1H,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.068,-0.13,-126.8,0.13,3,❌ 拒绝；ICIR t=1.97；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,SettlementMomentum,15MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.1553,0.3,186.3,6.53,8,❌ 拒绝；ICIR t=-0.44；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.1125,0.3,186.3,7.65,8,❌ 拒绝；ICIR t=-1.13；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,RealizedSkewReversal,15MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,-0.0697,-0.58,-1546.8,-10.35,3,❌ 拒绝；ICIR t=5.54；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,RealizedSkewReversal,30MIN,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0117,-0.45,-1126.0,-12.98,3,❌ 拒绝；ICIR t=4.13；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,RealizedSkewReversal,1H,batch13 intraday-info,unified,1.5/0.3 先验参数,PRE-REGISTERED (reports/intraday_batch13_prereg.md),,-0.0883,-0.31,-729.9,-14.13,3,❌ 拒绝；ICIR t=3.96；is_net_ex_drift 列为样本内每笔 ATR
+2026-09-27,SettlementMomentum,15MIN,batch13 intraday-info,event_study,结算 12:30~13:30（主） 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0272,,0.0028,0.35,8,事件研究 t 内/外 0.98/0.12；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,SettlementMomentum,15MIN,batch13 intraday-info,event_study,对照 10:30~11:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0583,,0.0084,2.75,8,事件研究 t 内/外 1.6/0.21；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,SettlementMomentum,15MIN,batch13 intraday-info,event_study,对照 14:30~15:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0597,,-0.0181,0.56,8,事件研究 t 内/外 2.64/-0.64；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,结算 12:30~13:30（主） 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0224,,0.0049,0.68,8,事件研究 t 内/外 1.05/0.27；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,对照 10:30~11:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0473,,0.0091,2.99,8,事件研究 t 内/外 1.7/0.29；列为每笔去漂移 ATR（非美元）；未通过
+2026-09-27,SettlementMomentum,30MIN,batch13 intraday-info,event_study,对照 14:30~15:30 持有 1 小时，sign(R),PRE-REGISTERED (reports/intraday_batch13_prereg.md),,0.0442,,-0.0128,0.79,8,事件研究 t 内/外 2.63/-0.6；列为每笔去漂移 ATR（非美元）；未通过

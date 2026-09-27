@@ -28,6 +28,7 @@ import datetime as dt
 import glob
 import lzma
 import os
+import random
 import struct
 import sys
 import time
@@ -41,13 +42,14 @@ DIVISOR = {"XAUUSD": 1000, "XAGUSD": 1000}
 REC = struct.Struct(">5if")
 
 
-def fetch(sym: str, side: str, day: dt.date, raw_dir: str, retries: int = 5) -> bytes:
+def fetch(sym: str, side: str, day: dt.date, raw_dir: str, retries: int = 8) -> bytes:
     """下载某日原始文件（带缓存与重试）；周末/无数据返回 b""。"""
     path = os.path.join(raw_dir, sym, side, f"{day:%Y%m%d}.bi5")
     if os.path.exists(path):
         return open(path, "rb").read()
     url = URL.format(sym=sym, y=day.year, m=day.month - 1, d=day.day, side=side)   # 月份从 0 开始
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    last = ""
     for k in range(retries):
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
@@ -57,11 +59,12 @@ def fetch(sym: str, side: str, day: dt.date, raw_dir: str, retries: int = 5) -> 
             if e.code == 404:
                 data = b""
                 break
-            time.sleep(2 ** k)
-        except (urllib.error.URLError, TimeoutError, ConnectionError):
-            time.sleep(2 ** k)
+            last = f"HTTP {e.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+            last = f"{type(e).__name__}: {e}"
+        time.sleep(min(60, 2 ** k) + random.random())      # 限流时逐步拉长等待
     else:
-        raise RuntimeError(f"下载失败（已重试 {retries} 次）：{url}")
+        raise RuntimeError(f"{day} 下载失败（重试 {retries} 次，最后错误 {last}）：{url}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path + ".part", "wb") as fh:
         fh.write(data)
@@ -101,14 +104,32 @@ def download(sym: str, side: str, start: dt.date, end: dt.date, out_dir: str, wo
     raw_dir = os.path.join(out_dir, "raw_dukascopy")
     all_days = list(days(start, end))
     by_year: dict[int, list] = {}
+    failed: list[tuple[dt.date, str]] = []
+
+    def safe(d):
+        try:
+            return fetch(sym, side, d, raw_dir)
+        except RuntimeError as e:                      # 单天失败不中断整个任务，结束时统一报告
+            return e
+
     done = 0
     with ThreadPoolExecutor(workers) as ex:
-        for day, data in zip(all_days, ex.map(lambda d: fetch(sym, side, d, raw_dir), all_days)):
-            by_year.setdefault(day.year, []).extend(parse(data, day, div))
+        for day, data in zip(all_days, ex.map(safe, all_days)):
+            if isinstance(data, Exception):
+                failed.append((day, str(data)))
+                print(f"  ！{data}", flush=True)
+            else:
+                by_year.setdefault(day.year, []).extend(parse(data, day, div))
             done += 1
             if done % 100 == 0 or done == len(all_days):
-                print(f"  {sym} {side}: {done}/{len(all_days)} 天（{day}）", flush=True)
+                print(f"  {sym} {side}: {done}/{len(all_days)} 天（{day}），失败 {len(failed)} 天", flush=True)
+    bad_years = {d.year for d, _ in failed}
+    if failed:
+        print(f"\n有 {len(failed)} 天下载失败（年份 {sorted(bad_years)} 暂不写出，避免生成不完整的文件）。"
+              f"\n已下载的日期已缓存，直接重跑同一条命令即可续传；若反复失败，可加 --workers 1 再试。")
     for y, rows in sorted(by_year.items()):
+        if y in bad_years:
+            continue
         rows.sort(key=lambda r: r[0])
         path = os.path.join(out_dir, f"DAT_ASCII_{sym}_{side}_M1_{y}.csv")
         with open(path, "w", encoding="ascii") as fh:
@@ -153,7 +174,7 @@ def main() -> None:
     ap.add_argument("--start", default="2009-01-01")
     ap.add_argument("--end", default=str(dt.date.today() - dt.timedelta(days=1)))
     ap.add_argument("--out", default=os.path.join(ROOT, "data"))
-    ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--check", action="store_true", help="只做自检（与现有 BID 文件比对）")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)

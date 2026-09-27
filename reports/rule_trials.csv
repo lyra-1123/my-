@@ -51,3 +51,8 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,30MIN:VWAPDeviation,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.78,270.0,0.86,913.0,,8,延迟入场独立检验
 2026-09-27,30MIN:MTFTrendResonance,30MIN→5MIN,trend-tail entry delay,delay,W=6,PRE-REGISTERED robustness,0.85,334.0,0.09,323.0,,8,延迟入场独立检验
 2026-09-27,30MIN:MTFTrendResonance,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.84,355.0,0.11,348.0,,8,延迟入场独立检验
+2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=5,2009-2014 sharpe_usd,0.27,107,0.77,2018,,5,验证2015-2019 净利+8 夏普+0.06
+2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=7.5,2009-2014 sharpe_usd,0.27,107,0.76,2006,,5,验证2015-2019 净利-58 夏普-0.08
+2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=10,2009-2014 sharpe_usd,0.2,49,0.76,1999,,5,验证2015-2019 净利-204 夏普-0.51
+2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=12.5,2009-2014 sharpe_usd,0.33,196,0.71,1870,,5,SELECTED 验证2015-2019 净利-12 夏普+0.01
+2026-09-27,30MIN:趋势尾部等权组合,30MIN,trend-tail,vol_gate,k=15,2009-2014 sharpe_usd,0.16,60,0.73,1929,,5,验证2015-2019 净利-70 夏普-0.28

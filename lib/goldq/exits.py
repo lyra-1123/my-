@@ -29,6 +29,7 @@ given 类用"距入场价的距离"而不是价位：第4章随机方向对照�
   - 下一根bar与当前bar间隔超过 max_gap_minutes（周末/假期）：信号bar本身后面就是缺口则不开仓；
     持仓中遇到缺口，按缺口前最后一根bar收盘价平仓（GAP）
   - 持仓 max_bars 根仍未出场按收盘价平仓（TIME）
+  - prepare_market 传入 last_idx 时，信号bar对应的那根（比如当日收盘前最后一根）收盘强制平仓（TIME）
 """
 
 from dataclasses import dataclass
@@ -103,6 +104,7 @@ class Market:
     exit_short: np.ndarray | None
     stop_dist: np.ndarray | None = None
     target_dist: np.ndarray | None = None
+    last_idx: np.ndarray | None = None  # 信号bar上的强制平仓bar索引，-1 表示不适用
 
     def __len__(self):
         return len(self.close)
@@ -110,7 +112,7 @@ class Market:
 
 def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
                    exit_short: pd.Series | None = None, stop_dist: pd.Series | None = None,
-                   target_dist: pd.Series | None = None) -> Market:
+                   target_dist: pd.Series | None = None, last_idx: pd.Series | None = None) -> Market:
     """df 需要 time_utc/open/high/low/close/atr。一次转成 numpy，供逐笔模拟反复使用。
     stop_dist / target_dist：given 类出场用，信号bar上的止损/止盈距离（美元，正数），其余bar为NaN。"""
     t = pd.to_datetime(df["time_utc"])
@@ -126,6 +128,7 @@ def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
         exit_short=None if exit_short is None else exit_short.fillna(False).to_numpy(dtype=bool),
         stop_dist=None if stop_dist is None else stop_dist.to_numpy(dtype=float),
         target_dist=None if target_dist is None else target_dist.to_numpy(dtype=float),
+        last_idx=None if last_idx is None else last_idx.fillna(-1).to_numpy(dtype=np.int64),
     )
 
 
@@ -182,6 +185,9 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
     reason = None
     exit_idx = None
     last = n - 1 if rule.max_bars is None else min(pos + rule.max_bars, n - 1)
+    forced = m.last_idx is not None and m.last_idx[pos] > pos
+    if forced:
+        last = min(last, int(m.last_idx[pos]))
 
     for j in range(pos + 1, last + 1):
         if j > pos + 1 and m.time_min[j] - m.time_min[j - 1] > rule.max_gap_minutes:
@@ -235,7 +241,7 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
     if remaining > 0:
         realized += remaining * m.close[last]
         remaining, exit_idx = 0.0, last
-        reason = "TIME" if rule.max_bars is not None else "END"
+        reason = "TIME" if (rule.max_bars is not None or forced) else "END"
 
     exit_price = realized  # 数量总和=1，加权平均成交价
     raw_pnl = d * (exit_price - entry)

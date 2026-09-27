@@ -32,14 +32,19 @@ def main():
     off = (srv - utc).total_seconds() / 3600
     pred = (srv - server_to_utc(pd.DatetimeIndex([srv]))[0]).total_seconds() / 3600
     print("== 时区")
-    print(f"  最新报价服务器时间 {srv}，本机 UTC {utc}，实测偏移约 {off:+.2f} 小时（休市时不可靠）；"
-          f"按 SERVER_TZ='{C.SERVER_TZ}' 推算的偏移 {pred:+.0f} 小时 → {'一致' if abs(round(off) - pred) < 0.5 else '不一致，请修改 SERVER_TZ'}")
+    fresh = abs(off - round(off)) < 0.1 and abs(off) < 14   # 报价在几分钟内 → 偏移接近整数小时
+    verdict = ("一致" if abs(round(off) - pred) < 0.5 else "不一致，请修改 SERVER_TZ") if fresh else \
+        "最新报价不是实时的（休市/断线），无法据此判断，以下面的滞后相关表为准或开盘后再跑"
+    print(f"  最新报价服务器时间 {srv}，本机 UTC {utc}，实测偏移约 {off:+.2f} 小时；"
+          f"按 SERVER_TZ='{C.SERVER_TZ}' 推算的偏移 {pred:+.0f} 小时 → {verdict}")
     print("== 历史深度（需要：30MIN ≥ 6000 根，1H ≥ 7000 根）")
     for fq in ("30MIN", "1H"):
+        print(f"  正在读取 {fq}（第一次可能要从服务器下载历史，需等待）…", flush=True)
         b = fetch_bars(fq, C.HISTORY_BARS[fq])
         print(f"  {fq}: {len(b)} 根，{b.index[0]} ~ {b.index[-1]} UTC → {'足够' if len(b) >= {'30MIN': 6000, '1H': 7000}[fq] else '不足，请调大图表最大 K 线数'}")
     if args.dukascopy_dir:
         from factors.data_loader import load_m1, resample_ohlcv
+        print("  正在读取 Dukascopy M1 全部历史（需要几分钟）…", flush=True)
         d = resample_ohlcv(load_m1(args.dukascopy_dir), "30MIN")
         m = fetch_bars("30MIN", C.HISTORY_BARS["30MIN"])
         rd, rm = np.log(d["close"]).diff(), np.log(m["close"]).diff()

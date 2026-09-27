@@ -46,7 +46,13 @@ def utc_now_from_server() -> pd.Timestamp:
 
 def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None) -> pd.DataFrame:
     """取最近 count 根 K 线，换算为 UTC，并丢弃尚未走完的最后一根。"""
-    rates = mt5.copy_rates_from_pos(C.SYMBOL, getattr(mt5, TF[freq]), 0, count)
+    # 请求数量超过终端"图表最大K线数"或服务器历史时，MT5 会直接返回 None；逐步减半重试
+    rates, n = None, count
+    while n >= 500:
+        rates = mt5.copy_rates_from_pos(C.SYMBOL, getattr(mt5, TF[freq]), 0, n)
+        if rates is not None and len(rates) > 0:
+            break
+        n //= 2
     if rates is None or len(rates) == 0:
         raise RuntimeError(f"取 {freq} K 线失败：{mt5.last_error()}")
     df = pd.DataFrame(rates)

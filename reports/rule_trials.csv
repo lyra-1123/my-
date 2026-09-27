@@ -1,1 +1,31 @@
 date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_sharpe,oos_net_ex_drift,oos_atr_edge_ratio,n_trials_for_factor,note
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,hyst,k=1.5;h=0;m=None,IS sharpe_atr_now,0.32,-1868.0,-0.02,-2162.0,0.86,15,SELECTED R0 迟滞
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.0;h=4;m=None,IS sharpe_atr_now,-0.11,-5554.0,-0.46,-4480.0,0.5,15,R1 固定h k=1.0 h=4
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.0;h=8;m=None,IS sharpe_atr_now,-0.05,-4562.0,-0.4,-4385.0,0.43,15,R1 固定h k=1.0 h=8
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.0;h=16;m=None,IS sharpe_atr_now,0.05,-4049.0,-0.42,-4785.0,0.25,15,R1 固定h k=1.0 h=16
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.5;h=4;m=None,IS sharpe_atr_now,-0.04,-3271.0,-0.15,-2647.0,0.72,15,R1 固定h k=1.5 h=4
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.5;h=8;m=None,IS sharpe_atr_now,-0.12,-3044.0,-0.18,-2795.0,0.59,15,R1 固定h k=1.5 h=8
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=1.5;h=16;m=None,IS sharpe_atr_now,0.07,-2455.0,-0.33,-3078.0,0.08,15,R1 固定h k=1.5 h=16
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=2.0;h=4;m=None,IS sharpe_atr_now,-0.43,-2150.0,-0.32,-1637.0,0.17,15,R1 固定h k=2.0 h=4
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=2.0;h=8;m=None,IS sharpe_atr_now,-0.41,-1937.0,-0.39,-1753.0,-0.2,15,R1 固定h k=2.0 h=8
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,fixed,k=2.0;h=16;m=None,IS sharpe_atr_now,-0.21,-1639.0,-0.25,-1669.0,-0.04,15,R1 固定h k=2.0 h=16
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,zero,k=1.0;h=0;m=None,IS sharpe_atr_now,0.09,-3496.0,-0.02,-3069.0,1.03,15,R2 回归到0 k=1.0
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,zero,k=1.5;h=0;m=None,IS sharpe_atr_now,0.06,-2173.0,0.01,-2158.0,0.99,15,R2 回归到0 k=1.5
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,zero,k=2.0;h=0;m=None,IS sharpe_atr_now,-0.13,-1488.0,0.04,-1128.0,1.09,15,R2 回归到0 k=2.0
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,zero,k=1.0;h=0;m=5,IS sharpe_atr_now,-0.1,-1424.0,-0.24,-2788.0,0.5,15,R3 成本过滤 m=5 + [R2 回归到0 k=1.0]
+2026-09-27,IntradayReversalCore,5MIN,VWAPDev+VWCT,zero,k=1.0;h=0;m=10,IS sharpe_atr_now,-0.47,-428.0,-0.83,-2094.0,-1.64,15,R3 成本过滤 m=10 + [R2 回归到0 k=1.0]
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,hyst,k=1.5;h=0;m=None,IS sharpe_atr_now,-0.43,-1445.0,0.23,-973.0,1.96,15,R0 迟滞
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=1;m=None,IS sharpe_atr_now,-0.37,-3322.0,-0.09,-2361.0,0.72,15,R1 固定h k=1.0 h=1
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=2;m=None,IS sharpe_atr_now,-0.48,-3068.0,-0.31,-2399.0,0.19,15,R1 固定h k=1.0 h=2
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=4;m=None,IS sharpe_atr_now,-0.37,-2636.0,-0.25,-2716.0,0.16,15,R1 固定h k=1.0 h=4
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.5;h=1;m=None,IS sharpe_atr_now,-0.68,-2326.0,0.13,-1048.0,1.11,15,R1 固定h k=1.5 h=1
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.5;h=2;m=None,IS sharpe_atr_now,-0.85,-2411.0,0.13,-1115.0,1.17,15,R1 固定h k=1.5 h=2
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.5;h=4;m=None,IS sharpe_atr_now,-0.4,-1791.0,0.27,-875.0,1.78,15,R1 固定h k=1.5 h=4
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=2.0;h=1;m=None,IS sharpe_atr_now,-0.6,-1302.0,-0.0,-272.0,0.83,15,R1 固定h k=2.0 h=1
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=2.0;h=2;m=None,IS sharpe_atr_now,-0.7,-1294.0,-0.09,-623.0,0.44,15,R1 固定h k=2.0 h=2
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=2.0;h=4;m=None,IS sharpe_atr_now,-0.58,-1146.0,0.02,-531.0,0.96,15,R1 固定h k=2.0 h=4
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,zero,k=1.0;h=0;m=None,IS sharpe_atr_now,-0.47,-2039.0,0.09,-1568.0,1.26,15,R2 回归到0 k=1.0
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,zero,k=1.5;h=0;m=None,IS sharpe_atr_now,-0.44,-1342.0,0.21,-1032.0,1.98,15,R2 回归到0 k=1.5
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,zero,k=2.0;h=0;m=None,IS sharpe_atr_now,-0.7,-1401.0,-0.12,-1039.0,-0.29,15,R2 回归到0 k=2.0
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=1;m=5,IS sharpe_atr_now,-0.02,-2642.0,-0.1,-2362.0,0.7,15,SELECTED R3 成本过滤 m=5 + [R1 固定h k=1.0 h=1]
+2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=1;m=10,IS sharpe_atr_now,-0.36,-932.0,-0.61,-2279.0,-0.52,15,R3 成本过滤 m=10 + [R1 固定h k=1.0 h=1]

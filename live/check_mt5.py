@@ -37,16 +37,17 @@ def main():
         "最新报价不是实时的（休市/断线），无法据此判断，以下面的滞后相关表为准或开盘后再跑"
     print(f"  最新报价服务器时间 {srv}，本机 UTC {utc}，实测偏移约 {off:+.2f} 小时；"
           f"按 SERVER_TZ='{C.SERVER_TZ}' 推算的偏移 {pred:+.0f} 小时 → {verdict}")
-    print("== 历史深度（需要：30MIN ≥ 6000 根，1H ≥ 7000 根）")
+    print(f"== 历史深度（只计最后一个缺口之后的连续数据；需要：30MIN ≥ {C.MIN_BARS['30MIN']} 根，1H ≥ {C.MIN_BARS['1H']} 根）")
     for fq in ("30MIN", "1H"):
         print(f"  正在读取 {fq}（第一次可能要从服务器下载历史，需等待）…", flush=True)
         b = fetch_bars(fq, C.HISTORY_BARS[fq])
-        print(f"  {fq}: {len(b)} 根，{b.index[0]} ~ {b.index[-1]} UTC → {'足够' if len(b) >= {'30MIN': 6000, '1H': 7000}[fq] else '不足，请调大图表最大 K 线数'}")
+        raw = fetch_bars(fq, C.HISTORY_BARS[fq], contiguous=False)
+        print(f"  {fq}: 取到 {len(raw)} 根（{raw.index[0]} 起），其中最后连续段 {len(b)} 根，{b.index[0]} ~ {b.index[-1]} UTC → {'足够' if len(b) >= C.MIN_BARS[fq] else '不足：连续历史太短，程序不会交易该频率的策略'}")
     if args.dukascopy_dir:
         from factors.data_loader import load_m1, resample_ohlcv
         print("  正在读取 Dukascopy M1 全部历史（需要几分钟）…", flush=True)
         d = resample_ohlcv(load_m1(args.dukascopy_dir), "30MIN")
-        m = fetch_bars("30MIN", C.HISTORY_BARS["30MIN"])
+        m = fetch_bars("30MIN", C.HISTORY_BARS["30MIN"], contiguous=False)
         step = pd.Timedelta("30min")
         # 只用"上一根正好是 30 分钟前"的收益，避免跨缺口的收益污染相关系数
         rd = np.log(d["close"]).diff().where(d.index.to_series().diff() == step)

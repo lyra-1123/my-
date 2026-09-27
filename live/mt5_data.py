@@ -44,7 +44,7 @@ def utc_now_from_server() -> pd.Timestamp:
     return max(t, local - pd.Timedelta(minutes=5)) if pd.notna(t) else local
 
 
-def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None) -> pd.DataFrame:
+def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None, contiguous: bool = True) -> pd.DataFrame:
     """取最近 count 根 K 线，换算为 UTC，并丢弃尚未走完的最后一根。"""
     # 请求数量超过终端"图表最大K线数"或服务器历史时，MT5 会直接返回 None；逐步减半重试
     rates, n = None, count
@@ -62,5 +62,15 @@ def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None) -> pd
     out = out[out.index.notna()]
     out = out[~out.index.duplicated(keep="last")].sort_index()
     out = out[out["volume"] > 0]
+    if contiguous:
+        out = latest_contiguous(out)
     now_utc = now_utc or utc_now_from_server()
     return out[out.index + DUR[freq] <= now_utc]
+
+
+def latest_contiguous(bars: pd.DataFrame, max_gap_days: float = C.MAX_GAP_DAYS) -> pd.DataFrame:
+    """只保留最后一个缺口（> max_gap_days 天）之后的连续数据。经纪商历史常有大段缺失，跨缺口计算滚动指标会失真。"""
+    gaps = bars.index.to_series().diff() > pd.Timedelta(days=max_gap_days)
+    if gaps.any():
+        bars = bars[bars.index >= gaps[gaps].index[-1]]
+    return bars

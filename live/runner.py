@@ -99,6 +99,8 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
     note, action = "", "HOLD"
     if halt:
         desired, note = 0.0, halt
+    elif len(bars) < C.MIN_BARS[spec.freq]:
+        note, desired = f"连续历史只有 {len(bars)} 根（需要 {C.MIN_BARS[spec.freq]}），不交易", 0.0
     elif age_min > C.MAX_DATA_AGE_MIN:
         note, desired = f"数据过期 {age_min:.0f} 分钟，不交易", current
     if abs(desired - current) > 1e-9:

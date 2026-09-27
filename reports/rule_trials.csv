@@ -29,3 +29,25 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,zero,k=2.0;h=0;m=None,IS sharpe_atr_now,-0.7,-1401.0,-0.12,-1039.0,-0.29,15,R2 回归到0 k=2.0
 2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=1;m=5,IS sharpe_atr_now,-0.02,-2642.0,-0.1,-2362.0,0.7,15,SELECTED R3 成本过滤 m=5 + [R1 固定h k=1.0 h=1]
 2026-09-27,IntradayReversalCore,15MIN,VWAPDev+VWCT,fixed,k=1.0;h=1;m=10,IS sharpe_atr_now,-0.36,-932.0,-0.61,-2279.0,-0.52,15,R3 成本过滤 m=10 + [R1 固定h k=1.0 h=1]
+2026-09-27,30MIN:TSMomentumVolScaled × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T0,k=None;W=None,IS sharpe_atr_now,0.81,419.0,0.39,1083.0,9.24,10,基础=TSMomentumVolScaled · T0 立即入场
+2026-09-27,30MIN:TrendEfficiencyVolume × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T0,k=None;W=None,IS sharpe_atr_now,0.76,78.0,0.87,1478.0,13.09,10,基础=TrendEfficiencyVolume · T0 立即入场
+2026-09-27,30MIN:VWAPDeviation × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T0,k=None;W=None,IS sharpe_atr_now,0.78,253.0,0.91,1142.0,15.41,10,基础=VWAPDeviation · T0 立即入场
+2026-09-27,30MIN:MTFTrendResonance × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T0,k=None;W=None,IS sharpe_atr_now,0.78,243.0,0.05,310.0,2.77,10,基础=MTFTrendResonance · T0 立即入场
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T0,k=None;W=None,IS sharpe_atr_now,0.82,335.0,0.57,679.0,11.6,10,基础=等权组合 · T0 立即入场
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T1,k=0.5;W=6,IS sharpe_atr_now,0.82,372.0,0.68,1001.0,13.11,10,基础=等权组合 · T1 等待 k=0.5 W=6
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T1,k=0.5;W=12,IS sharpe_atr_now,0.79,390.0,0.79,1230.0,14.78,10,基础=等权组合 · T1 等待 k=0.5 W=12
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T1,k=1.0;W=6,IS sharpe_atr_now,0.82,370.0,0.68,989.0,13.01,10,基础=等权组合 · T1 等待 k=1.0 W=6
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T1,k=1.0;W=12,IS sharpe_atr_now,0.82,419.0,0.81,1180.0,14.78,10,基础=等权组合 · T1 等待 k=1.0 W=12
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,T2,k=1.0;W=12,IS sharpe_atr_now,1.03,277.0,0.27,292.0,14.79,10,SELECTED 基础=等权组合 · T2 过滤 k=1.0 W=12
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,control,,POST-HOC CONTROL,0.85,400.0,0.69,773.0,,,事后对照（非预登记）：对照：固定延迟 W=6（不看反转）
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,control,,POST-HOC CONTROL,0.8,336.0,0.65,902.0,,,事后对照（非预登记）：对照：随机信号 T1 k=0.5 W=6
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,control,,POST-HOC CONTROL,0.88,432.0,0.69,689.0,,,事后对照（非预登记）：对照：固定延迟 W=12（不看反转）
+2026-09-27,30MIN:等权组合 × 5MIN:IntradayReversalCore,30MIN→5MIN,trend-tail + reversal timing,control,,POST-HOC CONTROL,0.8,327.0,0.61,830.0,,,事后对照（非预登记）：对照：随机信号 T1 k=0.5 W=12
+2026-09-27,30MIN:TSMomentumVolScaled,30MIN→5MIN,trend-tail entry delay,delay,W=6,PRE-REGISTERED robustness,0.88,495.0,0.33,940.0,,8,延迟入场独立检验
+2026-09-27,30MIN:TSMomentumVolScaled,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.86,480.0,0.31,959.0,,8,延迟入场独立检验
+2026-09-27,30MIN:TrendEfficiencyVolume,30MIN→5MIN,trend-tail entry delay,delay,W=6,PRE-REGISTERED robustness,0.79,134.0,0.8,1294.0,,8,延迟入场独立检验
+2026-09-27,30MIN:TrendEfficiencyVolume,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.83,213.0,0.86,1340.0,,8,延迟入场独立检验
+2026-09-27,30MIN:VWAPDeviation,30MIN→5MIN,trend-tail entry delay,delay,W=6,PRE-REGISTERED robustness,0.8,270.0,0.87,981.0,,8,延迟入场独立检验
+2026-09-27,30MIN:VWAPDeviation,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.78,270.0,0.86,913.0,,8,延迟入场独立检验
+2026-09-27,30MIN:MTFTrendResonance,30MIN→5MIN,trend-tail entry delay,delay,W=6,PRE-REGISTERED robustness,0.85,334.0,0.09,323.0,,8,延迟入场独立检验
+2026-09-27,30MIN:MTFTrendResonance,30MIN→5MIN,trend-tail entry delay,delay,W=12,PRE-REGISTERED robustness,0.84,355.0,0.11,348.0,,8,延迟入场独立检验

@@ -34,5 +34,10 @@ ICIR 接近 0、样本内外反号的因子**禁止**做规则适配：规则不
 - 多重检验：t 值门槛随试验次数提高（Harvey-Liu-Zhu：t > 3 是最低要求）；报告结论时说明该因子一共试了多少套规则。
 - 同时看：去漂移净利、夏普（策略 IR）、ATR 边际 ÷ 当前成本、逐年表现、最大回撤。
 
+## 4.1 择时 / 过滤类规则必须带对照
+- **固定延迟对照**：同样的等待时间，不看信号（检验改善是否只来自延迟）。
+- **随机信号对照**：用随机数替代择时信号（检验改善是否只来自规则结构）。
+- 只有同时优于两个对照，而且样本内和样本外都成立，才能说择时信号有价值（lessons L16）。
+
 ## 5. 登记格式（reports/rule_trials.csv）
 `date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_sharpe,oos_net_ex_drift,oos_atr_edge_ratio,n_trials_for_factor,note`

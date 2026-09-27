@@ -89,7 +89,7 @@ SPECS.append(
 SPECS.append(
     StrategySpec(
         id="HA1H-TS2-shadow",
-        name="年内高低位顺势 · 移动止损版（影子）",
+        name="年内高低位顺势 · 移动止损版",
         description="HA1H-v1 的影子版本：信号相同；每日平仓后按迟滞状态回补 + 移动止损 2×日线 ATR（不计入组合，仅与 v1 做前向对比）",
         freq="1H",
         components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),

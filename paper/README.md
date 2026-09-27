@@ -16,7 +16,7 @@
 |---|---|---|---|
 | 日内30min强势跟随 | TT30-EW-v1 | active | 30MIN 趋势尾部等权组合（`docs/strategy_TT30-EW-v1.md`） |
 | 年内高低位顺势 | HA1H-v1 | active | 1H 52 周高点锚定动量（`docs/strategy_HA1H-v1.md`） |
-| 年内高低位顺势 · 移动止损版（影子） | HA1H-TS2-shadow | shadow | 按状态回补 + 2×日 ATR 移动止损；不计入组合，252 个交易日时与 v1 比较 |
+| 年内高低位顺势 · 移动止损版 | HA1H-TS2-shadow | shadow | 按状态回补 + 2×日 ATR 移动止损；不计入组合，252 个交易日时与 v1 比较 |
 
 显示名称（`name`）可以随时修改；`id` 登记后不可改（登记文件、行为指纹、账本都挂在 id 上）。
 

@@ -1,8 +1,9 @@
 """
 compute_indicators.py
 =======================
-EMA / ATR / RSI，全部只用当前和过去的数据（因果安全），ATR/RSI 用 Wilder 平滑
-（ewm(alpha=1/period, adjust=False)），跟交易软件默认一致。
+EMA / ATR / RSI / ADX / MFI，全部只用当前和过去的数据（因果安全）。
+ATR/RSI/ADX 用 Wilder 平滑（ewm(alpha=1/period, adjust=False)），与 TradingView 一致；
+注意 MT5 自带 ATR 是 TR 的简单移动平均，数值会有出入。
 """
 
 import pandas as pd
@@ -12,8 +13,16 @@ def compute_ema(close: pd.Series, period: int) -> pd.Series:
     return close.ewm(span=period, adjust=False).mean()
 
 
-def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+def compute_atr(df: pd.DataFrame, period: int = 14, max_gap_minutes: int | None = None) -> pd.Series:
+    """
+    max_gap_minutes: 给定时，与上一根bar间隔超过该分钟数（周末/假期/每日停盘）的bar，
+    TR 只取当根 high-low，不把跳空算进去——否则停盘后第一根的跳空会让 ATR 虚高很久。
+    None = 标准算法（包含跳空）。
+    """
     prev_close = df["close"].shift(1)
+    if max_gap_minutes is not None:
+        gap = df["time_utc"].diff() > pd.Timedelta(minutes=max_gap_minutes)
+        prev_close = prev_close.mask(gap)
     true_range = pd.concat([
         df["high"] - df["low"],
         (df["high"] - prev_close).abs(),
@@ -53,9 +62,9 @@ def compute_mfi(df: pd.DataFrame, period: int = 12) -> pd.Series:
     typical_price = (df["high"] + df["low"] + df["close"]) / 3
     raw_money_flow = typical_price * df["volume"]
 
-    price_up = typical_price > typical_price.shift(1)
-    positive_flow = raw_money_flow.where(price_up, 0.0)
-    negative_flow = raw_money_flow.where(~price_up, 0.0)
+    prev_tp = typical_price.shift(1)
+    positive_flow = raw_money_flow.where(typical_price > prev_tp, 0.0)
+    negative_flow = raw_money_flow.where(typical_price < prev_tp, 0.0)  # 持平两边都不计（标准MFI）
 
     positive_sum = positive_flow.rolling(period).sum()
     negative_sum = negative_flow.rolling(period).sum()

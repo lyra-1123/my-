@@ -63,3 +63,14 @@
 - ATR动量v2 新出场规则第4章方向性筛选：**7种出场全部不通过**，方向边际 t 值在 -1.79 ~ +0.24，
   信号方向与随机方向无差别；成本后每笔R在 -0.07 ~ -0.17。ATR动量方向彻底结案，不进第5章。
   **累计正式验证的策略定义数 = 23**，下一个假设第5章 `N_TRIALS_PRIOR` 从 23 起算。
+- 新假设5 `hypothesis_atr_mfi_reversal`（ATR放大x倍 + MFI 离开极值区反转入场，不加EMA20，
+  1.5ATR 移动止损、不设止盈、不限持仓），x ∈ {1.5, 2, 2.5, 3}。操作定义已与用户确认；
+  "因为"一段由 Claude 起草待用户确认，"预期效应大小"待用户补。
+  第4章 `04_策略研究/validate_signal_atr_mfi_reversal.py`，第5章
+  `03_回测引擎/validate_ch5_atr_mfi_reversal.py <x>`（n_trials = 23 + 4 = 27）。
+- `compute_atr` 新增 `max_gap_minutes`：停盘（>N分钟）后第一根 TR 只取 high-low，排除跳空；
+  假设5 使用 180 分钟，之前的假设仍是标准算法。
+- 修正 `compute_mfi`：典型价持平的bar原来计入负资金流，改为两边都不计（标准MFI）。
+  ATR动量v2（已结案）的结果是在旧口径下算的，未重跑。
+- `exits.ExitRule.max_bars=None` 表示不限持仓（出场原因 END = 数据末尾）。
+- 第4章方向性筛选新增最少样本 100 笔的门槛；新增 `edge_by_year()` 按年份看方向边际。

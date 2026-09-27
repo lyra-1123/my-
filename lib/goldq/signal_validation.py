@@ -212,7 +212,7 @@ def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
         o = simulate_trade(market, int(pos), -d, rule)
         if t is None or o is None:
             continue
-        rows.append({"r": t["raw_r"], "r_opp": o["raw_r"], "cost_r": cost_usd / t["risk"],
+        rows.append({"entry_idx": int(pos), "direction": d, "r": t["raw_r"], "r_opp": o["raw_r"], "cost_r": cost_usd / t["risk"],
                      "win": t["raw_pnl"] - cost_usd > 0, "reason": t["exit_reason"],
                      "ambiguous": t["ambiguous"], "bars": t["bars_held"]})
     if not rows:
@@ -220,6 +220,7 @@ def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
     r = pd.DataFrame(rows)
     r_rand = 0.5 * (r["r"] + r["r_opp"])
     edge = r["r"] - r_rand
+    r["edge"] = edge
     se = edge.std() / np.sqrt(len(r)) if len(r) > 1 else float("nan")
     return {
         "n": len(r),
@@ -233,15 +234,16 @@ def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
         "ambiguous_pct": r["ambiguous"].mean(),
         "avg_bars": r["bars"].mean(),
         "reasons": r["reason"].value_counts().to_dict(),
+        "records": r,
     }
 
 
-def print_exit_direction_table(results: dict, min_edge_t: float = 2.0) -> list[str]:
-    """打印各出场规则的方向性筛选结果，返回通过筛选（方向边际 t>=min_edge_t 且成本后R>0）的规则名。"""
+def print_exit_direction_table(results: dict, min_edge_t: float = 2.0, min_n: int = 100) -> list[str]:
+    """打印方向性筛选结果，返回通过筛选（样本>=min_n、方向边际 t>=min_edge_t、成本后R>0）的名字。"""
     print("=" * 60)
     print("方向性筛选：同一批信号bar，信号方向 vs 随机方向（同一出场规则）")
     print("=" * 60)
-    table = pd.DataFrame({name: {k: v for k, v in res.items() if k != "reasons"}
+    table = pd.DataFrame({name: {k: v for k, v in res.items() if k not in ("reasons", "records")}
                           for name, res in results.items()}).T
     cols = ["n", "win_rate", "r_signal", "r_random", "edge_r", "edge_t", "cost_r", "net_r",
             "ambiguous_pct", "avg_bars"]
@@ -251,7 +253,18 @@ def print_exit_direction_table(results: dict, min_edge_t: float = 2.0) -> list[s
     for name, res in results.items():
         print(f"  {name} 出场原因: {res.get('reasons')}")
     passed = [name for name, res in results.items()
-              if res.get("n", 0) and res["edge_t"] >= min_edge_t and res["net_r"] > 0]
-    print(f"\n[筛选标准] 方向边际 t >= {min_edge_t} 且 成本后R > 0："
+              if res.get("n", 0) >= min_n and res["edge_t"] >= min_edge_t and res["net_r"] > 0]
+    print(f"\n[筛选标准] 样本 >= {min_n} 且 方向边际 t >= {min_edge_t} 且 成本后R > 0："
           + (f"✅ 通过 {passed}" if passed else "❌ 没有任何出场规则通过"))
     return passed
+
+
+def edge_by_year(records: pd.DataFrame, times: pd.Series) -> pd.DataFrame:
+    """三件套2 的出场规则版：按年份看方向边际和成本后R，检查边际是不是只集中在个别年份。"""
+    rec = records.copy()
+    rec["year"] = pd.to_datetime(times.to_numpy()[rec["entry_idx"].to_numpy()]).year
+    out = rec.groupby("year").agg(n=("r", "size"), r_signal=("r", "mean"), edge_r=("edge", "mean"),
+                                  edge_std=("edge", "std"), net_r=("r", "mean"), cost_r=("cost_r", "mean"))
+    out["net_r"] = out["r_signal"] - out["cost_r"]
+    out["edge_t"] = out["edge_r"] / (out["edge_std"] / np.sqrt(out["n"]))
+    return out[["n", "r_signal", "edge_r", "edge_t", "net_r"]]

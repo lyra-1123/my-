@@ -40,7 +40,7 @@ class ExitRule:
     name: str
     stop: str
     take_profit: str
-    max_bars: int = 24
+    max_bars: int | None = 24  # None = 不限，只靠止损/止盈/缺口出场
     atr_stop_mult: float = 1.5
     structure_lookback: int = 10
     structure_buffer_atr: float = 0.2
@@ -154,7 +154,7 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
     best = entry
     reason = None
     exit_idx = None
-    last = min(pos + rule.max_bars, n - 1)
+    last = n - 1 if rule.max_bars is None else min(pos + rule.max_bars, n - 1)
 
     for j in range(pos + 1, last + 1):
         if j > pos + 1 and m.time_min[j] - m.time_min[j - 1] > rule.max_gap_minutes:
@@ -207,7 +207,8 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
 
     if remaining > 0:
         realized += remaining * m.close[last]
-        remaining, reason, exit_idx = 0.0, "TIME", last
+        remaining, exit_idx = 0.0, last
+        reason = "TIME" if rule.max_bars is not None else "END"
 
     exit_price = realized  # 数量总和=1，加权平均成交价
     raw_pnl = d * (exit_price - entry)

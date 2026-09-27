@@ -36,7 +36,8 @@ def main() -> None:
 
         comp = list(spec.components)
         name, w, kw = comp[0]
-        kw2 = tuple((k, v + 1) if k == "chan" else (k, v) for k, v in kw) or (("chan", 33),)
+        # 扰动第一个参数（+1）；没有参数时加上 chan=33
+        kw2 = (((kw[0][0], kw[0][1] + 1),) + tuple(kw[1:])) if kw else (("chan", 33),)
         alt = dataclasses.replace(spec, components=tuple([(name, w, kw2)] + comp[1:]))
         r2 = fingerprint(spec, bars) != fingerprint(alt, bars)
         print(f"[2] {spec.id} 指纹对参数变化敏感 → {'OK' if r2 else 'FAIL'}")

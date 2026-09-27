@@ -30,6 +30,10 @@ given 类用"距入场价的距离"而不是价位：第4章随机方向对照�
     持仓中遇到缺口，按缺口前最后一根bar收盘价平仓（GAP）
   - 持仓 max_bars 根仍未出场按收盘价平仓（TIME）
   - prepare_market 传入 last_idx 时，信号bar对应的那根（比如当日收盘前最后一根）收盘强制平仓（TIME）
+  - 限价单入场（prepare_market 传入 entry_price / entry_hi / entry_lo）：在信号bar内按 entry_price 成交；
+    成交之后这根bar剩下的走势用 [entry_lo, entry_hi] 近似（由信号提供，比如价格下跌触及买入限价时，
+    成交后的范围是 [当根最低, max(限价, 收盘)]），按一根 开=成交价、高=entry_hi、低=entry_lo、收=收盘
+    的合成bar处理（先判止损），然后从下一根继续。两个方向用同一个合成bar，随机方向对照保持公平。
 """
 
 from dataclasses import dataclass
@@ -105,6 +109,9 @@ class Market:
     stop_dist: np.ndarray | None = None
     target_dist: np.ndarray | None = None
     last_idx: np.ndarray | None = None  # 信号bar上的强制平仓bar索引，-1 表示不适用
+    entry_price: np.ndarray | None = None  # 限价入场价，NaN = 信号bar收盘价入场
+    entry_hi: np.ndarray | None = None     # 限价成交后当根剩余走势的最高/最低
+    entry_lo: np.ndarray | None = None
 
     def __len__(self):
         return len(self.close)
@@ -112,7 +119,9 @@ class Market:
 
 def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
                    exit_short: pd.Series | None = None, stop_dist: pd.Series | None = None,
-                   target_dist: pd.Series | None = None, last_idx: pd.Series | None = None) -> Market:
+                   target_dist: pd.Series | None = None, last_idx: pd.Series | None = None,
+                   entry_price: pd.Series | None = None, entry_hi: pd.Series | None = None,
+                   entry_lo: pd.Series | None = None) -> Market:
     """df 需要 time_utc/open/high/low/close/atr。一次转成 numpy，供逐笔模拟反复使用。
     stop_dist / target_dist：given 类出场用，信号bar上的止损/止盈距离（美元，正数），其余bar为NaN。"""
     t = pd.to_datetime(df["time_utc"])
@@ -129,6 +138,9 @@ def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
         stop_dist=None if stop_dist is None else stop_dist.to_numpy(dtype=float),
         target_dist=None if target_dist is None else target_dist.to_numpy(dtype=float),
         last_idx=None if last_idx is None else last_idx.fillna(-1).to_numpy(dtype=np.int64),
+        entry_price=None if entry_price is None else entry_price.to_numpy(dtype=float),
+        entry_hi=None if entry_hi is None else entry_hi.to_numpy(dtype=float),
+        entry_lo=None if entry_lo is None else entry_lo.to_numpy(dtype=float),
     )
 
 
@@ -144,7 +156,8 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
         raise ValueError("indicator 止盈需要在 prepare_market 里传入 exit_long / exit_short")
 
     d = direction
-    entry = m.close[pos]
+    limit_entry = m.entry_price is not None and np.isfinite(m.entry_price[pos])
+    entry = m.entry_price[pos] if limit_entry else m.close[pos]
 
     if rule.stop in ("given", "given_trail") or rule.take_profit == "given":
         if m.stop_dist is None or (rule.take_profit == "given" and m.target_dist is None):
@@ -189,13 +202,17 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
     if forced:
         last = min(last, int(m.last_idx[pos]))
 
-    for j in range(pos + 1, last + 1):
+    first = pos if limit_entry else pos + 1
+    for j in range(first, last + 1):
         if j > pos + 1 and m.time_min[j] - m.time_min[j - 1] > rule.max_gap_minutes:
             realized += remaining * m.close[j - 1]
             remaining, reason, exit_idx = 0.0, "GAP", j - 1
             break
 
-        o, h, l, c = m.open[j], m.high[j], m.low[j], m.close[j]
+        if j == pos:
+            o, h, l, c = entry, m.entry_hi[pos], m.entry_lo[pos], m.close[pos]
+        else:
+            o, h, l, c = m.open[j], m.high[j], m.low[j], m.close[j]
         fav, adv = (h, l) if d == 1 else (l, h)
 
         if d * (adv - stop) <= 0:

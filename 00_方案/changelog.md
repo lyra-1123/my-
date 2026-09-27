@@ -115,3 +115,9 @@
 - 时段探索（2009-2019）结果记录于 `00_方案/exploration_sessions.md`：伦敦 22/23 点的强效应判定为
   每日结算时段点差扩大造成的 bid 价假象；周五 +11.7bp（91% 同号年份）、亚洲盘小时偏正、
   伦敦/纽约若干小时偏负，作为保留期假设候选。
+- 新假设9 `hypothesis_pullback_second_leg`（趋势回调 50% 限价入场、止损起涨点 A、止盈第二段 = 第一段）：
+  {M5, M15} × 第一段 {2, 3, 5}×ATR，大一级周期 EMA50 同向过滤（M5 看 M15、M15 看 H1），
+  第4章 `04_策略研究/validate_signal_pullback_second_leg.py`，第5章
+  `03_回测引擎/validate_ch5_pullback_second_leg.py <周期> <门槛>`（n_trials = 65 + 3 = 68）。
+- `exits.py` 支持限价单入场（entry_price / entry_hi / entry_lo）：成交当根按信号给出的成交后范围
+  合成一根bar先判止损，信号方向与随机方向用同一合成bar。

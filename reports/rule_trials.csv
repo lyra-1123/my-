@@ -66,3 +66,14 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E3 只用移动止损 k=4,IS sharpe_atr_now (must beat E0),0.88,620,0.85,1654,,10,SELECTED E3 只用移动止损 k=4
 2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E4 信号+固定止盈 k=3,IS sharpe_atr_now (must beat E0),0.17,-331,0.84,1251,,10,E4 信号+固定止盈 k=3
 2026-09-27,TT30-EW 出场规则,30MIN,trend-tail,exit,E4 信号+固定止盈 k=5,IS sharpe_atr_now (must beat E0),0.4,-25,0.87,1280,,10,E4 信号+固定止盈 k=5
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,strict exit=0.3,IS sharpe_atr_now (must beat strict 0.3),0.62,696,0.59,1140,,11,SELECTED strict exit=0.3
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,strict exit=0.0,IS sharpe_atr_now (must beat strict 0.3),0.59,642,0.57,1145,,11,strict exit=0.0
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,strict exit=0.6,IS sharpe_atr_now (must beat strict 0.3),0.62,680,0.56,1091,,11,strict exit=0.6
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3,IS sharpe_atr_now (must beat strict 0.3),0.41,456,0.48,1266,,11,state exit=0.3
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.0,IS sharpe_atr_now (must beat strict 0.3),0.31,267,0.45,1290,,11,state exit=0.0
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.6,IS sharpe_atr_now (must beat strict 0.3),0.52,653,0.49,1272,,11,state exit=0.6
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,overnight exit=0.3,IS sharpe_atr_now (must beat strict 0.3),0.22,-575,0.39,678,,11,overnight exit=0.3
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,overnight exit=0.0,IS sharpe_atr_now (must beat strict 0.3),0.12,-810,0.4,816,,11,overnight exit=0.0
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,overnight exit=0.6,IS sharpe_atr_now (must beat strict 0.3),0.31,-313,0.4,795,,11,overnight exit=0.6
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 2×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.56,708,0.75,1742,,11,state exit=0.3 + 移动止损 2×日ATR
+2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 3×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.43,468,0.55,1382,,11,state exit=0.3 + 移动止损 3×日ATR

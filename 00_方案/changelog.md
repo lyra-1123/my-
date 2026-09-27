@@ -88,3 +88,9 @@
 - 假设6 `hypothesis_double_top_bottom` 第4章 **REJECTED**：9 个组合无一通过。M5/M15 方向边际
   **显著为负**（t 最低 -4.87，突破后倾向回落），是项目第一个统计上真实的方向效应，但幅度 0.01-0.03R
   远低于成本，不可交易；H1 无效应。**累计正式验证的策略定义数 = 36**。
+- 新假设7 `hypothesis_support_resistance`：新增 `lib/goldq/levels.py`（多次触及聚类 / 大周期摆动点 /
+  前日前周高低点（纽约17:00日界）/ $50 整数关口，全部因果），用法 {过滤双顶双底, 触及反弹} × 4 方法 ×
+  {M5, M15, H1} = 24 个组合，出场统一给定止损 + 2R。第4章 `04_策略研究/validate_signal_support_resistance.py`
+  （含各方法当前价位供 MT5 核对、不过滤双顶双底作参照），第5章
+  `03_回测引擎/validate_ch5_support_resistance.py <周期> <用法> <方法>`（n_trials = 56 + 4 = 60）。
+- `chapter5_pipeline.Variant` 可自带 `market`（变体各自的止损距离）；摆动点识别移到 `goldq.levels.swing_lows`。

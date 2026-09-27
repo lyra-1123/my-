@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "02_增强处理"))
 from goldq.datastore import fetch_bars  # noqa: E402
 from goldq.exits import ExitRule  # noqa: E402
+from goldq.levels import swing_lows  # noqa: E402
 from goldq.resample import resample_ohlcv  # noqa: E402
 from compute_indicators import compute_atr  # noqa: E402
 
@@ -43,13 +44,6 @@ EXIT_RULES = [
     ExitRule("pattern_trail", "given_trail", "none", max_bars=None, atr_stop_mult=1.5),
     ExitRule("pattern_2R", "given", "fixed_r", max_bars=None, r_multiple=2.0),
 ]
-
-
-def swing_lows(low: np.ndarray, k: int) -> np.ndarray:
-    s = pd.Series(low)
-    left_min = s.shift(1).rolling(k).min()
-    right_min = s.shift(-1).rolling(k).min().shift(-(k - 1))
-    return np.flatnonzero(((s < left_min) & (s <= right_min)).to_numpy())
 
 
 def detect_double_bottoms(low: np.ndarray, high: np.ndarray, close: np.ndarray,

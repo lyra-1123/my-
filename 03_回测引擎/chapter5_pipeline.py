@@ -36,6 +36,7 @@ class Variant:
     name: str
     signal: pd.Series
     exit_rule: ExitRule
+    market: Market | None = None  # 变体自带止损/止盈距离时用；None 则用流水线的 market
 
 
 def _slice(trades: pd.DataFrame, start_idx: int, end_idx: int) -> pd.DataFrame:
@@ -79,7 +80,7 @@ def run_chapter5_validation(df: pd.DataFrame, market: Market, candidate: Variant
     cost_model = cost_model or SimpleCostModel()
     all_variants = variants if any(v.name == candidate.name for v in variants) else [candidate] + variants
 
-    trades_by_name = {v.name: run_backtest(df, market, v.signal, v.exit_rule, cost_model)
+    trades_by_name = {v.name: run_backtest(df, v.market or market, v.signal, v.exit_rule, cost_model)
                       for v in all_variants}
     cand_trades = trades_by_name[candidate.name]
     if cand_trades.empty:

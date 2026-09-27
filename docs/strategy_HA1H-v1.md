@@ -1,6 +1,6 @@
 # 策略说明书：HA1H-v1（XAUUSD 1 小时 · 52 周高点锚定动量）
 
-> 状态：**候选**（已通过模拟盘准入检查，尚未登记）。代码：`paper/specs.py`（规格）、`factors/library/trend_continuation.py::factor_high_anchor_momentum`、`factors/core.py`、`factors/evaluate.py`、`paper/engine.py`。
+> 状态：**模拟盘前向测试中**（2026-09-28 起），行为指纹 `c1ca467d69ce1ed7`。影子版本 `HA1H-TS2-shadow`（按状态回补 + 2×日 ATR 移动止损，指纹 `2cf943680e1b318e`）同时运行，只用于与 v1 做前向对比。代码：`paper/specs.py`（规格）、`factors/library/trend_continuation.py::factor_high_anchor_momentum`、`factors/core.py`、`factors/evaluate.py`、`paper/engine.py`。
 > 研究记录：`reports/trend_continuation_batch8.md`、`reports/batch8_candidate_validation.txt`。
 
 ## 1. 一句话概括
@@ -102,3 +102,9 @@ z    = MAD_Z( clip(pos, −3, 3), 1000 )          # 滚动 1000 根 1H K 线去�
 | 63 | −24.4 R | +7.0 R | +27.7 R |
 | 126 | −23.6 R | +10.9 R | +35.4 R |
 | 252 | −20.2 R | +16.8 R | +60.9 R |
+
+## 11. 影子版本 HA1H-TS2-shadow
+- 信号与 v1 完全相同；执行规则不同：每日照样平仓，但 19:00 起只要迟滞状态仍在就按原方向回补；叠加移动止损（本段持仓最有利价格回撤 2×日线 ATR(14) 即出场，盘中触发，止损后同方向须等状态复位）。
+- 来源：出场规则检验中样本外最好（夏普 0.75、+1742$、回撤 −428$），但样本内（0.56）不如 v1（0.62），按纪律不能直接采用（`reports/ha1h_exit_rules.md`）。
+- 不计入组合、不参与准入的相关性检查；`signal.json` 中的 `stop_for_next_bar` 给出下一根 K 线的止损价。
+- 判定（登记时写死）：252 个交易日时，若影子版本的前向日度 R 夏普高于 v1 且未触发自身失败线，则以其规则建立 HA1H 的新版本（重新走准入与登记）；否则停止影子版本。252 日之前不做切换。

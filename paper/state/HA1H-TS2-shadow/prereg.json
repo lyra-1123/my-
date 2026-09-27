@@ -1,0 +1,77 @@
+{
+ "strategy": "HA1H-TS2-shadow",
+ "registered_at_utc": "2026-09-27T09:17:56+00:00",
+ "forward_start": "2026-09-28",
+ "spec": {
+  "id": "HA1H-TS2-shadow",
+  "description": "HA1H-v1 的影子版本：信号相同；每日平仓后按迟滞状态回补 + 移动止损 2×日线 ATR（不计入组合，仅与 v1 做前向对比）",
+  "freq": "1H",
+  "components": [
+   [
+    "HighAnchorMomentum",
+    1.0,
+    [
+     [
+      "anchor_days",
+      250
+     ]
+    ]
+   ]
+  ],
+  "norm": 1000,
+  "entry": 1.5,
+  "exit": 0.3,
+  "lots": 0.01,
+  "forward_start": "2026-09-28",
+  "status": "shadow",
+  "notes": "出场规则检验中样本外最好、样本内不如 v1，按纪律不能直接采用；预登记为影子版本，由前向数据决定。见 reports/ha1h_exit_rules.md",
+  "rule": "state_trail",
+  "rule_params": [
+   [
+    "trail",
+    2.0
+   ]
+  ],
+  "shadow_of": "HA1H-v1"
+ },
+ "evidence": {
+  "is_sharpe_atr": 0.56,
+  "oos_sharpe_atr_2020_": 0.75,
+  "cscv_oos_sharpe_median": 0.56,
+  "exit_rules_PBO": 0.083,
+  "research_PBO": 0.027
+ },
+ "fingerprint": "2cf943680e1b318e",
+ "backtest_daily_R_sharpe": 0.725,
+ "bands_cum_R": {
+  "21": {
+   "p5": -13.533,
+   "p50": 0.0,
+   "p95": 25.056
+  },
+  "63": {
+   "p5": -25.835,
+   "p50": 6.95,
+   "p95": 38.328
+  },
+  "126": {
+   "p5": -29.453,
+   "p50": 13.192,
+   "p95": 55.66
+  },
+  "252": {
+   "p5": -10.002,
+   "p50": 19.983,
+   "p95": 73.458
+  }
+ },
+ "criteria": {
+  "fail": "前向累计 R 低于同长度窗口回测分布的 5% 分位（在 63/126/252 个交易日检查）→ 停止该策略并复查",
+  "warn": "前向累计 R 低于 50% 分位，或前向最大回撤超过回测最大回撤的 1.5 倍",
+  "expectation": "日度 R 夏普基准取 CSCV 样本外中位数（evidence.cscv_oos_sharpe_median），而非全样本回测值",
+  "min_evaluation": "252 个交易日之前不对'有效'下结论，只检查是否失败",
+  "shadow_decision": "252 个交易日时比较前向结果：若本影子版本的前向日度 R 夏普高于 HA1H-v1，且未触发自身失败线，则以本规则建立 HA1H-v1 的新版本（重新走准入与登记），否则停止本影子版本；252 日之前不做切换。"
+ },
+ "backtest_max_drawdown_R": -56.638,
+ "shadow_of": "HA1H-v1"
+}

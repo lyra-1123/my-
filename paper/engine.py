@@ -54,6 +54,8 @@ def load_bars(data_dir: str, freq: str) -> tuple[pd.DataFrame, pd.Timestamp]:
 # 信号与仓位
 # ---------------------------------------------------------------------------
 def compute(spec: StrategySpec, bars: pd.DataFrame) -> pd.DataFrame:
+    if spec.rule != "standard":
+        return compute_rule(spec, bars)
     z = spec.signal(bars)
     zx = execution_signal(z, spec.freq)
     tgt = targets(zx, spec.entry, spec.exit)
@@ -73,10 +75,45 @@ def compute(spec: StrategySpec, bars: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def compute_rule(spec: StrategySpec, bars: pd.DataFrame) -> pd.DataFrame:
+    """非统一执行规则（paper/rules.py）。输出列与 compute 相同，另有 stop_fill / next_stop。"""
+    from factors.core import htf_feature
+    from paper.rules import state_trail
+    if spec.rule != "state_trail":
+        raise ValueError(f"未知执行规则 {spec.rule}")
+    z = spec.signal(bars)
+    ny = bars.index.tz_localize("UTC").tz_convert("America/New_York")
+    mins = ny.hour * 60 + ny.minute
+    start = 17 * 60 - 2 * pd.Timedelta(BAR[spec.freq]).seconds // 60
+    flat = np.asarray((mins >= start) & (mins < 18 * 60))
+    atrd = np.nan_to_num(htf_feature(bars, spec.freq, "1D", lambda b: atr(b, 14)).to_numpy())
+    kw = dict(spec.rule_params)
+    pos_open, pnl, dpos, held_end, stop_fill, next_stop, final = state_trail(
+        np.nan_to_num(z.to_numpy()), bars["open"].to_numpy(), bars["high"].to_numpy(), bars["low"].to_numpy(),
+        flat, atrd, spec.entry, spec.exit, kw.get("trail", 2.0))
+    oz = spec.lots * 100
+    out = pd.DataFrame({"open": bars["open"], "close": bars["close"], "z": z,
+                        "z_exec": z.where(~flat, 0.0), "pos": pos_open}, index=bars.index)
+    out["target"] = out["pos"].shift(-1).fillna(final)
+    a = atr(bars, params(spec.freq)["atr"])
+    out["atr_prev"] = a.shift(1)
+    sw = held_end * swap_units(bars.index).to_numpy() * SWAP
+    out["gross"] = pnl * oz
+    out["spread"] = dpos * SPREAD / 2 * oz
+    out["swap"] = sw * oz
+    out["net"] = out["gross"] - out["spread"] - out["swap"]
+    out["net_R"] = (pnl - dpos * SPREAD / 2 - sw) / out["atr_prev"]
+    out["stop_fill"] = stop_fill
+    out["next_stop"] = next_stop
+    return out
+
+
 def fingerprint(spec: StrategySpec, bars: pd.DataFrame) -> str:
-    """行为指纹：固定历史区间上的信号（6 位小数）与目标仓位。"""
+    """行为指纹：固定历史区间上的信号（6 位小数）与目标仓位；非统一规则另加实际持仓。"""
     c = compute(spec, bars).loc[FINGERPRINT_WINDOW[0]:FINGERPRINT_WINDOW[1]]
     payload = np.round(c["z"].fillna(0).to_numpy(), 6).tobytes() + c["target"].to_numpy().tobytes()
+    if spec.rule != "standard":
+        payload += spec.rule.encode() + repr(spec.rule_params).encode() + c["pos"].to_numpy().tobytes()
     return hashlib.sha256(payload).hexdigest()[:16]
 
 
@@ -94,10 +131,12 @@ def trades_from(c: pd.DataFrame, lots: float) -> pd.DataFrame:
     for _, t in g.groupby("seg"):
         i_last = c.index.get_loc(t.index[-1])
         closed = i_last + 1 < len(c)
+        stop_px = t["stop_fill"].iloc[-1] if "stop_fill" in t else np.nan
+        stopped = not np.isnan(stop_px)
         rows.append({"entry_time": t.index[0], "side": "LONG" if t["pos"].iloc[0] > 0 else "SHORT",
                      "entry_open": t["open"].iloc[0],
-                     "exit_time": c.index[i_last + 1] if closed else pd.NaT,
-                     "exit_open": c["open"].iloc[i_last + 1] if closed else np.nan,
+                     "exit_time": (t.index[-1] if stopped else c.index[i_last + 1]) if closed else pd.NaT,
+                     "exit_open": (stop_px if stopped else c["open"].iloc[i_last + 1]) if closed else np.nan,
                      "bars": len(t), "gross": t["gross"].sum(),
                      "spread": SPREAD * oz * (1.0 if closed else 0.5), "swap": t["swap"].sum(), "is_open": not closed})
     tr = pd.DataFrame(rows, columns=cols)
@@ -128,5 +167,6 @@ def next_action(c: pd.DataFrame, spec: StrategySpec, last_m1: pd.Timestamp) -> d
     return {"strategy": spec.id, "as_of_bar": str(c.index[-1]), "bar_close_utc": str(bar_end), "last_m1_utc": str(last_m1),
             "z": round(float(last["z"]), 3), "z_exec": round(float(last["z_exec"]), 3),
             "current_position": cur, "target_position": tgt,
-            "action_at_next_open": act, "entry": spec.entry, "exit": spec.exit,
+            "action_at_next_open": act, "entry": spec.entry, "exit": spec.exit, "rule": spec.rule,
+            "stop_for_next_bar": (round(float(last["next_stop"]), 3) if "next_stop" in c and not np.isnan(last["next_stop"]) else None),
             "in_flat_window": bool(last["z_exec"] == 0 and last["z"] != 0)}

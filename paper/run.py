@@ -26,10 +26,11 @@ def main() -> None:
     args = ap.parse_args()
     now = datetime.now(timezone.utc)
     cache, rows = {}, []
-    for spec in [s for s in SPECS if s.status == "active"]:
+    for spec in [s for s in SPECS if s.status in ("active", "shadow")]:
         pre_path = os.path.join(STATE, spec.id, "prereg.json")
         if not os.path.exists(pre_path):
             raise SystemExit(f"{spec.id} 未登记：先运行 python -m paper.onboard {spec.id} --register")
+        sig_role = "影子" if spec.status == "shadow" else "在跑"
         pre = json.load(open(pre_path, encoding="utf-8"))
         if spec.freq not in cache:
             cache[spec.freq] = load_bars(args.data_dir, spec.freq)
@@ -57,7 +58,7 @@ def main() -> None:
         print("没有 active 策略")
         return
     t = pd.DataFrame(rows)[["strategy", "bar_close_utc", "z", "current_position", "target_position",
-                            "action_at_next_open", "forward_days", "forward_cum_usd", "forward_cum_R", "data_age_hours"]]
+                            "action_at_next_open", "stop_for_next_bar", "forward_days", "forward_cum_usd", "forward_cum_R", "data_age_hours"]]
     print(t.to_string(index=False))
     old = [r["strategy"] for r in rows if r["data_age_hours"] > 72]
     if old:

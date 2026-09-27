@@ -62,6 +62,9 @@ def main() -> None:
     ok &= not miss
 
     others = [s for s in SPECS if s.status == "active" and s.id != spec.id]
+    if spec.status == "shadow":
+        print(f"[2][3] 影子版本（对照 {spec.shadow_of}）：不计入组合，跳过相关性与组合贡献检查")
+        others = []
     if others:
         R = pd.DataFrame({s.id: backtest_daily(s, args.data_dir)["net_R"] for s in others}).fillna(0)
         cand = d["net_R"].reindex(R.index).fillna(0)
@@ -71,7 +74,7 @@ def main() -> None:
         before, after = sharpe(R.sum(axis=1)), sharpe(R.sum(axis=1) + cand)
         print(f"[3] 组合夏普（R 口径）：加入前 {before:.2f} → 加入后 {after:.2f}", "✅" if after >= before else "❌")
         ok &= after >= before
-    else:
+    elif spec.status != "shadow":
         print("[2][3] 目前没有在跑策略，跳过相关性与组合贡献检查")
 
     b = bands(d)
@@ -101,6 +104,11 @@ def main() -> None:
         },
         "backtest_max_drawdown_R": round(float((d["cum_R"] - d["cum_R"].cummax()).min()), 3),
     }
+    if spec.status == "shadow":
+        prereg["shadow_of"] = spec.shadow_of
+        prereg["criteria"]["shadow_decision"] = (
+            f"252 个交易日时比较前向结果：若本影子版本的前向日度 R 夏普高于 {spec.shadow_of}，且未触发自身失败线，"
+            f"则以本规则建立 {spec.shadow_of} 的新版本（重新走准入与登记），否则停止本影子版本；252 日之前不做切换。")
     json.dump(prereg, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
     fills = os.path.join(STATE, spec.id, "fills_manual.csv")
     if not os.path.exists(fills):

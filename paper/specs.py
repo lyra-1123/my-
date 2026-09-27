@@ -31,8 +31,11 @@ class StrategySpec:
     exit: float = 0.3
     lots: float = 0.01                        # 0.01 手 = 1 盎司
     forward_start: str = ""                   # 前向测试起始日（UTC 日期），此前为回测
-    status: str = "candidate"                 # candidate / active / retired
+    status: str = "candidate"                 # candidate / active / shadow / retired
     notes: str = ""
+    rule: str = "standard"                    # standard（迟滞+换日前平仓）/ state_trail（见 paper/rules.py）
+    rule_params: tuple = ()                   # 例如 (("trail", 2.0),)
+    shadow_of: str = ""                       # 影子版本对照的策略 id
     evidence: dict = field(default_factory=dict, hash=False, compare=False)
 
     def signal(self, df: pd.DataFrame) -> pd.Series:
@@ -72,10 +75,28 @@ SPECS.append(
         components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),
         norm=1000, entry=1.5, exit=0.3, lots=0.01,
         forward_start="2026-09-28",
-        status="candidate",
-        notes="第八批；参数为先验值；见 reports/batch8_candidate_validation.txt、reports/trend_continuation_batch8.md",
+        status="active",
+        notes="第八批；参数为先验值；见 docs/strategy_HA1H-v1.md、reports/trend_continuation_batch8.md",
         evidence={"oos_sharpe_atr_2020_": 0.59, "is_sharpe_atr": 0.62, "cscv_oos_sharpe_median": 0.61,
                   "param_PBO": 0.111, "research_PBO": 0.027, "DSR_Neff20": 0.279},
+    )
+)
+
+
+SPECS.append(
+    StrategySpec(
+        id="HA1H-TS2-shadow",
+        description="HA1H-v1 的影子版本：信号相同；每日平仓后按迟滞状态回补 + 移动止损 2×日线 ATR（不计入组合，仅与 v1 做前向对比）",
+        freq="1H",
+        components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),
+        norm=1000, entry=1.5, exit=0.3, lots=0.01,
+        forward_start="2026-09-28",
+        status="shadow",
+        rule="state_trail", rule_params=(("trail", 2.0),),
+        shadow_of="HA1H-v1",
+        notes="出场规则检验中样本外最好、样本内不如 v1，按纪律不能直接采用；预登记为影子版本，由前向数据决定。见 reports/ha1h_exit_rules.md",
+        evidence={"is_sharpe_atr": 0.56, "oos_sharpe_atr_2020_": 0.75, "cscv_oos_sharpe_median": 0.56,
+                  "exit_rules_PBO": 0.083, "research_PBO": 0.027},
     )
 )
 

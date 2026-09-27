@@ -24,13 +24,22 @@ from paper.specs import SPECS
 
 def main() -> None:
     ok = True
-    for spec in [s for s in SPECS if s.status in ("active", "candidate")]:
+    for spec in [s for s in SPECS if s.status in ("active", "candidate", "shadow")]:
         bars, last_m1 = load_bars("data", spec.freq)
         c = compute(spec, bars)
         oos = bars.index >= pd.Timestamp("2020-01-01")
-        ref = backtest(bars[oos], execution_signal(spec.signal(bars), spec.freq)[oos])
+        if spec.rule == "state_trail":
+            from research.ha1h_exit_rules import SPREAD as _SP, SWAP as _SW, SWU, df as rdf, simulate
+            po, pn, dp, he = simulate("state", spec.exit, trail=dict(spec.rule_params)["trail"])
+            m = rdf.index >= pd.Timestamp("2020-01-01")
+            ref = {"net": round(float((pn - dp * _SP / 2 - he * SWU * _SW)[m].sum()), 1),
+                   "trips": int(round(float(dp[m].sum() / 2)))}
+            c_trips = int(round(float(c.loc[oos, "spread"].sum() / (_SP / 2 * spec.lots * 100) / 2)))
+        else:
+            ref = backtest(bars[oos], execution_signal(spec.signal(bars), spec.freq)[oos])
+            c_trips = None
         eng = round(float(c.loc[oos, "net"].sum()), 1)
-        eng_trips = int(round(float(c.loc[oos, "pos"].diff().abs().fillna(c.loc[oos, "pos"].abs()).sum() / 2)))
+        eng_trips = c_trips if c_trips is not None else int(round(float(c.loc[oos, "pos"].diff().abs().fillna(c.loc[oos, "pos"].abs()).sum() / 2)))
         r1 = abs(eng - ref["net"]) < 0.2 and eng_trips == ref["trips"]
         print(f"[1] {spec.id} 对账：引擎 {eng:+.1f}$/{eng_trips} 笔 vs 评估器 {ref['net']:+.1f}$/{ref['trips']} 笔 → {'OK' if r1 else 'FAIL'}")
 

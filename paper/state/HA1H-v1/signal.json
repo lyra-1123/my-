@@ -1,9 +1,9 @@
 {
- "strategy": "TT30-EW-v1",
- "as_of_bar": "2026-09-25 20:30:00",
+ "strategy": "HA1H-v1",
+ "as_of_bar": "2026-09-25 20:00:00",
  "bar_close_utc": "2026-09-25 21:00:00",
  "last_m1_utc": "2026-09-25 20:59:00",
- "z": 0.879,
+ "z": -1.257,
  "z_exec": 0.0,
  "current_position": 0.0,
  "target_position": 0.0,

@@ -11,6 +11,16 @@
 | `paper/selftest.py` | 自检：与研究回测对账、指纹敏感性、未走完 K 线、前向流程 |
 | `paper/state/<id>/` | `prereg.json`（登记后不可改）、`signal.json`、`trades.csv`、`daily.csv`、`fills_manual.csv`（手工记录实际成交） |
 
+## 当前策略
+| id | 状态 | 说明 |
+|---|---|---|
+| TT30-EW-v1 | active | 30MIN 趋势尾部等权组合（`docs/strategy_TT30-EW-v1.md`） |
+| HA1H-v1 | active | 1H 52 周高点锚定动量（`docs/strategy_HA1H-v1.md`） |
+| HA1H-TS2-shadow | shadow | HA1H-v1 的影子版本：按状态回补 + 2×日 ATR 移动止损；不计入组合，252 个交易日时与 v1 比较 |
+
+影子版本（status="shadow"）：用来前向检验"样本外更好、但按纪律不能直接采用"的规则变体。它照常记账，但不计入组合、不参与相关性准入；登记时写死与对照策略的判定规则。
+非统一执行规则在 `paper/rules.py` 中实现，必须在 `paper/selftest.py` 中与研究脚本逐根对账。
+
 ## 日常流程
 1. 更新数据：在本机运行 Dukascopy 导出脚本，把最新的 `DAT_ASCII_XAUUSD_M1_2026.csv` 放进 `data/`（或上传到 Google Drive 后运行 `bash scripts/fetch_data.sh`）。
 2. `python -m paper.run` → 看每个策略"下一根开盘的操作"，并更新前向账本。

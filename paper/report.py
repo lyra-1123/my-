@@ -30,7 +30,8 @@ def status(cum_r: float, days: int, bands: dict) -> str:
 def main() -> None:
     lines = ["# 模拟盘前向测试报告", ""]
     port = {}
-    for spec in [s for s in SPECS if s.status == "active"]:
+    fwd = {}
+    for spec in [s for s in SPECS if s.status in ("active", "shadow")]:
         base = os.path.join(STATE, spec.id)
         pre = json.load(open(os.path.join(base, "prereg.json"), encoding="utf-8"))
         sig = json.load(open(os.path.join(base, "signal.json"), encoding="utf-8")) if os.path.exists(os.path.join(base, "signal.json")) else {}
@@ -39,7 +40,9 @@ def main() -> None:
         days = len(d); cum_r = float(d["net_R"].sum()) if days else 0.0
         closed = tr[~tr["is_open"].astype(bool)] if len(tr) else tr
         mdd = float((d["cum_R"] - d["cum_R"].cummax()).min()) if days else 0.0
-        lines += [f"## {spec.id}", "", f"- {spec.description}",
+        fwd[spec.id] = d["net_R"] if days else pd.Series(dtype=float)
+        role = f"（影子版本，对照 {spec.shadow_of}，不计入组合）" if spec.status == "shadow" else ""
+        lines += [f"## {spec.id}{role}", "", f"- {spec.description}",
                   f"- 前向起始 {spec.forward_start}；已运行 {days} 个交易日；数据截至 {sig.get('last_m1_utc', '—')}",
                   f"- 当前仓位 {sig.get('current_position', '—')}，下一根开盘操作：**{sig.get('action_at_next_open', '—')}**（z={sig.get('z', '—')}）",
                   f"- 累计：{cum_r:+.3f} R，{(d['net_usd'].sum() if days else 0):+.2f}$；已平仓 {len(closed)} 笔，"
@@ -56,8 +59,13 @@ def main() -> None:
                                   left_on="time_utc", right_on="t", direction="nearest", tolerance=pd.Timedelta("30min"))
                 m["slip"] = np.where(m["side_y"] == "LONG", m["price"] - m["entry_open"], m["entry_open"] - m["price"])
                 lines.append(f"- 实际成交 {len(f)} 笔；相对模型开盘价的平均不利滑点 {m['slip'].mean():+.3f}$（已含点差）")
+        if spec.status == "shadow" and days and len(fwd.get(spec.shadow_of, [])):
+            a, b = d["net_R"], fwd[spec.shadow_of].reindex(d.index).fillna(0)
+            sh = lambda x: x.mean() / x.std() * np.sqrt(252) if x.std() > 0 else float("nan")
+            lines.append(f"- 与 {spec.shadow_of} 的前向比较：累计 R {a.sum():+.2f} vs {b.sum():+.2f}；日度 R 夏普 {sh(a):+.2f} vs {sh(b):+.2f}"
+                         f"（判定在 252 个交易日时进行，见 prereg.json 的 shadow_decision）")
         lines.append("")
-        if days:
+        if days and spec.status == "active":
             port[spec.id] = d["net_R"]
     if len(port) > 1:
         P = pd.DataFrame(port).fillna(0)

@@ -1,0 +1,71 @@
+{
+ "strategy": "HA1H-v1",
+ "registered_at_utc": "2026-09-27T09:17:52+00:00",
+ "forward_start": "2026-09-28",
+ "spec": {
+  "id": "HA1H-v1",
+  "description": "1H 52 周高点锚定动量：价格在已收盘日线 250 日高低区间中的位置，迟滞开平仓，换日前平仓",
+  "freq": "1H",
+  "components": [
+   [
+    "HighAnchorMomentum",
+    1.0,
+    [
+     [
+      "anchor_days",
+      250
+     ]
+    ]
+   ]
+  ],
+  "norm": 1000,
+  "entry": 1.5,
+  "exit": 0.3,
+  "lots": 0.01,
+  "forward_start": "2026-09-28",
+  "status": "active",
+  "notes": "第八批；参数为先验值；见 docs/strategy_HA1H-v1.md、reports/trend_continuation_batch8.md",
+  "rule": "standard",
+  "rule_params": [],
+  "shadow_of": ""
+ },
+ "evidence": {
+  "oos_sharpe_atr_2020_": 0.59,
+  "is_sharpe_atr": 0.62,
+  "cscv_oos_sharpe_median": 0.61,
+  "param_PBO": 0.111,
+  "research_PBO": 0.027,
+  "DSR_Neff20": 0.279
+ },
+ "fingerprint": "c1ca467d69ce1ed7",
+ "backtest_daily_R_sharpe": 0.553,
+ "bands_cum_R": {
+  "21": {
+   "p5": -13.734,
+   "p50": 0.0,
+   "p95": 20.901
+  },
+  "63": {
+   "p5": -24.402,
+   "p50": 6.979,
+   "p95": 27.746
+  },
+  "126": {
+   "p5": -23.581,
+   "p50": 10.856,
+   "p95": 35.406
+  },
+  "252": {
+   "p5": -20.234,
+   "p50": 16.787,
+   "p95": 60.936
+  }
+ },
+ "criteria": {
+  "fail": "前向累计 R 低于同长度窗口回测分布的 5% 分位（在 63/126/252 个交易日检查）→ 停止该策略并复查",
+  "warn": "前向累计 R 低于 50% 分位，或前向最大回撤超过回测最大回撤的 1.5 倍",
+  "expectation": "日度 R 夏普基准取 CSCV 样本外中位数（evidence.cscv_oos_sharpe_median），而非全样本回测值",
+  "min_evaluation": "252 个交易日之前不对'有效'下结论，只检查是否失败"
+ },
+ "backtest_max_drawdown_R": -59.349
+}

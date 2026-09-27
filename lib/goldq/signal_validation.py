@@ -198,7 +198,8 @@ def print_report(hit_report: dict, stability: pd.DataFrame, target_usd,
 
 
 def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
-                            cost_usd: float = 0.0) -> dict:
+                            cost_usd: float = 0.0, swap_long_usd: float = 0.0,
+                            swap_short_usd: float = 0.0) -> dict:
     """
     同一批信号bar上，按 rule 分别模拟"信号方向"和"反方向"，随机方向的期望 = 两者平均（抛硬币的精确期望，
     不用抽样）。方向边际 = 信号方向R - 随机方向R，逐笔配对做 t 检验。
@@ -212,9 +213,10 @@ def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
         o = simulate_trade(market, int(pos), -d, rule)
         if t is None or o is None:
             continue
-        rows.append({"entry_idx": int(pos), "direction": d, "r": t["raw_r"], "r_opp": o["raw_r"], "cost_r": cost_usd / t["risk"],
-                     "win": t["raw_pnl"] - cost_usd > 0, "reason": t["exit_reason"],
-                     "ambiguous": t["ambiguous"], "bars": t["bars_held"]})
+        cost = cost_usd + (swap_long_usd if d > 0 else swap_short_usd) * t["nights"]
+        rows.append({"entry_idx": int(pos), "direction": d, "r": t["raw_r"], "r_opp": o["raw_r"], "cost_r": cost / t["risk"],
+                     "win": t["raw_pnl"] - cost > 0, "reason": t["exit_reason"],
+                     "ambiguous": t["ambiguous"], "bars": t["bars_held"], "nights": t["nights"]})
     if not rows:
         return {"n": 0}
     r = pd.DataFrame(rows)
@@ -233,6 +235,7 @@ def evaluate_exit_direction(market: Market, signal: pd.Series, rule: ExitRule,
         "net_r": (r["r"] - r["cost_r"]).mean(),
         "ambiguous_pct": r["ambiguous"].mean(),
         "avg_bars": r["bars"].mean(),
+        "avg_nights": r["nights"].mean(),
         "reasons": r["reason"].value_counts().to_dict(),
         "records": r,
     }
@@ -246,7 +249,7 @@ def print_exit_direction_table(results: dict, min_edge_t: float = 2.0, min_n: in
     table = pd.DataFrame({name: {k: v for k, v in res.items() if k not in ("reasons", "records")}
                           for name, res in results.items()}).T
     cols = ["n", "win_rate", "r_signal", "r_random", "edge_r", "edge_t", "cost_r", "net_r",
-            "ambiguous_pct", "avg_bars"]
+            "ambiguous_pct", "avg_bars", "avg_nights"]
     print(table[cols].to_string(float_format=lambda x: f"{x:.3f}"))
     print("\nr_signal/r_random：成本前每笔平均R；edge_r = 两者之差（方向判断力），edge_t 为其t值；"
           "\ncost_r：成本折成R；net_r = r_signal - cost_r（成本后每笔平均R）")

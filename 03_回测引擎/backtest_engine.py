@@ -33,7 +33,7 @@ def run_backtest(df: pd.DataFrame, market: Market, signal: pd.Series, rule: Exit
         if t is None:
             continue
         busy_until = t["exit_idx"]
-        t["pnl"] = t["raw_pnl"] - cost
+        t["pnl"] = t["raw_pnl"] - cost - cost_model.swap_cost(t["direction"], t["nights"])
         t["net_r"] = t["pnl"] / t["risk"]
         t["return_pct"] = t["pnl"] / t["entry_price"]
         trades.append(t)
@@ -75,6 +75,7 @@ def summarize_trades(trades: pd.DataFrame) -> dict:
         "gross_pnl": trades["raw_pnl"].sum(),
         "total_cost": (trades["raw_pnl"] - trades["pnl"]).sum(),
         "n_ambiguous": int(trades["ambiguous"].sum()),
+        "avg_nights": trades["nights"].mean(),
         "avg_raw_r": trades["raw_r"].mean(),
         "avg_net_r": trades["net_r"].mean(),
     }

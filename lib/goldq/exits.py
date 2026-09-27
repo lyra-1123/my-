@@ -41,6 +41,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from goldq.levels import trading_date
+
 STOP_MODES = ("structure", "atr_trail", "atr_fixed", "given", "given_trail")
 TP_MODES = ("fixed_r", "none", "indicator", "partial", "given")
 
@@ -112,6 +114,7 @@ class Market:
     entry_price: np.ndarray | None = None  # 限价入场价，NaN = 信号bar收盘价入场
     entry_hi: np.ndarray | None = None     # 限价成交后当根剩余走势的最高/最低
     entry_lo: np.ndarray | None = None
+    rollover_cum: np.ndarray | None = None  # 截至该bar所在交易日开始，累计经过的隔夜结算次数（周三算 3 次）
 
     def __len__(self):
         return len(self.close)
@@ -128,6 +131,11 @@ def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
     if t.dt.tz is not None:
         t = t.dt.tz_convert("UTC").dt.tz_localize(None)
     time_min = t.to_numpy().astype("datetime64[m]").astype("int64")  # 与底层存储精度(ns/us)无关
+    td = trading_date(df["time_utc"])
+    days = pd.Index(td.unique()).sort_values()
+    weight = np.where(days.dayofweek == 2, 3, 1)  # 周三结算收三倍隔夜利息（覆盖周末）
+    cum_day = np.r_[0, np.cumsum(weight)[:-1]]
+    rollover_cum = cum_day[days.get_indexer(td)]
     return Market(
         time_min=time_min,
         open=df["open"].to_numpy(dtype=float), high=df["high"].to_numpy(dtype=float),
@@ -141,6 +149,7 @@ def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
         entry_price=None if entry_price is None else entry_price.to_numpy(dtype=float),
         entry_hi=None if entry_hi is None else entry_hi.to_numpy(dtype=float),
         entry_lo=None if entry_lo is None else entry_lo.to_numpy(dtype=float),
+        rollover_cum=rollover_cum,
     )
 
 
@@ -268,4 +277,5 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
         "raw_pnl": raw_pnl, "raw_r": raw_pnl / risk,
         "bars_held": exit_idx - pos, "exit_reason": reason,
         "ambiguous": ambiguous, "partial_filled": partial_filled,
+        "nights": int(m.rollover_cum[exit_idx] - m.rollover_cum[pos]) if m.rollover_cum is not None else 0,
     }

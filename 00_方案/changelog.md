@@ -128,3 +128,8 @@
   但 DSR 0.066、OOS 年化 Sharpe 0.37。收益集中在趋势市（ADX>25）；该过滤是事后观察，需新数据才能检验。
 - 假设9 v2：H1/H4 × 第一段 {5, 8}×ATR，同一次回调只做一笔，大周期过滤 H1→H4、H4→交易日。
   `signal_pullback_second_leg.py` 新增 dedupe、交易日 EMA50、按周期的停盘阈值。累计策略定义数将为 72。
+- 假设9 v2 第4章：4 个组合未通过，但 45-91% 交易被"停盘前平仓"默认规则截断，结论不采信。
+  **修正为 v2b**：`exits.exit_rule_for(tf, hold_through_gaps=True)` 持仓过周末；成本模型新增隔夜利息
+  `swap_long_usd / swap_short_usd`（每盎司每晚，默认 0 待用户提供）；`Market.rollover_cum` 按交易日结算次数
+  计晚数（周三 3 倍），回测与第4章筛选都报告平均持仓晚数。**累计正式验证的策略定义数 = 72**
+  （v2b 运行后为 76）。

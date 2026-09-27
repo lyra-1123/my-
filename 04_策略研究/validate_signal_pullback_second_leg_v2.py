@@ -4,8 +4,11 @@ validate_signal_pullback_second_leg_v2.py
 假设9 v2 第4章筛选：{H1, H4} × 第一段 {5, 8}×ATR，同一次回调只交易一笔（dedupe），
 大周期过滤 H1 看 H4、H4 看交易日。
 
+默认（v2b）持仓过周末/假期，成本含隔夜利息（cost_model.py 的 swap_*）；
+加 --weekend-flat 复现 v2（停盘前强制平仓，2026-09-27 已记录的那次结果）。
+
 用法：
-    python 04_策略研究/validate_signal_pullback_second_leg_v2.py
+    python 04_策略研究/validate_signal_pullback_second_leg_v2.py [--weekend-flat]
 """
 
 import sys
@@ -29,8 +32,11 @@ def market_for(feat, sig):
 
 
 def main() -> None:
-    cost = SimpleCostModel().round_trip_cost()
-    print(f"[加载] M1 ... 成本 ${cost:.2f}/笔，出场 止损A + 第二段=第一段，同一次回调只做一笔")
+    hold = "--weekend-flat" not in sys.argv
+    cm = SimpleCostModel()
+    cost = cm.round_trip_cost()
+    print(f"[加载] M1 ... 成本 ${cost:.2f}/笔 + 隔夜利息 多${cm.swap_long_usd}/空${cm.swap_short_usd} 每盎司每晚，"
+          f"出场 止损A + 第二段=第一段，同一次回调只做一笔，{'持仓过周末' if hold else '停盘前平仓（v2）'}")
     m1 = load_m1()
 
     results, times = {}, {}
@@ -48,7 +54,8 @@ def main() -> None:
             if leg == LEG_ATR_GRID[0]:
                 print(f"  [{tf} 第一段>={leg}ATR] 最近 5 个（UTC，bid 价），请在 MT5 图上核对：")
                 print(describe_patterns(feat, pats).to_string(index=False))
-            results[f"{tf}|leg{leg}"] = evaluate_exit_direction(market_for(feat, sig), s, exit_rule_for(tf), cost)
+            results[f"{tf}|leg{leg}"] = evaluate_exit_direction(market_for(feat, sig), s, exit_rule_for(tf, hold), cost,
+                                                                cm.swap_long_usd, cm.swap_short_usd)
     print()
 
     passed = print_exit_direction_table(results)

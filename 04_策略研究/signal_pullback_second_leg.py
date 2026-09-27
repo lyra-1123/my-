@@ -50,8 +50,10 @@ HTF_EMA = 50
 EXIT_RULE = ExitRule("stopA_target_leg", "given", "given", max_bars=None)
 
 
-def exit_rule_for(tf: str) -> ExitRule:
-    return ExitRule("stopA_target_leg", "given", "given", max_bars=None, max_gap_minutes=GAP_MINUTES[tf])
+def exit_rule_for(tf: str, hold_through_gaps: bool = False) -> ExitRule:
+    """hold_through_gaps=True：持仓过周末/假期（跳空越过止损按开盘价成交），不在停盘前强制平仓。"""
+    gap = 10**9 if hold_through_gaps else GAP_MINUTES[tf]
+    return ExitRule("stopA_target_leg", "given", "given", max_bars=None, max_gap_minutes=gap)
 
 
 def htf_trend(ltf: pd.DataFrame, m1: pd.DataFrame, ltf_rule: str, htf_rule: str) -> pd.Series:

@@ -174,7 +174,8 @@ def print_chapter5_report(result: dict, candidate_name: str) -> None:
           f"总PnL ${c['total_pnl']:.1f}/oz，逐笔Sharpe {c['sharpe']:.3f}，最大回撤 ${c['max_drawdown']:.1f}/oz")
     print(f"出场原因分布：{c['exit_reason_counts']}，年均成交 {result['trades_per_year']:.0f} 笔")
     print(f"成本前PnL ${c['gross_pnl']:.1f}/oz - 成本 ${c['total_cost']:.1f}/oz = 成本后 ${c['total_pnl']:.1f}/oz")
-    print(f"平均每笔 {c['avg_raw_r']:+.3f}R（成本前） / {c['avg_net_r']:+.3f}R（成本后），平均持仓 {c['avg_bars_held']:.1f} 根")
+    print(f"平均每笔 {c['avg_raw_r']:+.3f}R（成本前） / {c['avg_net_r']:+.3f}R（成本后），"
+          f"平均持仓 {c['avg_bars_held']:.1f} 根、{c['avg_nights']:.1f} 晚（成本已含隔夜利息，当前设置见 cost_model.py）")
     print(f"同bar止损与止盈/分批都触及 {c['n_ambiguous']} 笔（已按止损记，偏保守）")
 
     cfg = result["wf_config"]

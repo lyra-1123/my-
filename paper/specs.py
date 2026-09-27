@@ -64,6 +64,22 @@ SPECS: list[StrategySpec] = [
 ]
 
 
+SPECS.append(
+    StrategySpec(
+        id="HA1H-v1",
+        description="1H 52 周高点锚定动量：价格在已收盘日线 250 日高低区间中的位置，迟滞开平仓，换日前平仓",
+        freq="1H",
+        components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),
+        norm=1000, entry=1.5, exit=0.3, lots=0.01,
+        forward_start="2026-09-28",
+        status="candidate",
+        notes="第八批；参数为先验值；见 reports/batch8_candidate_validation.txt、reports/trend_continuation_batch8.md",
+        evidence={"oos_sharpe_atr_2020_": 0.59, "is_sharpe_atr": 0.62, "cscv_oos_sharpe_median": 0.61,
+                  "param_PBO": 0.111, "research_PBO": 0.027, "DSR_Neff20": 0.279},
+    )
+)
+
+
 def get_spec(sid: str) -> StrategySpec:
     for s in SPECS:
         if s.id == sid:

@@ -62,7 +62,16 @@ python -m factors.evaluate --factors <因子名>      # 单个/多个；不带�
 - 按 `references/rule_adaptation.md`：规则从因子假设推出、每类最多 3~4 套、参数只在样本内选、样本外只跑一次、所有试验登记进 `reports/rule_trials.csv`。
 - ICIR 不显著的因子禁止做规则适配。
 
-### 8. 沉淀
+### 8. 过拟合检验（候选策略进入前向测试之前必须做）
+- `python -m research.overfitting_tests`：CSCV/PBO（参数层 + 研究层两个层面）与 DSR（多个 N 口径）。
+- 解读要点（lessons L19）：
+  - 参数层 PBO≈0.5 而样本外仍为正，说明参数无所谓，冻结先验参数即可；
+  - 研究层 PBO 要低；
+  - DSR 用有效独立试验数 N_eff（收益相关矩阵特征值的参与比），同时报告保守口径；
+  - 前向测试的预期以 CSCV 的"样本内最优在样本外的夏普中位数"为基准。
+- 所有登记试验（reports/rule_trials.csv）都要计入 DSR 的 N。
+
+### 9. 沉淀
 - 新的、可复现的规律写进 `references/lessons.md`（写清证据：频率、样本区间、IC、年度一致性）。
 - 被拒绝的因子**保留在库里**（负面结果同样是知识，防止重复挖掘）。
 - 提交：因子代码 + `reports/factors/*.json` + `FACTOR_LIBRARY.md` + lessons。`data/` 不入库。

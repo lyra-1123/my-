@@ -9,6 +9,8 @@ exits.py
              风险距离夹在 [min_risk_atr, max_risk_atr]×ATR 之间，避免过近（成本吃光）或过远
   atr_trail  初始 atr_stop_mult×ATR，之后按"入场以来最有利价 ∓ atr_stop_mult×入场ATR"只收紧不放松
   atr_fixed  atr_stop_mult×ATR，之后不动（旧版对称SL/TP的口径，仅为复现历史结果保留）
+  given      由信号给出的止损距离（prepare_market 的 stop_dist，比如形态止损），之后不动
+  given_trail  初始用信号给出的止损距离，之后按 atr_stop_mult×入场ATR 移动止损（只收紧）
 
 止盈（take_profit）：
   fixed_r    止盈 = 入场 ± r_multiple × 风险距离(1R)
@@ -16,6 +18,9 @@ exits.py
   indicator  收盘时出现反向指标信号（由调用方给出 exit_long / exit_short 布尔序列）按收盘价离场
   partial    价格到 partial_r×R 平掉 partial_fraction 仓位，止损移到保本；剩余仓位用移动止损
              （atr_trail 沿用原距离；structure 以 1R 为距离开始移动）
+  given      由信号给出的止盈距离（prepare_market 的 target_dist，比如形态等幅目标）
+
+given 类用"距入场价的距离"而不是价位：第4章随机方向对照时，反方向用同样的距离镜像，公平可比。
 
 执行假设（全部偏保守、严格因果）：
   - 信号bar收盘价进场；第 j 根bar的止损位只用到第 j-1 根为止的信息
@@ -31,8 +36,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-STOP_MODES = ("structure", "atr_trail", "atr_fixed")
-TP_MODES = ("fixed_r", "none", "indicator", "partial")
+STOP_MODES = ("structure", "atr_trail", "atr_fixed", "given", "given_trail")
+TP_MODES = ("fixed_r", "none", "indicator", "partial", "given")
 
 
 @dataclass(frozen=True)
@@ -96,14 +101,18 @@ class Market:
     atr: np.ndarray
     exit_long: np.ndarray | None
     exit_short: np.ndarray | None
+    stop_dist: np.ndarray | None = None
+    target_dist: np.ndarray | None = None
 
     def __len__(self):
         return len(self.close)
 
 
 def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
-                   exit_short: pd.Series | None = None) -> Market:
-    """df 需要 time_utc/open/high/low/close/atr。一次转成 numpy，供逐笔模拟反复使用。"""
+                   exit_short: pd.Series | None = None, stop_dist: pd.Series | None = None,
+                   target_dist: pd.Series | None = None) -> Market:
+    """df 需要 time_utc/open/high/low/close/atr。一次转成 numpy，供逐笔模拟反复使用。
+    stop_dist / target_dist：given 类出场用，信号bar上的止损/止盈距离（美元，正数），其余bar为NaN。"""
     t = pd.to_datetime(df["time_utc"])
     if t.dt.tz is not None:
         t = t.dt.tz_convert("UTC").dt.tz_localize(None)
@@ -115,6 +124,8 @@ def prepare_market(df: pd.DataFrame, exit_long: pd.Series | None = None,
         atr=df["atr"].to_numpy(dtype=float),
         exit_long=None if exit_long is None else exit_long.fillna(False).to_numpy(dtype=bool),
         exit_short=None if exit_short is None else exit_short.fillna(False).to_numpy(dtype=bool),
+        stop_dist=None if stop_dist is None else stop_dist.to_numpy(dtype=float),
+        target_dist=None if target_dist is None else target_dist.to_numpy(dtype=float),
     )
 
 
@@ -132,7 +143,15 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
     d = direction
     entry = m.close[pos]
 
-    if rule.stop == "structure":
+    if rule.stop in ("given", "given_trail") or rule.take_profit == "given":
+        if m.stop_dist is None or (rule.take_profit == "given" and m.target_dist is None):
+            raise ValueError("given 类出场需要在 prepare_market 里传入 stop_dist / target_dist")
+
+    if rule.stop in ("given", "given_trail"):
+        risk = m.stop_dist[pos]
+        if not np.isfinite(risk) or risk <= 0:
+            return None
+    elif rule.stop == "structure":
         lo = max(0, pos - rule.structure_lookback + 1)
         extreme = m.low[lo:pos + 1].min() if d == 1 else m.high[lo:pos + 1].max()
         risk = d * (entry - extreme) + rule.structure_buffer_atr * atr
@@ -141,9 +160,17 @@ def simulate_trade(m: Market, pos: int, direction: int, rule: ExitRule) -> dict 
         risk = rule.atr_stop_mult * atr
     stop = entry - d * risk
 
-    trailing = rule.stop == "atr_trail"
+    trailing = rule.stop in ("atr_trail", "given_trail")
     trail_dist = rule.atr_stop_mult * atr if trailing else risk
-    tp = entry + d * rule.r_multiple * risk if rule.take_profit == "fixed_r" else None
+    if rule.take_profit == "fixed_r":
+        tp = entry + d * rule.r_multiple * risk
+    elif rule.take_profit == "given":
+        target = m.target_dist[pos]
+        if not np.isfinite(target) or target <= 0:
+            return None
+        tp = entry + d * target
+    else:
+        tp = None
     partial_level = entry + d * rule.partial_r * risk if rule.take_profit == "partial" else None
     ind_flags = (m.exit_long if d == 1 else m.exit_short) if rule.take_profit == "indicator" else None
 

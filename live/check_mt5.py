@@ -47,15 +47,31 @@ def main():
         print("  正在读取 Dukascopy M1 全部历史（需要几分钟）…", flush=True)
         d = resample_ohlcv(load_m1(args.dukascopy_dir), "30MIN")
         m = fetch_bars("30MIN", C.HISTORY_BARS["30MIN"])
-        rd, rm = np.log(d["close"]).diff(), np.log(m["close"]).diff()
-        print("== 与 Dukascopy 的对齐（30MIN 收益在不同滞后下的相关，最佳应为 0 小时）")
+        step = pd.Timedelta("30min")
+        # 只用"上一根正好是 30 分钟前"的收益，避免跨缺口的收益污染相关系数
+        rd = np.log(d["close"]).diff().where(d.index.to_series().diff() == step)
+        rm = np.log(m["close"]).diff().where(m.index.to_series().diff() == step)
+        print("== MT5 30MIN 历史中超过 4 天的缺口（周末约 2 天，属正常）")
+        gaps = m.index.to_series().diff()
+        big = gaps[gaps > pd.Timedelta(days=4)]
+        for t, g in big.tail(15).items():
+            print(f"  {t - g} → {t}（{g.days} 天）")
+        if len(big) > 15:
+            print(f"  …共 {len(big)} 个")
+        if len(big) == 0:
+            print("  无")
+        print("== 与 Dukascopy 的对齐（30MIN 收益在不同时间平移下的相关，最佳应为 0 小时）")
         for lag in range(-6, 7):
-            x = pd.concat([rd, rm.shift(lag)], axis=1).dropna()
-            print(f"  滞后 {lag * 0.5:+.1f} 小时：相关 {x.corr().iloc[0, 1]:.3f}（{len(x)} 根重叠）")
-        both = pd.concat([d["close"], m["close"]], axis=1, keys=["duka", "mt5"]).dropna()
-        print(f"  同一时刻收盘价差：中位 {(both.mt5 - both.duka).median():+.3f}，绝对值 95% 分位 {(both.mt5 - both.duka).abs().quantile(.95):.3f}")
-        vd, vm = d["volume"].reindex(both.index), m["volume"].reindex(both.index)
-        print(f"  成交量相关（Dukascopy volume vs MT5 tick_volume）：{np.corrcoef(np.log1p(vd), np.log1p(vm))[0, 1]:.3f}")
+            x = pd.concat([rd, rm.shift(lag, freq=step)], axis=1, sort=True).dropna()
+            print(f"  平移 {lag * 0.5:+.1f} 小时：相关 {x.corr().iloc[0, 1]:.3f}（{len(x)} 根重叠）")
+        both = pd.concat([d[["close", "volume"]], m[["close", "volume"]], rd, rm], axis=1, sort=True,
+                         keys=["duka", "mt5", "rd", "rm"]).dropna()
+        both.columns = ["dc", "dv", "mc", "mv", "rd", "rm"]
+        print("== 按年份：收益相关 / 收盘价差 / 成交量相关（近几年最重要，实时计算只用最近约 1~2 年）")
+        for y, g in both.groupby(both.index.year):
+            diff = g.mc - g.dc
+            print(f"  {y}：{len(g):6d} 根，收益相关 {g.rd.corr(g.rm):.3f}，价差中位 {diff.median():+.2f} / 绝对值95%分位 {diff.abs().quantile(.95):.2f}，"
+                  f"成交量相关 {np.corrcoef(np.log1p(g.dv), np.log1p(g.mv))[0, 1]:.3f}")
     mt5.shutdown()
 
 

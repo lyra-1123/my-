@@ -164,7 +164,7 @@ def next_action(c: pd.DataFrame, spec: StrategySpec, last_m1: pd.Timestamp) -> d
     else:
         act = f"REVERSE → {'BUY' if tgt > 0 else 'SELL'} {lots} 手（先平后开）"
     bar_end = c.index[-1] + pd.Timedelta(BAR[spec.freq])
-    return {"strategy": spec.id, "as_of_bar": str(c.index[-1]), "bar_close_utc": str(bar_end), "last_m1_utc": str(last_m1),
+    return {"strategy": spec.id, "name": spec.name, "as_of_bar": str(c.index[-1]), "bar_close_utc": str(bar_end), "last_m1_utc": str(last_m1),
             "z": round(float(last["z"]), 3), "z_exec": round(float(last["z_exec"]), 3),
             "current_position": cur, "target_position": tgt,
             "action_at_next_open": act, "entry": spec.entry, "exit": spec.exit, "rule": spec.rule,

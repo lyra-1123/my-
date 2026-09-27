@@ -1,5 +1,6 @@
 {
  "strategy": "TT30-EW-v1",
+ "name": "日内30min强势跟随",
  "as_of_bar": "2026-09-25 20:30:00",
  "bar_close_utc": "2026-09-25 21:00:00",
  "last_m1_utc": "2026-09-25 20:59:00",
@@ -13,8 +14,8 @@
  "rule": "standard",
  "stop_for_next_bar": null,
  "in_flat_window": true,
- "run_at_utc": "2026-09-27T09:17:56+00:00",
- "data_age_hours": 36.3,
+ "run_at_utc": "2026-09-27T09:24:03+00:00",
+ "data_age_hours": 36.4,
  "forward_days": 0,
  "forward_cum_usd": 0.0,
  "forward_cum_R": 0.0,

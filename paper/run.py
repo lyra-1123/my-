@@ -57,7 +57,7 @@ def main() -> None:
     if not rows:
         print("没有 active 策略")
         return
-    t = pd.DataFrame(rows)[["strategy", "bar_close_utc", "z", "current_position", "target_position",
+    t = pd.DataFrame(rows)[["name", "strategy", "bar_close_utc", "z", "current_position", "target_position",
                             "action_at_next_open", "stop_for_next_bar", "forward_days", "forward_cum_usd", "forward_cum_R", "data_age_hours"]]
     print(t.to_string(index=False))
     old = [r["strategy"] for r in rows if r["data_age_hours"] > 72]

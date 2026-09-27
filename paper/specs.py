@@ -22,7 +22,7 @@ FINGERPRINT_WINDOW = ("2024-01-01", "2024-12-31")
 
 @dataclass(frozen=True)
 class StrategySpec:
-    id: str                                   # 唯一标识，含版本号，如 "TT30-EW-v1"
+    id: str                                   # 唯一标识，含版本号，如 "TT30-EW-v1"（登记后不可改，账本与指纹挂在 id 上）
     description: str
     freq: str                                 # 5MIN / 15MIN / 30MIN / 1H / 4H / 1D
     components: tuple                         # ((因子名, 权重, {参数覆盖}), ...)，权重符号即方向
@@ -36,6 +36,7 @@ class StrategySpec:
     rule: str = "standard"                    # standard（迟滞+换日前平仓）/ state_trail（见 paper/rules.py）
     rule_params: tuple = ()                   # 例如 (("trail", 2.0),)
     shadow_of: str = ""                       # 影子版本对照的策略 id
+    name: str = ""                            # 显示名称（通俗中文名，可改，不影响指纹与账本）
     evidence: dict = field(default_factory=dict, hash=False, compare=False)
 
     def signal(self, df: pd.DataFrame) -> pd.Series:
@@ -53,6 +54,7 @@ class StrategySpec:
 SPECS: list[StrategySpec] = [
     StrategySpec(
         id="TT30-EW-v1",
+        name="日内30min强势跟随",
         description="30MIN 趋势尾部：放量趋势效率 + VWAP 偏离 等权组合，迟滞开平仓，换日前平仓",
         freq="30MIN",
         components=(("TrendEfficiencyVolume", 0.5, (("chan", 32),)),
@@ -70,6 +72,7 @@ SPECS: list[StrategySpec] = [
 SPECS.append(
     StrategySpec(
         id="HA1H-v1",
+        name="年内高低位顺势",
         description="1H 52 周高点锚定动量：价格在已收盘日线 250 日高低区间中的位置，迟滞开平仓，换日前平仓",
         freq="1H",
         components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),
@@ -86,6 +89,7 @@ SPECS.append(
 SPECS.append(
     StrategySpec(
         id="HA1H-TS2-shadow",
+        name="年内高低位顺势 · 移动止损版（影子）",
         description="HA1H-v1 的影子版本：信号相同；每日平仓后按迟滞状态回补 + 移动止损 2×日线 ATR（不计入组合，仅与 v1 做前向对比）",
         freq="1H",
         components=(("HighAnchorMomentum", 1.0, (("anchor_days", 250),)),),

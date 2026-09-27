@@ -1,4 +1,7 @@
-# 策略说明书：HA1H-v1（XAUUSD 1 小时 · 52 周高点锚定动量）
+# 策略说明书：年内高低位顺势（HA1H-v1）
+
+> 通俗说法：金价靠近一年内的最高价就做多、靠近一年内的最低价就做空，每天重新确认一次。
+> 研究名称：XAUUSD 1 小时 · 52 周高点锚定动量。影子版本名称：年内高低位顺势 · 移动止损版（HA1H-TS2-shadow）。
 
 > 状态：**模拟盘前向测试中**（2026-09-28 起），行为指纹 `c1ca467d69ce1ed7`。影子版本 `HA1H-TS2-shadow`（按状态回补 + 2×日 ATR 移动止损，指纹 `2cf943680e1b318e`）同时运行，只用于与 v1 做前向对比。代码：`paper/specs.py`（规格）、`factors/library/trend_continuation.py::factor_high_anchor_momentum`、`factors/core.py`、`factors/evaluate.py`、`paper/engine.py`。
 > 研究记录：`reports/trend_continuation_batch8.md`、`reports/batch8_candidate_validation.txt`。

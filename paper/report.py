@@ -42,7 +42,7 @@ def main() -> None:
         mdd = float((d["cum_R"] - d["cum_R"].cummax()).min()) if days else 0.0
         fwd[spec.id] = d["net_R"] if days else pd.Series(dtype=float)
         role = f"（影子版本，对照 {spec.shadow_of}，不计入组合）" if spec.status == "shadow" else ""
-        lines += [f"## {spec.id}{role}", "", f"- {spec.description}",
+        lines += [f"## {spec.name or spec.id}（{spec.id}）{role}", "", f"- {spec.description}",
                   f"- 前向起始 {spec.forward_start}；已运行 {days} 个交易日；数据截至 {sig.get('last_m1_utc', '—')}",
                   f"- 当前仓位 {sig.get('current_position', '—')}，下一根开盘操作：**{sig.get('action_at_next_open', '—')}**（z={sig.get('z', '—')}）",
                   f"- 累计：{cum_r:+.3f} R，{(d['net_usd'].sum() if days else 0):+.2f}$；已平仓 {len(closed)} 笔，"

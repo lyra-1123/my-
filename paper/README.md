@@ -12,11 +12,13 @@
 | `paper/state/<id>/` | `prereg.json`（登记后不可改）、`signal.json`、`trades.csv`、`daily.csv`、`fills_manual.csv`（手工记录实际成交） |
 
 ## 当前策略
-| id | 状态 | 说明 |
-|---|---|---|
-| TT30-EW-v1 | active | 30MIN 趋势尾部等权组合（`docs/strategy_TT30-EW-v1.md`） |
-| HA1H-v1 | active | 1H 52 周高点锚定动量（`docs/strategy_HA1H-v1.md`） |
-| HA1H-TS2-shadow | shadow | HA1H-v1 的影子版本：按状态回补 + 2×日 ATR 移动止损；不计入组合，252 个交易日时与 v1 比较 |
+| 名称 | id | 状态 | 说明 |
+|---|---|---|---|
+| 日内30min强势跟随 | TT30-EW-v1 | active | 30MIN 趋势尾部等权组合（`docs/strategy_TT30-EW-v1.md`） |
+| 年内高低位顺势 | HA1H-v1 | active | 1H 52 周高点锚定动量（`docs/strategy_HA1H-v1.md`） |
+| 年内高低位顺势 · 移动止损版（影子） | HA1H-TS2-shadow | shadow | 按状态回补 + 2×日 ATR 移动止损；不计入组合，252 个交易日时与 v1 比较 |
+
+显示名称（`name`）可以随时修改；`id` 登记后不可改（登记文件、行为指纹、账本都挂在 id 上）。
 
 影子版本（status="shadow"）：用来前向检验"样本外更好、但按纪律不能直接采用"的规则变体。它照常记账，但不计入组合、不参与相关性准入；登记时写死与对照策略的判定规则。
 非统一执行规则在 `paper/rules.py` 中实现，必须在 `paper/selftest.py` 中与研究脚本逐根对账。

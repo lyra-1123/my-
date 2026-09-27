@@ -113,6 +113,9 @@ def dsr_impact() -> None:
     from research.ha1h_exit_rules import evaluate as ha_eval, simulate as ha_sim
     from research.overfitting_tests import daily_atr_returns, dsr, matrix_B, n_eff
     B = matrix_B()
+    const = [c for c in B.columns if B[c].std() == 0]           # 全期不开仓的"因子×频率"：相关矩阵无定义，剔除
+    B = B.drop(columns=const)
+    print(f"剔除全期无交易的列 {len(const)} 个：{const}")
     new = [c for c in B.columns if c.split("|")[0] in ("IntradaySeasonality", "SettlementMomentum", "RealizedSkewReversal")]
     old = B.drop(columns=new)
     tt = next(s for s in SPECS if s.id == "TT30-EW-v1")

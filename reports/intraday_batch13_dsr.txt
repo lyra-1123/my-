@@ -1,0 +1,7 @@
+剔除全期无交易的列 8 个：['RangeBreakoutNoPole|5MIN', 'RangeBreakoutNoPole|15MIN', 'RangeBreakoutNoPole|30MIN', 'RangeBreakoutNoPole|1H', 'ThreePushNoDecay|4H', 'FlagBreakout|4H', 'RangeBreakoutNoPole|4H', 'ThreePushNoDecay|1D']
+
+[3] 研究层规模对 DSR 的影响（日度 ATR·今，全样本；登记试验 92 次，含本批）
+   本批之前：N=208，N_eff=18.1  TT30-EW-v1  SR=0.65  SR0=0.76  DSR@N_eff=0.291  DSR@N_eff+登记=0.024
+   本批之前：N=208，N_eff=18.1  HA1H-v1     SR=0.57  SR0=0.76  DSR@N_eff=0.174  DSR@N_eff+登记=0.010
+   加入本批：N=216，N_eff=19.0  TT30-EW-v1  SR=0.65  SR0=0.77  DSR@N_eff=0.284  DSR@N_eff+登记=0.026
+   加入本批：N=216，N_eff=19.0  HA1H-v1     SR=0.57  SR0=0.77  DSR@N_eff=0.169  DSR@N_eff+登记=0.011

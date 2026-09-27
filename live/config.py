@@ -18,7 +18,7 @@ STRATEGIES = {
     "TT30-EW-v1":      {"enabled": True, "magic": 3001, "lots": 0.01},   # 日内30min强势跟随
     "HA1H-v1":         {"enabled": True, "magic": 3002, "lots": 0.01},   # 年内高低位顺势
     "HA1H-TS2-shadow": {"enabled": True, "magic": 3003, "lots": 0.01},   # 影子：移动止损版
-    "MF30-EW-shadow":  {"enabled": True, "magic": 3004, "lots": 0.01},   # 影子：30min多逻辑组合
+    "MF30-EW-shadow":  {"enabled": False, "magic": 3004, "lots": 0.01},  # 影子：30min多逻辑组合。compare_signals 未通过（一致率 0.849 < 0.90，成交量来源差异），不上实盘，只在模拟盘账本上继续前向
 }
 
 # 每个频率从 MT5 取多少根 K 线做计算（需要在 MT5"工具→选项→图表→图表最大K线数"里设为足够大，例如"无限"）

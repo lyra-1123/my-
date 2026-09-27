@@ -176,18 +176,22 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
     c = compute(spec, bars)
     in_day = (c.index >= start) & (c.index < end)
     cd = c[in_day]
-    # 模型（同一份 MT5 K 线，0.2 点差）
-    daily = daily_from(c)
-    model_day = float(daily["net_usd"].get(day, 0.0))
-    hist = daily["net_usd"].iloc[-261:-1]
-    sigma = float(hist[hist != 0].std()) if (hist != 0).sum() > 20 else np.nan
-    mtr = trades_from(c, lots)
-    mtr_day = mtr[(mtr["entry_time"] >= start) & (mtr["entry_time"] < end)]
-    # 实际
     # 上线时点：该策略第一条决策记录（没有日志时退回第一笔成交）
     started = deals_hist[deals_hist["magic"] == cfg["magic"]]
     first_dec = dec.loc[dec["strategy"] == sid, "utc_time"].min() if not dec.empty else pd.NaT
     live_start = first_dec if pd.notna(first_dec) else (started["utc"].min() if len(started) else pd.NaT)
+    is_live = pd.notna(live_start) and live_start < end
+    cmp_from = max(start, live_start) if is_live else end        # 只在程序运行后的时段与模型对照
+    # 模型（同一份 MT5 K 线，0.2 点差）
+    daily = daily_from(c)
+    model_full = float(daily["net_usd"].get(day, 0.0))
+    model_day = float(c.loc[(c.index >= cmp_from) & (c.index < end), "net"].sum())
+    hist = daily["net_usd"].iloc[-261:-1]
+    sigma = float(hist[hist != 0].std()) if (hist != 0).sum() > 20 else np.nan
+    mtr = trades_from(c, lots)
+    mtr_day = mtr[(mtr["entry_time"] >= start) & (mtr["entry_time"] < end)]
+    mtr_cmp = mtr_day[mtr_day["entry_time"] >= cmp_from]
+    # 实际
     tr_all = round_trips(deals_hist, cfg["magic"])
     tr = tr_all[(tr_all["entry_utc"] < end) & ((tr_all["exit_utc"] >= start) | tr_all["is_open"])] if len(tr_all) else tr_all
     tr = enrich(tr, sid, bars, c, dec)
@@ -212,7 +216,8 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
     swap_trips = int((closed_today["swap"].abs() > 1e-9).sum()) if len(closed_today) else 0
     z = live_day / sigma if sigma and np.isfinite(sigma) and sigma > 0 else np.nan
     return {"sid": sid, "name": spec.name, "freq": spec.freq, "status": spec.status, "lots": lots, "bars": cd, "trips": tr,
-            "closed": closed_today, "model_trades": mtr_day, "model_day": model_day, "live_day": live_day, "sigma": sigma, "z": z,
+            "closed": closed_today, "model_trades": mtr_day, "model_trades_cmp": mtr_cmp, "model_day": model_day,
+            "model_full": model_full, "is_live": is_live, "cmp_from": cmp_from, "live_day": live_day, "sigma": sigma, "z": z,
             "z_model": model_day / sigma if sigma else np.nan, "align": align, "n_bars_live": len(t_ok), "mismatch": mism,
             "live_pos_at_mismatch": live_pos.reindex(mism.index), "n_err": n_err, "n_spread_block": n_spread_block,
             "n_stale": n_stale, "n_order_fail": n_order_fail, "manual": manual, "swap_trips": swap_trips,
@@ -221,6 +226,8 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
 
 def flags_for(r) -> list[tuple[str, str]]:
     f = []
+    if not r.get("is_live", True):
+        return f
     if r["manual"]:
         f.append(("🔴", f"{r['manual']} 笔手动成交（魔术号属于本策略但来源是客户端/手机/网页）：破坏了规则执行，当日数据不能用于评价策略"))
     if r["n_err"]:
@@ -299,7 +306,7 @@ def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
         L.append(f"- 最大单根 30MIN 波动 {ctx['max_bar']:.2f}（{_fmt_t(ctx['max_bar_t'])}）\n")
     # 总览
     L.append("## 1. 当日总览\n")
-    L.append("| 策略 | 状态 | 实际净盈亏$ | 按0.2点差折算$ | 模型$ | 差额$ | 当日 z | 平仓笔数(实际/模型) | 仓位一致率 | 检查 |")
+    L.append("| 策略 | 状态 | 实际净盈亏$ | 按0.2点差折算$ | 模型(同时段)$ | 差额$ | 当日 z | 平仓笔数(实际/模型) | 仓位一致率 | 检查 |")
     L.append("|---|---|---|---|---|---|---|---|---|---|")
     tot = {"live": 0.0, "adj": 0.0, "model": 0.0}
     for r in results:
@@ -307,7 +314,10 @@ def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
         adj = float(cl["net_at_real_spread"].sum()) if len(cl) else 0.0
         fl = flags_for(r)
         worst = "🔴" if any(x[0] == "🔴" for x in fl) else ("🟡" if fl else "🟢")
-        mt = r["model_trades"]
+        mt = r["model_trades_cmp"]
+        if not r["is_live"]:
+            L.append(f"| {r['name']}（{r['sid']}） | {r['status']} | — | — | — | — | — | — | — | 未运行 |")
+            continue
         L.append(f"| {r['name']}（{r['sid']}） | {r['status']} | {r['live_day']:+.2f} | {adj:+.2f} | {r['model_day']:+.2f} | "
                  f"{r['live_day'] - r['model_day']:+.2f} | {_f(r['z'], '+.2f')} | {len(cl)}/{int((~mt['is_open']).sum()) if len(mt) else 0} | "
                  f"{_f(r['align'], '.0%')} | {worst} |")
@@ -331,6 +341,11 @@ def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
     L.append("## 3. 逐策略明细\n")
     for r in results:
         L.append(f"### {r['name']}（{r['sid']}，{r['freq']}，{r['status']}）\n")
+        if not r["is_live"]:
+            L.append(f"- ⚪ 该交易日程序尚未运行（上线于 {_fmt_t(r['live_start']) or '尚无记录'}），以下模型结果仅作行情参考，不做对照："
+                     f"模型全天 {r['model_full']:+.2f}$")
+        elif r["cmp_from"] > s:
+            L.append(f"- ⚪ 程序从 {_fmt_t(r['cmp_from'])} 开始运行，此前的模型结果（全天 {r['model_full']:+.2f}$）不参与对照")
         cd = r["bars"]
         if len(cd):
             zx = cd["z_exec"]
@@ -376,12 +391,13 @@ def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
         cl = r["closed"]
         exec_part = -float(((cl["cost_in"] + cl["cost_out"]) - REAL_SPREAD).mul(cl["lots"] * 100).sum()) if len(cl) else 0.0
         other = diff - exec_part
-        if abs(diff) > 0.5 or len(r["mismatch"]):
+        if r["is_live"] and (abs(diff) > 0.5 or len(r["mismatch"])):
             k += 1
             L.append(f"{k}. **{r['name']}** 实际 − 模型 = {diff:+.2f}$，其中执行成本差 ≈ {exec_part:+.2f}$（滑点 + 点差超出 0.2 的部分），"
                      f"其他 ≈ {other:+.2f}$（信号/成交时点/止损/跨日归属不一致；不一致 K 线 {len(r['mismatch'])} 根）")
     if k == 0:
-        L.append("- 无：实际与模型的差额均小于 0.5$，且逐根仓位一致")
+        L.append("- 无：程序运行时段内，实际与模型的差额均小于 0.5$，且逐根仓位一致" if any(r["is_live"] for r in results)
+                 else "- ⚪ 该交易日程序尚未运行，无可对照内容")
     L.append("")
     return "\n".join(L)
 
@@ -416,6 +432,8 @@ def update_summary(day, results):
     path = os.path.join(REPORT_DIR, "daily_summary.csv")
     rows = []
     for r in results:
+        if not r["is_live"]:
+            continue
         cl = r["closed"]
         rows.append({"day": pd.Timestamp(day).strftime("%Y-%m-%d"), "strategy": r["sid"], "status": r["status"],
                      "live_usd": round(r["live_day"], 2),
@@ -425,6 +443,8 @@ def update_summary(day, results):
                      "align": round(r["align"], 3) if np.isfinite(r["align"]) else "",
                      "slip_ex_spread_mean": round(float(cl["slip_ex_spread"].mean()), 3) if len(cl) else "",
                      "flags": " | ".join(f"{a}{b}" for a, b in flags_for(r))})
+    if not rows:
+        return
     new = pd.DataFrame(rows)
     if os.path.exists(path):
         old = pd.read_csv(path)

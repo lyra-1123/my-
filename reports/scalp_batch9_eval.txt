@@ -1,0 +1,14 @@
+IntradayRegimeScalp         5MIN  IC内 +0.0195  IC外 +0.0195  ICIR +0.83/+0.86 t=+12.3  年度>0 1.00  净利    -7594  去漂移    -7583  次数 39813  自检 OK  💸 有效但成本不可行
+IntradayRegimeScalp         3MIN  IC内 +0.0310  IC外 +0.0239  ICIR +1.42/+1.08 t=+18.6  年度>0 1.00  净利    -8079  去漂移    -8086  次数 45514  自检 OK  💸 有效但成本不可行
+IntradayRegimeScalp         1MIN  IC内 +0.0447  IC外 +0.0295  ICIR +2.52/+1.65 t=+29.4  年度>0 1.00  净利    -7143  去漂移    -7156  次数 49072  自检 OK  💸 有效但成本不可行
+OpeningRangeBreakout        5MIN  IC内 -0.0406  IC外 -0.0160  ICIR -0.61/-0.39 t=-7.7  年度>0 0.22  净利      +57  去漂移      +60  次数  1188  自检 OK  ⏳ 当前波动下可行
+OpeningRangeBreakout        3MIN  IC内 -0.0460  IC外 -0.0202  ICIR -0.85/-0.48 t=-10.2  年度>0 0.06  净利      +63  去漂移      +67  次数  1355  自检 OK  🔄 方向相反
+OpeningRangeBreakout        1MIN  IC内 -0.0445  IC外 -0.0155  ICIR -1.18/-0.52 t=-13.0  年度>0 0.06  净利     +218  去漂移     +222  次数  1775  自检 OK  🔄 方向相反
+AnchoredVWAPBandReversion   5MIN  IC内 +0.0224  IC外 +0.0115  ICIR +0.80/+0.45 t=+9.7  年度>0 1.00  净利    -4971  去漂移    -4983  次数 14202  自检 OK  💸 有效但成本不可行
+AnchoredVWAPBandReversion   3MIN  IC内 +0.0257  IC外 +0.0117  ICIR +1.19/+0.64 t=+13.9  年度>0 1.00  净利    -3248  去漂移    -3272  次数 12194  自检 OK  💸 有效但成本不可行
+AnchoredVWAPBandReversion   1MIN  IC内 +0.0288  IC外 +0.0145  ICIR +1.89/+1.08 t=+21.1  年度>0 1.00  净利    -3525  去漂移    -3543  次数 10215  自检 OK  💸 有效但成本不可行
+AnchoredVWAPTrendFollow     5MIN  IC内 -0.0129  IC外 -0.0115  ICIR -0.46/-0.23 t=-5.4  年度>0 0.06  净利     -987  去漂移    -1044  次数  4158  自检 OK  🔄 方向相反
+AnchoredVWAPTrendFollow     3MIN  IC内 -0.0074  IC外 -0.0067  ICIR -0.43/-0.18 t=-4.8  年度>0 0.11  净利    -1264  去漂移    -1312  次数  3879  自检 OK  ❌ 拒绝
+AnchoredVWAPTrendFollow     1MIN  IC内 +0.0000  IC外 -0.0011  ICIR -0.10/+0.00 t=-0.8  年度>0 0.50  净利     -614  去漂移     -634  次数  2741  自检 OK  ❌ 拒绝
+
+因子库已更新: /home/user/my-/FACTOR_LIBRARY.md

@@ -1,5 +1,9 @@
 # 过拟合检验：CSCV / PBO / DSR（2026-09-27）
 
+> **修正（2026-09-27）**：日度收益改为按交易日（纽约 17:00 为界）汇总后重跑（最新数字见 `reports/overfitting_tests.txt`）：
+> 参数层 PBO 0.609（样本外亏损概率 5.9%）；研究层 PBO 0.034；样本内最优在样本外的夏普中位数 0.45 → **0.41**；
+> 所选策略年化夏普 0.78 → 0.70；DSR（N_eff≈16）0.73 → **0.69**。结论不变；前向预期基准改为 0.41。
+
 脚本：`research/overfitting_tests.py`；原始输出：`reports/overfitting_tests.txt`、`reports/overfitting_tests.json`。
 收益：日度"ATR·今"口径（与价格水平无关），2009-2026，4608 个交易日。CSCV：16 块，12870 种切分。
 

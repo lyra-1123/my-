@@ -20,7 +20,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from factors.core import atr, params
+from factors.core import atr, params, trading_day
 from factors.evaluate import BAR, SPREAD, SWAP, swap_units
 from research.factor_correlation import factor_values
 
@@ -87,8 +87,7 @@ def metrics(df: pd.DataFrame, pos: pd.Series, a_prev: pd.Series, atr_now: float,
     sw = p.abs() * swap_units(d.index)
     # ATR 单位、按当前成本折算
     pnl_atr = (p * m_atr - dpos * (SPREAD / 2) / atr_now - sw * SWAP / atr_now).fillna(0.0)
-    daily = pnl_atr.groupby(pnl_atr.index.normalize()).sum()
-    daily = daily[daily.index.dayofweek < 5]
+    daily = pnl_atr.groupby(trading_day(pnl_atr.index)).sum()
     trips = float(dpos.sum() / 2)
     # 真实历史美元口径
     net_usd = float((p * move - dpos * SPREAD / 2 - sw * SWAP).fillna(0.0).sum())

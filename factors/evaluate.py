@@ -29,7 +29,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from .core import ALL_FREQS, atr, check_input, params
+from .core import ALL_FREQS, atr, check_input, params, trading_day
 from .data_loader import load_m1, resample_ohlcv
 from .registry import REGISTRY, FactorSpec, get_factors
 
@@ -79,13 +79,18 @@ def ic_stats(f: pd.Series, y: pd.Series, freq: str, mask=None) -> dict:
             "ic_t": round(float(icir * np.sqrt(len(ics))), 2), "n_periods": int(len(ics))}
 
 
-def positions(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Series:
-    """迟滞信号 -> 实际持仓（已 shift 到 t+1 开盘执行）。"""
+def targets(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Series:
+    """迟滞规则：第 t 根收盘后的目标仓位（尚未执行）。"""
     raw = pd.Series(np.nan, index=z.index)
     raw[z > entry] = 1.0
     raw[z < -entry] = -1.0
     raw[z.abs() < exit_] = 0.0
-    return raw.ffill().fillna(0.0).shift(1).fillna(0.0)
+    return raw.ffill().fillna(0.0)
+
+
+def positions(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Series:
+    """迟滞信号 -> 实际持仓（已 shift 到 t+1 开盘执行）。"""
+    return targets(z, entry, exit_).shift(1).fillna(0.0)
 
 
 def swap_units(index: pd.DatetimeIndex) -> pd.Series:
@@ -134,8 +139,7 @@ def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float =
     net = (bar - cost).fillna(0.0)
     trips = float(pos.diff().abs().sum() / 2.0)
     eq = net.cumsum()
-    daily = net.groupby(net.index.normalize()).sum()
-    daily = daily[daily.index.dayofweek < 5]
+    daily = net.groupby(trading_day(net.index)).sum()
     sharpe = float(daily.mean() / daily.std() * np.sqrt(252)) if daily.std() > 0 else float("nan")
     return {
         "gross": round(float(bar.sum()), 1),

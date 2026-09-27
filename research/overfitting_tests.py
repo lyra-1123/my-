@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kurtosis, norm, skew
 
-from factors.core import atr, params
+from factors.core import atr, params, trading_day
 from factors.evaluate import SPREAD, SWAP, execution_signal, positions, swap_units
 from factors.registry import get_factors
 
@@ -41,8 +41,7 @@ def daily_atr_returns(df: pd.DataFrame, z: pd.Series, freq: str, entry=1.5, exit
     pos = positions(execution_signal(z, freq), entry, exit_)
     dpos = pos.diff().abs().fillna(pos.abs())
     r = (pos * m - dpos * SPREAD / 2 / atr_now - pos.abs() * swap_units(df.index) * SWAP / atr_now).fillna(0)
-    d = r.groupby(r.index.normalize()).sum()
-    return d[d.index.dayofweek < 5]
+    return r.groupby(trading_day(r.index)).sum()
 
 
 def matrix_A() -> pd.DataFrame:
@@ -72,7 +71,6 @@ def matrix_B() -> pd.DataFrame:
             if freq in spec.freqs:
                 cols[f"{spec.name}|{freq}"] = daily_atr_returns(df, spec(df, freq), freq)
     M = pd.DataFrame(cols).fillna(0.0)
-    M = M[M.index.dayofweek < 5]
     M.to_pickle(path)
     return M
 

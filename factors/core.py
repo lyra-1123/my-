@@ -133,3 +133,12 @@ def vol_scaled_momentum(bars: pd.DataFrame, lookbacks=(5, 20)) -> pd.Series:
     sigma = lc.diff().rolling(L_max, min_periods=L_max // 2).std()
     parts = [(lc - lc.shift(L)) / (sigma * np.sqrt(L) + EPS) for L in lookbacks]
     return pd.concat(parts, axis=1).mean(axis=1)
+
+
+def trading_day(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """
+    交易日标签（纽约 17:00 为界，与换日/过夜费一致）：周日晚开盘的 K 线归入周一。
+    所有"按日汇总"的地方都必须用它，不能用 UTC 日期再过滤周末（会丢掉周日晚上的盈亏）。
+    """
+    ny = index.tz_localize("UTC").tz_convert("America/New_York") + pd.Timedelta(hours=7)
+    return ny.normalize().tz_localize(None)

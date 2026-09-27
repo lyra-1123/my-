@@ -71,7 +71,12 @@ python -m factors.evaluate --factors <因子名>      # 单个/多个；不带�
   - 前向测试的预期以 CSCV 的"样本内最优在样本外的夏普中位数"为基准。
 - 所有登记试验（reports/rule_trials.csv）都要计入 DSR 的 N。
 
-### 9. 沉淀
+### 9. 加入模拟盘（通过过拟合检验的候选策略）
+- 流程见 `paper/README.md`：在 `paper/specs.py` 写规格 → `python -m paper.selftest` → `python -m paper.onboard <id>`（与在跑策略日度相关 < 0.5、组合夏普不下降）→ `--register` 写死预期区间和行为指纹 → status 改为 active。
+- **挖新因子时不能改变在跑策略的行为**：改了公共代码（`factors/core.py`、`factors/evaluate.py`、在用因子的函数）后，必须运行 `python -m paper.run` 或 `python -m paper.selftest`。指纹报错就撤销改动，或者给新行为另开一个版本。
+- 引擎与研究回测必须逐 K 线对账（lessons L20）。
+
+### 10. 沉淀
 - 新的、可复现的规律写进 `references/lessons.md`（写清证据：频率、样本区间、IC、年度一致性）。
 - 被拒绝的因子**保留在库里**（负面结果同样是知识，防止重复挖掘）。
 - 提交：因子代码 + `reports/factors/*.json` + `FACTOR_LIBRARY.md` + lessons。`data/` 不入库。

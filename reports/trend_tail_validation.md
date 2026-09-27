@@ -1,5 +1,9 @@
 # 30MIN 趋势尾部策略稳健性验证（2026-09-27）
 
+> **修正（2026-09-27）**：此前按 UTC 日期汇总日度收益并过滤周末，丢掉了周日晚开盘时段的盈亏。现已统一改为按交易日（纽约 17:00 为界）汇总（`factors.core.trading_day`），并重跑本报告。
+> 美元净利不受影响；夏普略降：等权组合样本内 0.64 → 0.51，样本外 1.02 → 1.04；walk-forward 仍全部为正且仍劣于固定参数（等权组合 0.45 vs 0.71）。
+> 最新数字以 `reports/trend_tail_validation.txt`、`reports/trend_tail_sensitivity.txt` 为准；下文表格为修正前数值，结论不变。
+
 脚本：`research/trend_tail_validation.py`（预登记，检验而非选参）；完整输出：`reports/trend_tail_validation.txt`。
 对象：TrendEfficiencyVolume、VWAPDeviation 及二者等权组合；默认参数 chan=32 / entry=1.5 / exit=0.3（入库时的先验值）；
 执行：迟滞开平仓 + 换日前平仓；成本：点差 0.2 + 过夜费 0.47（周三 ×3）/ 0.01 手。

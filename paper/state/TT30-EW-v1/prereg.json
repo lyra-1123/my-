@@ -1,0 +1,77 @@
+{
+ "strategy": "TT30-EW-v1",
+ "registered_at_utc": "2026-09-27T08:41:52+00:00",
+ "forward_start": "2026-09-28",
+ "spec": {
+  "id": "TT30-EW-v1",
+  "description": "30MIN 趋势尾部：放量趋势效率 + VWAP 偏离 等权组合，迟滞开平仓，换日前平仓",
+  "freq": "30MIN",
+  "components": [
+   [
+    "TrendEfficiencyVolume",
+    0.5,
+    [
+     [
+      "chan",
+      32
+     ]
+    ]
+   ],
+   [
+    "VWAPDeviation",
+    0.5,
+    [
+     [
+      "chan",
+      32
+     ]
+    ]
+   ]
+  ],
+  "norm": 1000,
+  "entry": 1.5,
+  "exit": 0.3,
+  "lots": 0.01,
+  "forward_start": "2026-09-28",
+  "status": "active",
+  "notes": "参数为入库先验值，未调参；见 reports/trend_tail_validation.md、reports/overfitting_tests.md"
+ },
+ "evidence": {
+  "oos_sharpe_atr_2020_": 1.04,
+  "cscv_oos_sharpe_median": 0.41,
+  "research_PBO": 0.034,
+  "DSR_Neff16": 0.69,
+  "param_PBO": 0.61
+ },
+ "fingerprint": "2a082351a3ab07bf",
+ "backtest_daily_R_sharpe": 0.916,
+ "bands_cum_R": {
+  "21": {
+   "p5": -17.462,
+   "p50": 4.066,
+   "p95": 24.405
+  },
+  "63": {
+   "p5": -27.11,
+   "p50": 12.819,
+   "p95": 40.152
+  },
+  "126": {
+   "p5": -25.92,
+   "p50": 23.072,
+   "p95": 61.183
+  },
+  "252": {
+   "p5": -19.39,
+   "p50": 39.858,
+   "p95": 82.682
+  }
+ },
+ "criteria": {
+  "fail": "前向累计 R 低于同长度窗口回测分布的 5% 分位（在 63/126/252 个交易日检查）→ 停止该策略并复查",
+  "warn": "前向累计 R 低于 50% 分位，或前向最大回撤超过回测最大回撤的 1.5 倍",
+  "expectation": "日度 R 夏普基准取 CSCV 样本外中位数（evidence.cscv_oos_sharpe_median），而非全样本回测值",
+  "min_evaluation": "252 个交易日之前不对'有效'下结论，只检查是否失败"
+ },
+ "backtest_max_drawdown_R": -64.312
+}

@@ -77,7 +77,7 @@
     "gross_per_trip": 1.135,
     "time_in_mkt": 0.022,
     "mdd": -238.9,
-    "sharpe": 0.32
+    "sharpe": 0.3
    },
    "bt_oos_reversed": {
     "gross": -272.4,
@@ -92,7 +92,7 @@
     "gross_per_trip": -1.135,
     "time_in_mkt": 0.022,
     "mdd": -338.4,
-    "sharpe": -0.46
+    "sharpe": -0.42
    },
    "signal_coverage": 0.0223,
    "atr_edge": {

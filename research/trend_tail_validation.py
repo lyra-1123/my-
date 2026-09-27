@@ -20,7 +20,7 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from factors.core import atr, rolling_mad_zscore, params
+from factors.core import atr, rolling_mad_zscore, params, trading_day
 from factors.evaluate import SPREAD, SWAP, execution_signal, positions, swap_units
 from factors.registry import get_factors
 
@@ -59,8 +59,7 @@ def pnl(pos: pd.Series, spread_x=1.0, swap_x=1.0) -> tuple[pd.Series, pd.Series]
 
 
 def daily(x: pd.Series) -> pd.Series:
-    d = x.groupby(x.index.normalize()).sum()
-    return d[d.index.dayofweek < 5]
+    return x.groupby(trading_day(x.index)).sum()
 
 
 def sharpe(x: pd.Series) -> float:

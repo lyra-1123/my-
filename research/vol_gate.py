@@ -15,7 +15,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from factors.core import atr
+from factors.core import atr, trading_day
 from factors.evaluate import ENTRY, EXIT, SPREAD, SWAP, execution_signal, swap_units
 from research.rule_adaptation import TRIALS_CSV
 from research.trend_tail_validation import FREQ, a_prev, atr_now, df, factor_z, m_atr, move
@@ -46,8 +46,8 @@ def evaluate(pos: pd.Series, mask) -> dict:
     dpos = p.diff().abs().fillna(p.abs())
     usd = (p * move[mask] - dpos * SPREAD / 2 - p.abs() * swu[mask] * SWAP).fillna(0)
     atrn = (p * m_atr[mask] - dpos * SPREAD / 2 / atr_now - p.abs() * swu[mask] * SWAP / atr_now).fillna(0)
-    d = usd.groupby(usd.index.normalize()).sum(); d = d[d.index.dayofweek < 5]
-    da = atrn.groupby(atrn.index.normalize()).sum(); da = da[da.index.dayofweek < 5]
+    d = usd.groupby(trading_day(usd.index)).sum()
+    da = atrn.groupby(trading_day(atrn.index)).sum()
     eq = usd.cumsum()
     return {"net": float(usd.sum()), "sharpe_usd": float(d.mean() / d.std() * np.sqrt(252)) if d.std() > 0 else 0.0,
             "sharpe_atr": float(da.mean() / da.std() * np.sqrt(252)) if da.std() > 0 else 0.0,

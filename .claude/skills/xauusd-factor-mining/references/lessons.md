@@ -50,3 +50,9 @@
 - 证据：30MIN 上 TSMomentumVolScaled、TrendEfficiencyVolume、VWAPDeviation、MTFTrendResonance 的 IC 为负，但按迟滞持仓（|z|>1.5 开仓、<0.3 平仓）交易时，逐年去漂移的 ATR 毛利在 78%~89% 的年份为正（TrendEfficiencyVolume 30MIN：样本内 +0.24 / 样本外 +0.40 ATR，18 年里 16 年为正）。
 - 解释：温和区间反转（L1、L8），极端区间延续，而且需要持有数小时。
 - 多重检验提醒：这些因子高度同质（都是趋势类），应视为一个发现，不是四个；需要在 walk-forward 和参数平原检验下复核。
+
+## L12. 过夜费 + 换日前平仓（2026-09-27，用户确认成本：点差 0.2，过夜费 0.47 美元/0.01 手/天，周三 3 倍）
+- 过夜费对跨夜持仓的因子影响很大：4H 的趋势因子平均每笔跨 7~17 次换日，TSMomentumVolScaled 4H 样本外净利 +639 → +96，TrendEfficiencyVolume 4H +158 → -301，两者都被淘汰。
+- 换日前平仓（纽约 17:00 前两根 K 线置 0、换日后 1 小时不开仓）几乎总是更好：省下的过夜费远大于多付的点差。例如 MTFTrendResonance 30MIN 样本外 -486 → +406，PullbackSwing 5MIN +782 → +1225。已作为 ≤1H 频率的统一执行规则写入评估器（execution_signal）。
+- 加上过夜费和换日前平仓后，趋势中缩量回调（5MIN）的近 3 年 ATR 边际是当前成本的 1.82 倍（15MIN 为 1.70 倍），但样本外美元净利接近 0（+40 / +34），逐年为正的比例分别为 0.94 / 0.83。结论：历史上是保本水平，当前波动下略有余量。
+- 研究脚本：research/flat_before_rollover.py

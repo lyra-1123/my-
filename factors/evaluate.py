@@ -14,7 +14,9 @@
 评估口径（所有因子统一，禁止针对单个因子改口径）：
     - 样本内 < split <= 样本外；参数不在样本内调优（用 core.FREQ_PRESETS 先验参数）
     - 信号 t 收盘产生，t+1 开盘成交；前瞻收益用开盘价
-    - 成本：0.01 手（1 盎司）点差 0.2 美元，每单位仓位变化收半个点差
+    - 成本：0.01 手（1 盎司）点差 0.2 美元，每单位仓位变化收半个点差；
+      过夜费 0.47 美元/0.01 手/天，纽约 17:00 换日时持仓即收（多空都收），周三 3 倍
+    - 执行：日内频率（≤1H）换日前平仓、换日后 1 小时不开仓（execution_signal）；4H/1D 持仓过夜
     - 迟滞开平仓：|z|>1.5 开仓，|z|<0.3 平仓
 """
 from __future__ import annotations
@@ -37,7 +39,8 @@ LIBRARY_MD = os.path.join(ROOT, "FACTOR_LIBRARY.md")
 
 HORIZONS = {"5MIN": (1, 6, 24), "15MIN": (1, 4, 16), "30MIN": (1, 4, 12),
             "1H": (1, 4, 12), "4H": (1, 3, 6), "1D": (1, 3, 5)}
-SPREAD = 0.2
+SPREAD = 0.2           # 美元 / 0.01 手 / 开平一次
+SWAP = 0.47            # 美元 / 0.01 手 / 每次换日（多空都收），周三 3 倍
 ENTRY, EXIT = 1.5, 0.3
 
 
@@ -67,18 +70,57 @@ def positions(z: pd.Series, entry: float = ENTRY, exit_: float = EXIT) -> pd.Ser
     return raw.ffill().fillna(0.0).shift(1).fillna(0.0)
 
 
+def swap_units(index: pd.DatetimeIndex) -> pd.Series:
+    """
+    每根 K 线持仓需要支付的过夜费单位数。
+    换日时点 = 纽约 17:00（与日线切分一致）。持仓 pos_t 覆盖 [open_t, open_t+1)，
+    若 t 与 t+1 属于不同交易日，则跨过一次换日：收 1 份；该交易日为周三时收 3 份（覆盖周末），周五不另收。
+    """
+    ny = index.tz_localize("UTC").tz_convert("America/New_York") + pd.Timedelta(hours=7)
+    day = pd.Series(ny.normalize().tz_localize(None), index=index)
+    cross = day.shift(-1).ne(day) & day.shift(-1).notna()
+    mult = np.where(day.dt.dayofweek == 2, 3.0, 1.0)
+    return (cross.astype(float) * mult).rename("swap_units")
+
+
+INTRADAY_FLAT = ("5MIN", "15MIN", "30MIN", "1H")   # 这些频率执行"换日前平仓"
+BAR = {"5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
+
+
+def execution_signal(z: pd.Series, freq: str) -> pd.Series:
+    """
+    执行层规则（不改变因子本身，IC 仍用原始因子计算）：
+    日内频率在 [纽约17:00 - 2根K线, 纽约18:00) 内把信号置 0：
+      - 迟滞规则在换日前平仓（提前两根：t 收盘出信号、t+1 开盘成交），不支付过夜费；
+      - 换日后 1 小时（点差最宽的时段）不开新仓。
+    4H/1D 本身就是多日持仓，不做处理，照常支付过夜费。
+    已知残留：美国假日提前收盘（纽约 14:00 左右）的日子，平仓窗口内没有 K 线，仓位会被带过换日（每年约 10 次）。
+    """
+    if freq not in INTRADAY_FLAT:
+        return z
+    ny = z.index.tz_localize("UTC").tz_convert("America/New_York")
+    mins = ny.hour * 60 + ny.minute
+    start = 17 * 60 - 2 * pd.Timedelta(BAR[freq]).seconds // 60
+    flat = (mins >= start) & (mins < 18 * 60)
+    return z.where(~flat, 0.0)
+
+
 def backtest(df: pd.DataFrame, z: pd.Series, spread: float = SPREAD, oz: float = 1.0) -> dict:
     pos = positions(z)
     move = df["open"].shift(-1) - df["open"]
     bar = pos * move * oz
     bar_ex = pos * (move - move.mean()) * oz          # 去掉样本期平均漂移（牛市 beta）后的毛利
-    cost = pos.diff().abs().fillna(pos.abs()) * spread / 2.0 * oz
+    spread_cost = pos.diff().abs().fillna(pos.abs()) * spread / 2.0 * oz
+    swap_cost = pos.abs() * swap_units(df.index) * SWAP * oz
+    cost = spread_cost + swap_cost
     net = (bar - cost).fillna(0.0)
     trips = float(pos.diff().abs().sum() / 2.0)
     eq = net.cumsum()
     return {
         "gross": round(float(bar.sum()), 1),
         "cost": round(float(cost.sum()), 1),
+        "spread_cost": round(float(spread_cost.sum()), 1),
+        "swap_cost": round(float(swap_cost.sum()), 1),
         "net": round(float(net.sum()), 1),
         "net_ex_drift": round(float((bar_ex - cost).sum()), 1),
         "long_gross": round(float(bar[pos > 0].sum()), 1),
@@ -94,7 +136,7 @@ def atr_edge(df: pd.DataFrame, z: pd.Series, freq: str) -> dict:
     """
     以 ATR 为单位、逐年去漂移后的每笔毛利（与价格水平/波动率无关），逐年统计。
     固定 0.2 美元点差在不同波动时期对应的 ATR 成本差异巨大（2015 年 15MIN≈0.15 ATR，2026 年≈0.02 ATR），
-    因此还要与"当前"成本（最近 1 年点差/ATR 中位数）比较，判断信号在当下是否可交易。
+    因此还要与"当前"成本比较：(点差 + 过夜费 × 平均每笔跨越的换日单位数) / 最近 1 年 ATR 中位数。
     """
     a = atr(df, params(freq)["atr"]).shift(1)
     pos = positions(z)
@@ -108,6 +150,8 @@ def atr_edge(df: pd.DataFrame, z: pd.Series, freq: str) -> dict:
     recent = df.index >= df.index[-1] - pd.Timedelta(days=3 * 365)
     split = pd.Timestamp(SPLIT_DEFAULT)
     ins, oos = df.index < split, df.index >= split
+    # 该策略平均每笔开平要跨越的过夜费单位数（持仓习惯的属性，用全样本估计）
+    swap_per_trip = float((pos.abs() * swap_units(df.index)).sum() / max(trips.sum(), 1))
 
     def pt(m):
         n = float(trips[m].sum())
@@ -116,7 +160,8 @@ def atr_edge(df: pd.DataFrame, z: pd.Series, freq: str) -> dict:
         "per_trip_atr_in": pt(ins), "per_trip_atr_oos": pt(oos), "per_trip_atr_recent3y": pt(recent),
         "per_trip_atr_year": {int(k): round(float(v), 4) for k, v in per_year.items()},
         "per_trip_atr_year_pos_ratio": round(float((per_year > 0).mean()), 2) if len(per_year) else float("nan"),
-        "cost_now_atr": round(float((SPREAD / a[last]).median()), 4),
+        "swap_units_per_trip": round(swap_per_trip, 3),
+        "cost_now_atr": round(float(((SPREAD + SWAP * swap_per_trip) / a[last]).median()), 4),
     }
 
 
@@ -153,6 +198,7 @@ def verdict(m: dict) -> str:
 
 def evaluate_freq(spec: FactorSpec, df: pd.DataFrame, freq: str, split: pd.Timestamp) -> dict:
     fac = spec(df, freq)
+    zx = execution_signal(fac, freq)          # 回测/ATR 边际使用执行层信号
     ins, oos = fac.index < split, fac.index >= split
     hs = HORIZONS[freq]
     main_h = hs[1]
@@ -172,10 +218,10 @@ def evaluate_freq(spec: FactorSpec, df: pd.DataFrame, freq: str, split: pd.Times
         "ic_in": round(ic[main_h][0], 4), "ic_oos": round(ic[main_h][1], 4),
         "ic_year": {k: round(v, 4) for k, v in ic_year.items()},
         "ic_year_pos_ratio": round(float(np.mean([v > 0 for v in valid])), 2) if valid else float("nan"),
-        "bt_oos": backtest(df[oos], fac[oos]),
-        "bt_oos_reversed": backtest(df[oos], -fac[oos]),
+        "bt_oos": backtest(df[oos], zx[oos]),
+        "bt_oos_reversed": backtest(df[oos], -zx[oos]),
         "signal_coverage": round(float((fac.abs() > ENTRY).mean()), 4),
-        "atr_edge": atr_edge(df, fac, freq),
+        "atr_edge": atr_edge(df, zx, freq),
     }
     m["verdict"] = verdict(m)
     return m
@@ -202,7 +248,7 @@ def build_library_md() -> str:
         verdicts = " ".join(f"{f}:{res[f]['verdict'].split()[0]}" for f in res)
         rows.append(f"| [{name}](#{name.lower()}) | {spec.cn_name} | {spec.family} | {verdicts} | "
                     f"{best['freq']} ({best['bt_oos']['net']:+.0f}$) | {rep['evaluated']} |")
-        t = ["| 频率 | 判定 | IC内 | IC外 | 年度IC>0占比 | 样本外净利$ | 去漂移净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 每笔毛利ATR 内/外/近3年 | 年度ATR毛利>0 | 当前点差ATR |",
+        t = ["| 频率 | 判定 | IC内 | IC外 | 年度IC>0占比 | 样本外净利$ | 去漂移净利$ | 多头毛利 | 空头毛利 | 开平次数 | 单笔毛利 | 反向净利 | 每笔毛利ATR 内/外/近3年 | 年度ATR毛利>0 | 当前成本ATR(点差+过夜) |",
              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for f, m in res.items():
             b, r = m["bt_oos"], m["bt_oos_reversed"]
@@ -226,7 +272,7 @@ def build_library_md() -> str:
         "# XAUUSD 因子库", "",
         "> 本文件由 `python -m factors.evaluate` 自动生成，请勿手改。",
         f"> 数据：Dukascopy XAUUSD M1（BID，UTC），样本内 < {SPLIT_DEFAULT} ≤ 样本外。"
-        "成本：0.01 手点差 0.2 美元；开仓 |z|>1.5、平仓 |z|<0.3；信号 t 收盘、t+1 开盘成交。", "",
+        "成本：0.01 手点差 0.2 美元 + 过夜费 0.47 美元/天（纽约 17:00 换日，多空都收，周三 3 倍）；开仓 |z|>1.5、平仓 |z|<0.3；信号 t 收盘、t+1 开盘成交；≤1H 换日前平仓。", "",
         "判定：✅ 候选 · ⏳ 当前波动下可行 · 🟡 观察 · 💸 有效但成本不可行 · 🔄 方向相反 · ❌ 拒绝 · ⚪ 数据不足"
         "（规则见 `.claude/skills/xauusd-factor-mining/references/evaluation.md`）", "",
         "## 总表", "",

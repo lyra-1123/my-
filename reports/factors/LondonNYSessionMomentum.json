@@ -49,6 +49,8 @@
    "bt_oos": {
     "gross": 272.4,
     "cost": 48.0,
+    "spread_cost": 48.0,
+    "swap_cost": 0.0,
     "net": 224.4,
     "net_ex_drift": 231.6,
     "long_gross": 196.4,
@@ -61,6 +63,8 @@
    "bt_oos_reversed": {
     "gross": -272.4,
     "cost": 48.0,
+    "spread_cost": 48.0,
+    "swap_cost": 0.0,
     "net": -320.4,
     "net_ex_drift": -327.6,
     "long_gross": -76.0,
@@ -96,6 +100,7 @@
      "2026": 0.0182
     },
     "per_trip_atr_year_pos_ratio": 0.78,
+    "swap_units_per_trip": 0.002,
     "cost_now_atr": 0.0054
    },
    "verdict": "⏳ 当前波动下可行"
@@ -146,6 +151,8 @@
    "bt_oos": {
     "gross": 527.0,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": 478.0,
     "net_ex_drift": 483.8,
     "long_gross": -177.1,
@@ -158,6 +165,8 @@
    "bt_oos_reversed": {
     "gross": -527.0,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": -576.0,
     "net_ex_drift": -581.8,
     "long_gross": -704.1,
@@ -193,7 +202,8 @@
      "2026": 0.4
     },
     "per_trip_atr_year_pos_ratio": 0.67,
-    "cost_now_atr": 0.0105
+    "swap_units_per_trip": 0.006,
+    "cost_now_atr": 0.0106
    },
    "verdict": "❌ 拒绝"
   },
@@ -243,6 +253,8 @@
    "bt_oos": {
     "gross": 746.7,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": 697.7,
     "net_ex_drift": 703.6,
     "long_gross": -150.3,
@@ -255,6 +267,8 @@
    "bt_oos_reversed": {
     "gross": -746.7,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": -795.7,
     "net_ex_drift": -801.6,
     "long_gross": -897.1,
@@ -290,6 +304,7 @@
      "2026": 0.9418
     },
     "per_trip_atr_year_pos_ratio": 0.56,
+    "swap_units_per_trip": 0.0,
     "cost_now_atr": 0.0151
    },
    "verdict": "❌ 拒绝"
@@ -340,6 +355,8 @@
    "bt_oos": {
     "gross": 849.6,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": 800.6,
     "net_ex_drift": 806.4,
     "long_gross": -59.3,
@@ -352,6 +369,8 @@
    "bt_oos_reversed": {
     "gross": -849.6,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": -898.6,
     "net_ex_drift": -904.4,
     "long_gross": -908.9,
@@ -387,6 +406,7 @@
      "2026": 1.6112
     },
     "per_trip_atr_year_pos_ratio": 0.61,
+    "swap_units_per_trip": 0.0,
     "cost_now_atr": 0.0217
    },
    "verdict": "❌ 拒绝"
@@ -437,6 +457,8 @@
    "bt_oos": {
     "gross": 797.6,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": 748.6,
     "net_ex_drift": 754.4,
     "long_gross": -166.3,
@@ -449,6 +471,8 @@
    "bt_oos_reversed": {
     "gross": -797.6,
     "cost": 49.0,
+    "spread_cost": 49.0,
+    "swap_cost": 0.0,
     "net": -846.6,
     "net_ex_drift": -852.4,
     "long_gross": -963.9,
@@ -484,6 +508,7 @@
      "2026": 2.6431
     },
     "per_trip_atr_year_pos_ratio": 0.5,
+    "swap_units_per_trip": 0.0,
     "cost_now_atr": 0.0387
    },
    "verdict": "❌ 拒绝"

@@ -23,3 +23,10 @@
 
 ## L6. 伦敦→纽约时段接力在 4H 上 IC 为正但不稳定
 - LondonNYSessionMomentum 4H：IC内 +0.013 / IC外 +0.016，各持有期同号，但年度一致性只有 0.56。固定 UTC 时段未处理夏令时，是可改进点。
+
+## L7. 多周期共振不能挽救动量（2026-09-27）
+- 证据：MTFTrendResonance（基准 + 两个已收盘大周期的波动率缩放动量，按方向一致度加权）在 5MIN~1H 的 IC 与单周期 TSMomentumVolScaled 几乎相同（5MIN IC内 -0.035 vs -0.034），日内仍然是反转；4H/1D 的正净利几乎全部来自多头（4H 多 +1579 / 空 -453），属于牛市 beta。
+- HTFTrendLTFBreakout（只保留与两个大周期同向的放量突破）：各频率 IC 仍为负，4H/1H 样本外 IC -0.053/-0.024。大周期同向并不能把日内突破从"反转"变成"延续"。
+- MTFPullbackResonance：加上大周期共振门控后，反而比单周期 TrendPullbackLowVolume 更差（15MIN IC外 +0.0066 → -0.0015）。**共振时趋势往往已经成熟**，门控把样本集中到了趋势后段。
+- 结论：在 2009-2026 的 XAUUSD 上，5MIN~1D 的持有期里没有可交易的时间序列动量（1D 的 TSMOM IC 也是负数），"动量"方向的边际收益很低。日内的主导规律是反转（L1）。
+- 工具：多周期特征必须用 `core.htf_feature`（只用已收盘的大周期 K 线，按收盘时间 merge_asof）；直接 resample 后 ffill 会用到未完成的 K 线，产生未来函数。

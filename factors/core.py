@@ -89,3 +89,47 @@ def rolling_mad_zscore(x: pd.Series, window: int, n_mad: float = 3.0) -> pd.Seri
     sd = clipped.rolling(window, min_periods=minp).std()
     z = (clipped - mu) / (sd + EPS)
     return z.where(sd > EPS, 0.0)
+
+
+# ---------------------------------------------------------------------------
+# 多周期（MTF）工具：只使用"已收盘"的大周期 K 线，严格无未来函数
+# ---------------------------------------------------------------------------
+BAR_DURATION = {"5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
+
+# 每个基准频率对应的两个更高周期（固定时长，便于计算"大周期 K 线何时收盘"）
+HTF_MAP = {
+    "5MIN": ("30min", "4h"),
+    "15MIN": ("1h", "4h"),
+    "30MIN": ("4h", "1D"),
+    "1H": ("4h", "1D"),
+    "4H": ("1D", "7D"),
+    "1D": ("7D", "28D"),
+}
+
+
+def htf_feature(d: pd.DataFrame, freq: str, rule: str, feature_fn) -> pd.Series:
+    """
+    在更高周期 rule 上计算特征，并对齐回基准频率 freq。
+
+    对齐规则（防未来函数的关键）：
+      - 大周期 K 线 [s, s+rule) 在 s+rule 时刻才收盘，其特征只能在 s+rule 之后使用；
+      - 基准 K 线 [t, t+bar) 在 t+bar 收盘时决策，只能取 "大周期收盘时间 <= t+bar" 的最新值；
+      - 正在形成中的大周期 K 线（未收盘）永远不被使用。
+    feature_fn: 输入大周期 OHLCV DataFrame，返回同索引的 Series。
+    """
+    agg = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+    htf = d.resample(rule, label="left", closed="left").agg(agg).dropna(subset=["open"])
+    f = feature_fn(htf)
+    f_avail = pd.DataFrame({"t": f.index + pd.Timedelta(rule), "v": f.to_numpy()}).dropna()
+    base_end = pd.DataFrame({"t": d.index + pd.Timedelta(BAR_DURATION[freq])})
+    merged = pd.merge_asof(base_end, f_avail, on="t", direction="backward")
+    return pd.Series(merged["v"].to_numpy(), index=d.index)
+
+
+def vol_scaled_momentum(bars: pd.DataFrame, lookbacks=(5, 20)) -> pd.Series:
+    """波动率缩放动量（近似 t 统计量）的多窗口平均：log(C/C_L) / (σ·√L)。"""
+    lc = np.log(bars["close"])
+    L_max = max(lookbacks)
+    sigma = lc.diff().rolling(L_max, min_periods=L_max // 2).std()
+    parts = [(lc - lc.shift(L)) / (sigma * np.sqrt(L) + EPS) for L in lookbacks]
+    return pd.concat(parts, axis=1).mean(axis=1)

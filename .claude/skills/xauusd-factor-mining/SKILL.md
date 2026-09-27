@@ -33,7 +33,7 @@ description: XAUUSD（黄金）量化 Alpha 因子挖掘与因子库维护流程
 ### 3. 代码实现
 - 按 `references/factor_template.py` 写在 `factors/library/<家族>.py`，用 `@register(...)` 登记元数据（name / cn_name / family / hypothesis / formula / risks / freqs / added）。
 - 新模块要在 `factors/library/__init__.py` 里 import。
-- 公共工具在 `factors/core.py`：`check_input / params / atr / relative_volume（日内按同时刻去季节性）/ rolling_mad_zscore`。
+- 公共工具在 `factors/core.py`：`check_input / params / atr / relative_volume（日内按同时刻去季节性）/ rolling_mad_zscore / htf_feature（多周期，只用已收盘大周期 K 线）/ vol_scaled_momentum`。
 
 ### 4. 评估
 ```bash

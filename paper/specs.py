@@ -105,6 +105,28 @@ SPECS.append(
 )
 
 
+_MF30 = ("TSMomentumVolScaled", "OBVMomentum", "CMFFlow", "PSARTrend", "SqueezeReleaseMomentum",
+         "TrendPullbackLowVolume", "PullbackSwing", "HTFTrendLTFBreakout")
+SPECS.append(
+    StrategySpec(
+        id="MF30-EW-shadow",
+        name="30min多逻辑组合",
+        description="30MIN 多因子簇代表等权：趋势尾部、回调、资金流、大周期定向突破等 8 个簇各取一个代表等权，"
+                    "迟滞开平仓，换日前平仓（TT30 的影子对照，不计入组合）",
+        freq="30MIN",
+        components=tuple((n, 1.0 / len(_MF30), ()) for n in _MF30),
+        norm=1000, entry=1.5, exit=0.3, lots=0.01,
+        forward_start="2026-09-28",
+        status="shadow",
+        shadow_of="TT30-EW-v1",
+        notes="成分由 2009-2019 样本内信息选定（reports/multifactor_combo.md）；样本内夏普被选择偏差抬高，前向预期按滚动选择水平",
+        evidence={"is_sharpe_atr_fixed_biased": 1.24, "oos_sharpe_atr_2020_": 0.72, "walkforward_oos_sharpe": 0.89,
+                  "walkforward_full_sharpe": 0.65, "cscv_oos_sharpe_median": 0.95, "param_PBO": 0.057,
+                  "research_PBO": 0.02, "DSR_walkforward_Neff15": 0.33},
+    )
+)
+
+
 def get_spec(sid: str) -> StrategySpec:
     for s in SPECS:
         if s.id == sid:

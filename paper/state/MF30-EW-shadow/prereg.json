@@ -1,0 +1,106 @@
+{
+ "strategy": "MF30-EW-shadow",
+ "registered_at_utc": "2026-09-27T10:29:07+00:00",
+ "forward_start": "2026-09-28",
+ "spec": {
+  "id": "MF30-EW-shadow",
+  "description": "30MIN 多因子簇代表等权：趋势尾部、回调、资金流、大周期定向突破等 8 个簇各取一个代表等权，迟滞开平仓，换日前平仓（TT30 的影子对照，不计入组合）",
+  "freq": "30MIN",
+  "components": [
+   [
+    "TSMomentumVolScaled",
+    0.125,
+    []
+   ],
+   [
+    "OBVMomentum",
+    0.125,
+    []
+   ],
+   [
+    "CMFFlow",
+    0.125,
+    []
+   ],
+   [
+    "PSARTrend",
+    0.125,
+    []
+   ],
+   [
+    "SqueezeReleaseMomentum",
+    0.125,
+    []
+   ],
+   [
+    "TrendPullbackLowVolume",
+    0.125,
+    []
+   ],
+   [
+    "PullbackSwing",
+    0.125,
+    []
+   ],
+   [
+    "HTFTrendLTFBreakout",
+    0.125,
+    []
+   ]
+  ],
+  "norm": 1000,
+  "entry": 1.5,
+  "exit": 0.3,
+  "lots": 0.01,
+  "forward_start": "2026-09-28",
+  "status": "shadow",
+  "notes": "成分由 2009-2019 样本内信息选定（reports/multifactor_combo.md）；样本内夏普被选择偏差抬高，前向预期按滚动选择水平",
+  "rule": "standard",
+  "rule_params": [],
+  "shadow_of": "TT30-EW-v1",
+  "name": "30min多逻辑组合"
+ },
+ "evidence": {
+  "is_sharpe_atr_fixed_biased": 1.24,
+  "oos_sharpe_atr_2020_": 0.72,
+  "walkforward_oos_sharpe": 0.89,
+  "walkforward_full_sharpe": 0.65,
+  "cscv_oos_sharpe_median": 0.95,
+  "param_PBO": 0.057,
+  "research_PBO": 0.02,
+  "DSR_walkforward_Neff15": 0.33
+ },
+ "fingerprint": "2285fdcedfe6727a",
+ "backtest_daily_R_sharpe": 0.546,
+ "bands_cum_R": {
+  "21": {
+   "p5": -18.183,
+   "p50": 0.843,
+   "p95": 23.434
+  },
+  "63": {
+   "p5": -27.522,
+   "p50": 4.918,
+   "p95": 41.973
+  },
+  "126": {
+   "p5": -38.82,
+   "p50": 13.718,
+   "p95": 60.084
+  },
+  "252": {
+   "p5": -61.795,
+   "p50": 26.431,
+   "p95": 84.317
+  }
+ },
+ "criteria": {
+  "fail": "前向累计 R 低于同长度窗口回测分布的 5% 分位（在 63/126/252 个交易日检查）→ 停止该策略并复查",
+  "warn": "前向累计 R 低于 50% 分位，或前向最大回撤超过回测最大回撤的 1.5 倍",
+  "expectation": "日度 R 夏普基准取 CSCV 样本外中位数（evidence.cscv_oos_sharpe_median），而非全样本回测值",
+  "min_evaluation": "252 个交易日之前不对'有效'下结论，只检查是否失败",
+  "shadow_decision": "252 个交易日时比较前向结果：若本影子版本的前向日度 R 夏普高于 TT30-EW-v1，且未触发自身失败线，则以本规则建立 TT30-EW-v1 的新版本（重新走准入与登记），否则停止本影子版本；252 日之前不做切换。"
+ },
+ "backtest_max_drawdown_R": -117.499,
+ "shadow_of": "TT30-EW-v1"
+}

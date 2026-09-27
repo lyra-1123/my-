@@ -45,9 +45,11 @@ def main() -> None:
 
         comp = list(spec.components)
         name, w, kw = comp[0]
-        # 扰动第一个参数（+1）；没有参数时加上 chan=33
-        kw2 = (((kw[0][0], kw[0][1] + 1),) + tuple(kw[1:])) if kw else (("chan", 33),)
-        alt = dataclasses.replace(spec, components=tuple([(name, w, kw2)] + comp[1:]))
+        if kw:   # 扰动第一个成分的第一个参数（+1）
+            kw2 = ((kw[0][0], kw[0][1] + 1),) + tuple(kw[1:])
+            alt = dataclasses.replace(spec, components=tuple([(name, w, kw2)] + comp[1:]))
+        else:    # 成分没有显式参数时，扰动开仓阈值（对任何策略都会改变目标仓位）
+            alt = dataclasses.replace(spec, entry=spec.entry + 0.05)
         r2 = fingerprint(spec, bars) != fingerprint(alt, bars)
         print(f"[2] {spec.id} 指纹对参数变化敏感 → {'OK' if r2 else 'FAIL'}")
 

@@ -15,7 +15,7 @@ import os
 import pandas as pd
 
 # 研究频率 -> pandas 重采样规则
-RESAMPLE_RULES = {"5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
+RESAMPLE_RULES = {"1MIN": "1min", "3MIN": "3min", "5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
 
 
 def load_m1(data_dir: str, years: list[int] | None = None) -> pd.DataFrame:

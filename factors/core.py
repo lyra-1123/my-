@@ -23,6 +23,9 @@ FREQ_PRESETS = {
     "30MIN": dict(chan=32, atr=32, vol_base=20, thrust=8,  sq_short=8,  sq_long=160, norm=1000, intraday=True,  trend=(32, 96, 288)),
     "15MIN": dict(chan=32, atr=32, vol_base=20, thrust=8,  sq_short=12, sq_long=192, norm=1500, intraday=True,  trend=(32, 96, 384)),
     "5MIN":  dict(chan=36, atr=48, vol_base=20, thrust=12, sq_short=12, sq_long=288, norm=2000, intraday=True,  trend=(36, 144, 576)),
+    # 剥头皮频率（第九批加入）：窗口约为"1 小时"的倍数；norm 约 3~4 个交易日
+    "3MIN":  dict(chan=20, atr=40, vol_base=20, thrust=10, sq_short=10, sq_long=200, norm=2500, intraday=True,  trend=(20, 60, 240)),
+    "1MIN":  dict(chan=60, atr=60, vol_base=20, thrust=15, sq_short=30, sq_long=600, norm=5000, intraday=True,  trend=(60, 180, 720)),
 }
 ALL_FREQS = list(FREQ_PRESETS)
 
@@ -94,7 +97,7 @@ def rolling_mad_zscore(x: pd.Series, window: int, n_mad: float = 3.0) -> pd.Seri
 # ---------------------------------------------------------------------------
 # 多周期（MTF）工具：只使用"已收盘"的大周期 K 线，严格无未来函数
 # ---------------------------------------------------------------------------
-BAR_DURATION = {"5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
+BAR_DURATION = {"1MIN": "1min", "3MIN": "3min", "5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
 
 # 每个基准频率对应的两个更高周期（固定时长，便于计算"大周期 K 线何时收盘"）
 HTF_MAP = {

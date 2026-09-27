@@ -37,7 +37,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORT_DIR = os.path.join(ROOT, "reports", "factors")
 LIBRARY_MD = os.path.join(ROOT, "FACTOR_LIBRARY.md")
 
-HORIZONS = {"5MIN": (1, 6, 24), "15MIN": (1, 4, 16), "30MIN": (1, 4, 12),
+HORIZONS = {"1MIN": (1, 5, 15), "3MIN": (1, 5, 10), "5MIN": (1, 6, 24), "15MIN": (1, 4, 16), "30MIN": (1, 4, 12),
             "1H": (1, 4, 12), "4H": (1, 3, 6), "1D": (1, 3, 5)}
 SPREAD = 0.2           # 美元 / 0.01 手 / 开平一次
 SWAP = 0.47            # 美元 / 0.01 手 / 每次换日（多空都收），周三 3 倍
@@ -106,8 +106,8 @@ def swap_units(index: pd.DatetimeIndex) -> pd.Series:
     return (cross.astype(float) * mult).rename("swap_units")
 
 
-INTRADAY_FLAT = ("5MIN", "15MIN", "30MIN", "1H")   # 这些频率执行"换日前平仓"
-BAR = {"5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
+INTRADAY_FLAT = ("1MIN", "3MIN", "5MIN", "15MIN", "30MIN", "1H")   # 这些频率执行"换日前平仓"
+BAR = {"1MIN": "1min", "3MIN": "3min", "5MIN": "5min", "15MIN": "15min", "30MIN": "30min", "1H": "1h", "4H": "4h", "1D": "1D"}
 
 
 def execution_signal(z: pd.Series, freq: str) -> pd.Series:

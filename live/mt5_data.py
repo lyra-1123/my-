@@ -44,7 +44,8 @@ def utc_now_from_server() -> pd.Timestamp:
     return max(t, local - pd.Timedelta(minutes=5)) if pd.notna(t) else local
 
 
-def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None, contiguous: bool = True) -> pd.DataFrame:
+def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None, contiguous: bool = True,
+               include_partial: bool = False) -> pd.DataFrame:
     """取最近 count 根 K 线，换算为 UTC，并丢弃尚未走完的最后一根。"""
     # 请求数量超过终端"图表最大K线数"或服务器历史时，MT5 会直接返回 None；逐步减半重试
     rates, n = None, count
@@ -64,6 +65,8 @@ def fetch_bars(freq: str, count: int, now_utc: pd.Timestamp | None = None, conti
     out = out[out["volume"] > 0]
     if contiguous:
         out = latest_contiguous(out)
+    if include_partial:   # 含尚未走完的最后一根（仅用于盘中预估，交易决策从不使用）
+        return out
     now_utc = now_utc or utc_now_from_server()
     return out[out.index + DUR[freq] <= now_utc]
 

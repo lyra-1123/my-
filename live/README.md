@@ -10,6 +10,7 @@
 | `live/compare_signals.py` | 上线前第 2 步：同一段时间用 MT5 数据和 Dukascopy 数据分别算信号，比较是否一致 |
 | `live/runner.py` | 实时程序：每根 30 分钟 K 线收盘后运行一次 |
 | `live/daily_review.py` | 每日复盘数据层：读取 MT5 成交记录，与模型逐笔对照，输出 `live/reports/review_<交易日>.md` 和 `daily_summary.csv` |
+| `live/status.py` | 实时状态（只读）：每个策略的持仓、信号 z、离开仓/平仓/反手还差多少、盘中预估、换日前平仓时间、止损距离、程序是否在线 |
 | `live/selftest.py` | 自测（不需要 MT5，用 Dukascopy 数据模拟服务器），在云端/任何机器上都能跑 |
 | `live/logs/` | `decisions.csv`（每次决策）、`orders.csv`（每笔订单与回执）、`state.json` |
 
@@ -88,3 +89,14 @@ python -m live.runner
 - 手动生成或补做：`python -m live.daily_review --day 2026-09-29`（不带 `--day` = 最近一个已收盘交易日）。
 - 内容：当日行情；各策略实际 / 按 0.2 点差折算 / 模型盈亏；规则检查（手动干预、报错、下单失败、过夜、仓位一致率、滑点、延迟，阈值写死）；逐笔明细（参考价、延迟、扣点差后的滑点、MFE/MAE、兑现率、R）；上线以来累计 vs 登记区间；必须解释的偏离。
 - 深度复盘：把报告全文贴给 Claude，或提交推送 `live/reports/` 后让 Claude 读取，按 `.claude/skills/mt5-daily-review/SKILL.md` 写教练评语。
+
+## 实时查看策略状态
+另开一个命令行窗口（不影响 runner）：
+```
+python -m live.status             # 显示一次
+python -m live.status --watch 60  # 每 60 秒刷新
+```
+- 持仓时看"距平仓还差"：z 回到 ±出场线（0.3）以内就平仓；反向越过 ±入场线（1.5）就反手。z 反向但没过入场线时继续持有。
+- 空仓时看"距开多/开空还差"：离阈值不到 0.3 标注"接近"。
+- "盘中预估"把还没走完的 K 线按现价当作收盘来算，只是参考：程序只在 K 线收盘后 8 秒决策，含成交量的指标在 K 线走完前偏低。
+- 查看日志请用记事本或 `live.status`；用 Excel 打开会锁住文件（程序不会因此崩溃，但日志会先暂存到 `*.pending.csv`，关掉 Excel 后自动并回）。

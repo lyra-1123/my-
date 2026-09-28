@@ -137,6 +137,9 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
         note += " " + "；".join(failed)
         print(f"!!! {sid} 下单失败：{'；'.join(failed)}")
     state["last_bar"][sid] = str(last_bar)
+    if action != "HOLD" or note.strip():
+        print(f"  {sid}（{spec.name}）：{action}，目标 {desired:+.2f} 手，原持仓 {current:+.2f} 手"
+              + (f"，止损 {stop:.2f}" if stop is not None else "") + (f"，备注：{note.strip()}" if note.strip() else ""))
     log_decision({"utc_time": str(now_utc), "strategy": sid, "name": spec.name, "bar": str(last_bar), "z": round(float(row["z"]), 4),
                   "z_exec": round(float(row["z_exec"]), 4), "target": target, "desired_lots": desired, "current_lots": current,
                   "action": action, "stop": stop, "spread": round(spread, 3), "data_age_min": round(age_min, 1), "note": note.strip()})

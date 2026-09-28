@@ -137,7 +137,10 @@ def enrich(tr: pd.DataFrame, sid: str, bars: pd.DataFrame, c: pd.DataFrame, dec:
         slip = total_cost - (spread_paid if np.isfinite(spread_paid) else 0.0)
         # 最大浮盈 / 浮亏（M1 K 线，BID）
         end = r["exit_utc"] if not r["is_open"] else pd.Timestamp.now("UTC").tz_localize(None)
-        m1 = bars_range("1MIN", r["entry_utc"].floor("1min"), end)
+        try:
+            m1 = bars_range("1MIN", r["entry_utc"].floor("1min"), end)
+        except Exception:   # 取不到 M1（历史不足/接口差异）时只缺 MFE/MAE，不影响报告其他部分
+            m1 = pd.DataFrame()
         if len(m1):
             hi, lo = m1["high"].max(), m1["low"].min()
             mfe = (hi - r["entry_px"]) if r["side"] > 0 else (r["entry_px"] - lo)

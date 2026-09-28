@@ -103,11 +103,13 @@ def fetch_bars_retry(freq: str, now_utc: pd.Timestamp) -> pd.DataFrame:
     休市（周末、换日休市的一小时）时最后一根本来就不会更新，不重试。
     """
     exp = expected_last_bar(freq, now_utc)
+    ny = pd.Timestamp(exp).tz_localize("UTC").tz_convert("America/New_York")
+    in_break = ny.hour == 17 or ny.weekday() == 5 or (ny.weekday() == 4 and ny.hour >= 17) or (ny.weekday() == 6 and ny.hour < 18)
     last_err = None
     for k in range(C.RETRY_TIMES + 1):
         try:
             bars = fetch_bars(freq, C.HISTORY_BARS[freq], now_utc)
-            if bars.index[-1] >= exp:
+            if bars.index[-1] >= exp or in_break:   # 每日换日休市 / 周末：本来就没有这根 K 线
                 return bars
             tick = mt5.symbol_info_tick(C.SYMBOL)
             if tick is None or (now_utc - server_to_utc(pd.DatetimeIndex([pd.Timestamp(tick.time, unit="s")]))[0]) > pd.Timedelta(minutes=10):
@@ -249,6 +251,7 @@ def cycle(state: dict, force=False):
                 state["last_review"] = str(day.date())
                 print(f"已生成复盘报告：{path}")
         except Exception as e:
+            print(f"!!! 复盘报告生成失败：{e!r}（交易不受影响；可手动运行 python -m live.daily_review 查看详细错误）")
             log_decision({"utc_time": str(now_utc), "strategy": "DAILY_REVIEW", "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                           "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
                           "note": repr(e)})

@@ -207,6 +207,7 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
     dd = dec[(dec["strategy"] == sid) & (dec["utc_time"] >= start) & (dec["utc_time"] < end)] if not dec.empty else dec
     od = orders[(orders["strategy"] == sid) & (orders["utc_time"] >= start) & (orders["utc_time"] < end)] if not orders.empty else orders
     n_err = int((dd["action"] == "ERROR").sum()) if len(dd) else 0
+    n_blocked = int((dd["action"] == "BLOCKED").sum()) if len(dd) else 0
     notes = dd["note"].dropna().astype(str) if len(dd) else pd.Series(dtype=str)
     n_spread_block = int(notes.str.contains("点差").sum())
     n_stale = int(notes.str.contains("过期").sum())
@@ -220,7 +221,7 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
             "model_full": model_full, "is_live": is_live, "cmp_from": cmp_from, "live_day": live_day, "sigma": sigma, "z": z,
             "z_model": model_day / sigma if sigma else np.nan, "align": align, "n_bars_live": len(t_ok), "mismatch": mism,
             "live_pos_at_mismatch": live_pos.reindex(mism.index), "n_err": n_err, "n_spread_block": n_spread_block,
-            "n_stale": n_stale, "n_order_fail": n_order_fail, "manual": manual, "swap_trips": swap_trips,
+            "n_stale": n_stale, "n_order_fail": n_order_fail, "n_blocked": n_blocked, "manual": manual, "swap_trips": swap_trips,
             "live_start": live_start, "decisions": dd, "daily_model": daily, "tr_all": tr_all, "c": c}
 
 
@@ -232,6 +233,8 @@ def flags_for(r) -> list[tuple[str, str]]:
         f.append(("🔴", f"{r['manual']} 笔手动成交（魔术号属于本策略但来源是客户端/手机/网页）：破坏了规则执行，当日数据不能用于评价策略"))
     if r["n_err"]:
         f.append(("🔴", f"程序报错 {r['n_err']} 次（decisions.csv 中 action=ERROR）"))
+    if r.get("n_blocked"):
+        f.append(("🔴", f"{r['n_blocked']} 次有信号但终端/账户不允许下单（算法交易未开启等），仓位与模型脱节"))
     if r["n_order_fail"]:
         f.append(("🔴", f"下单失败 {r['n_order_fail']} 次（orders.csv 回执不是 10009）"))
     if r["swap_trips"]:

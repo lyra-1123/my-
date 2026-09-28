@@ -82,7 +82,7 @@ def daily_pnl(now_utc) -> float:
     return realized + floating
 
 
-def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str | None, force=False):
+def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str | None, force=False, halt_orders: str = ""):
     spec = get_spec(sid)
     bars = fetch_bars(spec.freq, C.HISTORY_BARS[spec.freq], now_utc)
     last_bar = bars.index[-1]
@@ -103,23 +103,39 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
         note, desired = f"连续历史只有 {len(bars)} 根（需要 {C.MIN_BARS[spec.freq]}），不交易", 0.0
     elif age_min > C.MAX_DATA_AGE_MIN:
         note, desired = f"数据过期 {age_min:.0f} 分钟，不交易", current
-    if abs(desired - current) > 1e-9:
+    failed = []
+    if abs(desired - current) > 1e-9 and not halt_orders:
         if current != 0 and (desired == 0 or np.sign(desired) != np.sign(current) or abs(desired) != abs(current)):
-            broker.close_all(sid, cfg["magic"], now_utc); action = "CLOSE"
-        if desired != 0:
+            action = "CLOSE"
+            if not broker.close_all(sid, cfg["magic"], now_utc):
+                failed.append(f"平仓失败：{broker.LAST_ERROR[0]}")
+        if desired != 0 and not failed:
             if spread > C.MAX_SPREAD_USD:
                 note += f" 点差 {spread:.2f} 过宽，不开仓"
+            elif state.get("suspect", {}).get(sid):
+                note += " 此前成交后持仓与目标不符，已停止为该策略开新仓，请人工核对后删除 state.json 中的 suspect 项"
             else:
                 if stop is None and "trail_dist" in c:
                     # 模型的初始止损 = 下一根开盘价 ∓ trail×日线ATR；实盘此时下一根开盘价就是现价
                     px = broker.entry_price(int(np.sign(desired)))
                     stop = px - np.sign(desired) * float(row["trail_dist"])
-                broker.open_position(sid, cfg["magic"], abs(desired), int(np.sign(desired)), now_utc, sl=stop)
                 action = "OPEN_LONG" if desired > 0 else "OPEN_SHORT"
                 if current != 0:
                     action = "REVERSE_" + action.split("_")[1]
-    if stop is not None and broker.net_lots(cfg["magic"]) != 0:
-        broker.set_stop(sid, cfg["magic"], stop, now_utc)
+                if not broker.open_position(sid, cfg["magic"], abs(desired), int(np.sign(desired)), now_utc, sl=stop):
+                    failed.append(f"开仓失败：{broker.LAST_ERROR[0]}")
+        after = broker.net_lots(cfg["magic"])
+        if not failed and abs(after - desired) > 1e-9:
+            # 回执成功但按魔术号查不到应有的持仓：停止继续开仓，防止重复下单
+            state.setdefault("suspect", {})[sid] = True
+            failed.append(f"回执成功但持仓为 {after}（目标 {desired}），已停止为该策略开新仓")
+    elif abs(desired - current) > 1e-9 and halt_orders:
+        note += f" 未下单：{halt_orders}"
+        action = "BLOCKED"
+    if failed:
+        action = "ORDER_FAILED"
+        note += " " + "；".join(failed)
+        print(f"!!! {sid} 下单失败：{'；'.join(failed)}")
     state["last_bar"][sid] = str(last_bar)
     log_decision({"utc_time": str(now_utc), "strategy": sid, "name": spec.name, "bar": str(last_bar), "z": round(float(row["z"]), 4),
                   "z_exec": round(float(row["z_exec"]), 4), "target": target, "desired_lots": desired, "current_lots": current,
@@ -139,10 +155,13 @@ def cycle(state: dict, force=False):
             nxt = trading_day(pd.DatetimeIndex([now_utc]))[0] + pd.Timedelta(days=1)
             state["paused_until"] = str((nxt.tz_localize("America/New_York") - pd.Timedelta(hours=7)).tz_convert("UTC").tz_localize(None))
             halt = f"当日亏损 {pnl:.2f}$ 超过熔断线，暂停至 {state['paused_until']}"
+    ok, why = broker.trading_allowed()
+    if not ok:
+        print(f"!!! 无法下单：{why}")
     for sid, cfg in C.STRATEGIES.items():
         if cfg["enabled"]:
             try:
-                process(sid, cfg, now_utc, state, halt, force)
+                process(sid, cfg, now_utc, state, halt, force, "" if ok else why)
             except Exception as e:  # 单个策略出错不影响其他策略
                 log_decision({"utc_time": str(now_utc), "strategy": sid, "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                               "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
@@ -172,6 +191,9 @@ def main():
     ap.add_argument("--once", action="store_true", help="只运行一次（用于测试或由计划任务调用）")
     args = ap.parse_args()
     connect(); preflight()
+    ok, why = broker.trading_allowed()
+    if not ok:
+        raise SystemExit(f"无法下单：{why}。开启后再启动。")
     state = load_state()
     if args.once or C.ALIGN_ON_START:
         cycle(state, force=C.ALIGN_ON_START)

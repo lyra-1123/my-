@@ -25,7 +25,7 @@ Pos = namedtuple("Pos", "ticket symbol magic type volume price_open sl tp profit
 Res = namedtuple("Res", "retcode price comment")
 Tick = namedtuple("Tick", "time bid ask")
 Info = namedtuple("Info", "trade_contract_size digits volume_min volume_step trade_stops_level filling_mode")
-Acc = namedtuple("Acc", "login server trade_mode margin_mode balance equity currency")
+Acc = namedtuple("Acc", "login server trade_mode margin_mode balance equity currency trade_allowed trade_expert")
 Deal = namedtuple("Deal", "ticket order time time_msc type entry magic position_id reason volume price commission swap profit fee symbol comment")
 DEAL_TYPE_BUY, DEAL_TYPE_SELL = 0, 1
 DEAL_ENTRY_IN, DEAL_ENTRY_OUT = 0, 1
@@ -61,7 +61,10 @@ def initialize(*a, **k): return True
 def shutdown(): return True
 def last_error(): return (0, "ok")
 def symbol_select(*a): return True
-def account_info(): return Acc(1, "mock", ACCOUNT_TRADE_MODE_DEMO, ACCOUNT_MARGIN_MODE_RETAIL_HEDGING, 10000.0, 10000.0, "USD")
+TermInfo = namedtuple("TermInfo", "trade_allowed connected")
+TRADE_ALLOWED = [True]
+def terminal_info(): return TermInfo(TRADE_ALLOWED[0], True)
+def account_info(): return Acc(1, "mock", ACCOUNT_TRADE_MODE_DEMO, ACCOUNT_MARGIN_MODE_RETAIL_HEDGING, 10000.0, 10000.0, "USD", True, True)
 def symbol_info(sym): return Info(100.0, 2, 0.01, 0.01, 0, 1)
 
 
@@ -104,6 +107,8 @@ def history_deals_get(a, b):
 
 
 def order_send(req):
+    if not TRADE_ALLOWED[0]:
+        return Res(10027, 0.0, "AutoTrading disabled by client")
     if req["action"] == TRADE_ACTION_SLTP:
         for i, p in enumerate(_pos):
             if p.ticket == req["position"]:

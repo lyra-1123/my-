@@ -41,9 +41,26 @@ def _log(row: dict):
         w.writerow(row)
 
 
+LAST_ERROR = [""]   # 最近一次失败订单的回执说明（runner 写进决策日志）
+
+
+def trading_allowed() -> tuple[bool, str]:
+    """终端和账户是否允许程序下单（"算法交易"按钮、账户权限）。"""
+    ti, acc = mt5.terminal_info(), mt5.account_info()
+    if ti is not None and not getattr(ti, "trade_allowed", True):
+        return False, "MT5 终端未开启'算法交易'（工具栏按钮需为绿色；工具→选项→智能交易→允许算法交易）"
+    if acc is not None and not getattr(acc, "trade_expert", True):
+        return False, "该账户不允许程序（EA）交易"
+    if acc is not None and not getattr(acc, "trade_allowed", True):
+        return False, "该账户当前不允许交易"
+    return True, ""
+
+
 def _send(req: dict, sid: str, utc_now) -> bool:
     res = mt5.order_send(req)
     ok = res is not None and res.retcode == mt5.TRADE_RETCODE_DONE
+    if not ok:
+        LAST_ERROR[0] = f"{getattr(res, 'retcode', None)} {getattr(res, 'comment', mt5.last_error())}"
     _log({"utc_time": str(utc_now), "strategy": sid, "action": req.get("action"), "type": req.get("type"),
           "volume": req.get("volume"), "req_price": req.get("price"), "sl": req.get("sl"), "position": req.get("position"),
           "retcode": getattr(res, "retcode", None), "fill_price": getattr(res, "price", None),

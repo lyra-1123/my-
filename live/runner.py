@@ -23,6 +23,7 @@ import pandas as pd
 from factors.core import trading_day
 from live import broker
 from live import config as C
+from live.logutil import append_row, flush_pending
 from live.mt5_api import mt5
 from live.mt5_data import DUR, connect, fetch_bars, utc_now_from_server
 from paper.engine import compute
@@ -40,7 +41,11 @@ def load_state():
 
 def save_state(s):
     os.makedirs(C.LOG_DIR, exist_ok=True)
-    json.dump(s, open(STATE, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+    try:
+        with open(STATE, "w", encoding="utf-8") as fh:
+            json.dump(s, fh, ensure_ascii=False, indent=1, default=str)
+    except OSError as e:
+        print(f"!!! 状态文件写入失败（不影响本次交易）：{e!r}")
 
 
 DECISION_FIELDS = ["utc_time", "beijing_time", "strategy", "name", "bar", "z", "z_exec", "target", "desired_lots", "current_lots",
@@ -49,25 +54,13 @@ DECISION_FIELDS = ["utc_time", "beijing_time", "strategy", "name", "bar", "z", "
 
 
 def log_decision(row):
-    path = os.path.join(C.LOG_DIR, "decisions.csv")
-    os.makedirs(C.LOG_DIR, exist_ok=True)
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as fh:
-            header = fh.readline().strip().split(",")
-        if header != DECISION_FIELDS:   # 旧版日志列不同：原地升级表头，保留历史行
-            old = pd.read_csv(path)
-            old.reindex(columns=DECISION_FIELDS).to_csv(path, index=False, encoding="utf-8")
-    new = not os.path.exists(path)
+    """写决策日志；文件被占用时暂存，绝不让程序崩溃（见 live/logutil.py）。"""
     try:
         row.setdefault("beijing_time", pd.Timestamp(row["utc_time"]).tz_localize("UTC").tz_convert("Asia/Shanghai")
                        .strftime("%Y-%m-%d %H:%M:%S"))
     except Exception:
         pass
-    with open(path, "a", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=DECISION_FIELDS, extrasaction="ignore")
-        if new:
-            w.writeheader()
-        w.writerow(row)
+    append_row(os.path.join(C.LOG_DIR, "decisions.csv"), row, DECISION_FIELDS)
 
 
 def preflight():
@@ -222,6 +215,8 @@ def cycle(state: dict, force=False):
             log_decision({"utc_time": str(now_utc), "strategy": "DAILY_REVIEW", "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                           "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
                           "note": repr(e)})
+    for name in ("decisions.csv", "orders.csv"):
+        flush_pending(os.path.join(C.LOG_DIR, name))
     save_state(state)
 
 
@@ -246,8 +241,13 @@ def main():
     while True:
         wake = next_wakeup(pd.Timestamp(time.time(), unit="s"))
         time.sleep(max(1.0, (wake - pd.Timestamp(time.time(), unit="s")).total_seconds()))
-        cycle(state)
-        print(f"{pd.Timestamp(time.time(), unit='s'):%Y-%m-%d %H:%M:%S} UTC 已处理，详见 {C.LOG_DIR}/decisions.csv")
+        try:
+            cycle(state)
+            print(f"{pd.Timestamp(time.time(), unit='s'):%Y-%m-%d %H:%M:%S} UTC 已处理，详见 {C.LOG_DIR}/decisions.csv")
+        except Exception as e:   # 任何意外都不能让程序退出：打印后等下一根 K 线再试
+            import traceback
+            traceback.print_exc()
+            print(f"!!! {pd.Timestamp(time.time(), unit='s'):%Y-%m-%d %H:%M:%S} UTC 本次运行出错：{e!r}；程序继续运行，下一根 K 线重试")
 
 
 if __name__ == "__main__":

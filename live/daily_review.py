@@ -61,8 +61,11 @@ def _read_log(name: str) -> pd.DataFrame:
     if not os.path.exists(p):
         return pd.DataFrame()
     df = pd.read_csv(p)
+    pend = p[:-4] + ".pending.csv"
+    if os.path.exists(pend):   # 日志文件曾被占用时暂存的行
+        df = pd.concat([df, pd.read_csv(pend)], ignore_index=True)
     df["utc_time"] = pd.to_datetime(df["utc_time"])
-    return df
+    return df.sort_values("utc_time", kind="stable").reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------

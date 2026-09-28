@@ -8,6 +8,7 @@ import os
 import pandas as pd
 
 from live import config as C
+from live.logutil import append_row
 from live.mt5_api import mt5
 
 
@@ -31,14 +32,7 @@ def net_lots(magic: int) -> float:
 
 
 def _log(row: dict):
-    path = os.path.join(C.LOG_DIR, "orders.csv")
-    new = not os.path.exists(path)
-    os.makedirs(C.LOG_DIR, exist_ok=True)
-    with open(path, "a", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(row))
-        if new:
-            w.writeheader()
-        w.writerow(row)
+    append_row(os.path.join(C.LOG_DIR, "orders.csv"), row, list(row))
 
 
 LAST_ERROR = [""]   # 最近一次失败订单的回执说明（runner 写进决策日志）

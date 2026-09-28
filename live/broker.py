@@ -42,6 +42,7 @@ def _log(row: dict):
 
 
 LAST_ERROR = [""]   # 最近一次失败订单的回执说明（runner 写进决策日志）
+FILLS: list[dict] = []   # 本次处理中成功的市价成交（runner 每个策略处理前清空），用于记录成交价与滑点
 
 
 def trading_allowed() -> tuple[bool, str]:
@@ -61,6 +62,16 @@ def _send(req: dict, sid: str, utc_now) -> bool:
     ok = res is not None and res.retcode == mt5.TRADE_RETCODE_DONE
     if not ok:
         LAST_ERROR[0] = f"{getattr(res, 'retcode', None)} {getattr(res, 'comment', mt5.last_error())}"
+    elif req.get("action") == mt5.TRADE_ACTION_DEAL:
+        px = getattr(res, "price", 0.0) or 0.0
+        if not px and getattr(res, "deal", 0):
+            try:   # 部分服务器回执里不带成交价：按成交单号查
+                d = mt5.history_deals_get(ticket=res.deal)
+                px = d[0].price if d else 0.0
+            except Exception:
+                pass
+        FILLS.append({"closing": "position" in req, "req_price": req.get("price"), "fill_price": px or None,
+                      "volume": req.get("volume")})
     _log({"utc_time": str(utc_now), "strategy": sid, "action": req.get("action"), "type": req.get("type"),
           "volume": req.get("volume"), "req_price": req.get("price"), "sl": req.get("sl"), "position": req.get("position"),
           "retcode": getattr(res, "retcode", None), "fill_price": getattr(res, "price", None),

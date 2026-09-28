@@ -43,12 +43,28 @@ def save_state(s):
     json.dump(s, open(STATE, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
 
 
+DECISION_FIELDS = ["utc_time", "beijing_time", "strategy", "name", "bar", "z", "z_exec", "target", "desired_lots", "current_lots",
+                   "action", "signal_price", "bid", "ask", "close_fill", "open_fill", "slip_close_vs_signal", "slip_open_vs_signal",
+                   "slip_vs_quote", "stop", "spread", "data_age_min", "note"]
+
+
 def log_decision(row):
     path = os.path.join(C.LOG_DIR, "decisions.csv")
-    new = not os.path.exists(path)
     os.makedirs(C.LOG_DIR, exist_ok=True)
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            header = fh.readline().strip().split(",")
+        if header != DECISION_FIELDS:   # 旧版日志列不同：原地升级表头，保留历史行
+            old = pd.read_csv(path)
+            old.reindex(columns=DECISION_FIELDS).to_csv(path, index=False, encoding="utf-8")
+    new = not os.path.exists(path)
+    try:
+        row.setdefault("beijing_time", pd.Timestamp(row["utc_time"]).tz_localize("UTC").tz_convert("Asia/Shanghai")
+                       .strftime("%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        pass
     with open(path, "a", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(row))
+        w = csv.DictWriter(fh, fieldnames=DECISION_FIELDS, extrasaction="ignore")
         if new:
             w.writeheader()
         w.writerow(row)
@@ -104,6 +120,8 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
     elif age_min > C.MAX_DATA_AGE_MIN:
         note, desired = f"数据过期 {age_min:.0f} 分钟，不交易", current
     failed = []
+    broker.FILLS.clear()
+    tick0 = mt5.symbol_info_tick(C.SYMBOL)   # 下单前的报价
     if abs(desired - current) > 1e-9 and not halt_orders:
         if current != 0 and (desired == 0 or np.sign(desired) != np.sign(current) or abs(desired) != abs(current)):
             action = "CLOSE"
@@ -140,7 +158,29 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
     if action != "HOLD" or note.strip():
         print(f"  {sid}（{spec.name}）：{action}，目标 {desired:+.2f} 手，原持仓 {current:+.2f} 手"
               + (f"，止损 {stop:.2f}" if stop is not None else "") + (f"，备注：{note.strip()}" if note.strip() else ""))
-    log_decision({"utc_time": str(now_utc), "strategy": sid, "name": spec.name, "bar": str(last_bar), "z": round(float(row["z"]), 4),
+    # 价格与滑点（$/盎司，正 = 对自己不利）：
+    #   信号价 = 信号 K 线收盘价（BID；模型按下一根开盘价成交，与之几乎相同）
+    #   相对信号价的滑点 = 含点差的全部执行成本；相对报价的滑点 = 下单报价到成交价的纯滑点
+    sig_px = round(float(row["close"]), 2)
+    closes = [f for f in broker.FILLS if f["closing"] and f["fill_price"]]
+    opens = [f for f in broker.FILLS if not f["closing"] and f["fill_price"]]
+    close_px = float(np.mean([f["fill_price"] for f in closes])) if closes else None
+    open_px = float(opens[-1]["fill_price"]) if opens else None
+    side_new, side_old = np.sign(desired), np.sign(current)
+    slip_open = round(side_new * (open_px - sig_px), 3) if open_px else None
+    slip_close = round(-side_old * (close_px - sig_px), 3) if close_px else None
+    slip_q = [(1 if not f["closing"] else -1) * (side_new if not f["closing"] else side_old) * (f["fill_price"] - f["req_price"])
+              for f in broker.FILLS if f["fill_price"] and f["req_price"]]
+    if broker.FILLS:
+        print(f"    信号价 {sig_px:.2f}" + (f"，平仓成交 {close_px:.2f}（滑点 {slip_close:+.2f}）" if close_px else "")
+              + (f"，开仓成交 {open_px:.2f}（滑点 {slip_open:+.2f}）" if open_px else ""))
+    log_decision({"utc_time": str(now_utc), "strategy": sid, "name": spec.name, "bar": str(last_bar),
+                  "signal_price": sig_px, "bid": getattr(tick0, "bid", ""), "ask": getattr(tick0, "ask", ""),
+                  "close_fill": round(close_px, 2) if close_px else "", "open_fill": round(open_px, 2) if open_px else "",
+                  "slip_close_vs_signal": "" if slip_close is None else slip_close,
+                  "slip_open_vs_signal": "" if slip_open is None else slip_open,
+                  "slip_vs_quote": round(float(np.mean(slip_q)), 3) if slip_q else "",
+                  "z": round(float(row["z"]), 4),
                   "z_exec": round(float(row["z_exec"]), 4), "target": target, "desired_lots": desired, "current_lots": current,
                   "action": action, "stop": stop, "spread": round(spread, 3), "data_age_min": round(age_min, 1), "note": note.strip()})
 

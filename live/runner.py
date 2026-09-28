@@ -261,7 +261,27 @@ def next_wakeup(now: pd.Timestamp) -> pd.Timestamp:
     return now.floor("30min") + pd.Timedelta("30min") + pd.Timedelta(seconds=C.BAR_CLOSE_DELAY_SEC)
 
 
+def disable_quick_edit():
+    """
+    Windows 命令行的"快速编辑模式"：在窗口里点一下鼠标就会进入选择状态，程序下次打印时整个进程被挂起，
+    直到按 Esc/回车。对无人值守的交易程序很危险，这里在启动时关掉它（只影响本窗口）。
+    """
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        h = k32.GetStdHandle(-10)                  # STD_INPUT_HANDLE
+        mode = ctypes.c_uint32()
+        if k32.GetConsoleMode(h, ctypes.byref(mode)):
+            ENABLE_QUICK_EDIT, ENABLE_EXTENDED_FLAGS = 0x0040, 0x0080
+            k32.SetConsoleMode(h, (mode.value & ~ENABLE_QUICK_EDIT) | ENABLE_EXTENDED_FLAGS)
+    except Exception:
+        pass
+
+
 def main():
+    disable_quick_edit()
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true", help="只运行一次（用于测试或由计划任务调用）")
     args = ap.parse_args()

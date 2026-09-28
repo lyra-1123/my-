@@ -66,7 +66,7 @@ def _send(req: dict, sid: str, utc_now) -> bool:
                 pass
         FILLS.append({"closing": "position" in req, "req_price": req.get("price"), "fill_price": px or None,
                       "volume": req.get("volume")})
-    _log({"utc_time": str(utc_now), "strategy": sid, "action": req.get("action"), "type": req.get("type"),
+    _log({"utc_time": pd.Timestamp(utc_now).strftime("%Y-%m-%d %H:%M:%S"), "strategy": sid, "action": req.get("action"), "type": req.get("type"),
           "volume": req.get("volume"), "req_price": req.get("price"), "sl": req.get("sl"), "position": req.get("position"),
           "retcode": getattr(res, "retcode", None), "fill_price": getattr(res, "price", None),
           "comment": getattr(res, "comment", str(mt5.last_error()))})

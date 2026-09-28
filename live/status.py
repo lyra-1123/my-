@@ -152,7 +152,7 @@ def read_decisions() -> pd.DataFrame:
         pend = p[:-4] + ".pending.csv"
         if os.path.exists(pend):
             d = pd.concat([d, pd.read_csv(pend)], ignore_index=True)
-        d["utc_time"] = pd.to_datetime(d["utc_time"])
+        d["utc_time"] = pd.to_datetime(d["utc_time"], format="mixed")
         return d.sort_values("utc_time", kind="stable")
     except Exception:
         return pd.DataFrame()
@@ -165,12 +165,14 @@ def render() -> str:
     acc = mt5.account_info()
     L = [f"XAUUSD 策略实时状态 · 北京 {_bj(now)}:{pd.Timestamp(now).second:02d} · BID {tick.bid:.2f} / ASK {tick.ask:.2f}（点差 {tick.ask - tick.bid:.2f}）"
          f" · 净值 {acc.equity:.2f} {acc.currency}"]
-    if dec.empty:
-        L.append("程序状态：没有找到决策日志（程序还没运行过？）")
+    # runner 每次运行结束都会写 state.json（休市时也写），用它的修改时间判断程序是否在线
+    st = os.path.join(C.LOG_DIR, "state.json")
+    if not os.path.exists(st):
+        L.append("程序状态：没有找到 state.json（程序还没运行过？）")
     else:
-        age = now - dec["utc_time"].max()
+        age = pd.Timedelta(seconds=time.time() - os.path.getmtime(st))
         alive = age <= pd.Timedelta(minutes=35)
-        L.append(f"程序状态：最近一次运行在 {_dur(age)}前 → " + ("在线" if alive else "!!! 超过 35 分钟没有运行，请检查 runner 窗口"))
+        L.append(f"程序状态：最近一次运行在 {_dur(age)}前 → " + ("在线" if alive else "!!! 超过 35 分钟没有运行，请检查 runner 窗口（是否卡住/已退出）"))
     ok, why = broker.trading_allowed()
     if not ok:
         L.append(f"!!! 无法下单：{why}")

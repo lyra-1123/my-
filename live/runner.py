@@ -56,6 +56,7 @@ DECISION_FIELDS = ["utc_time", "beijing_time", "strategy", "name", "bar", "z", "
 def log_decision(row):
     """写决策日志；文件被占用时暂存，绝不让程序崩溃（见 live/logutil.py）。"""
     try:
+        row["utc_time"] = pd.Timestamp(row["utc_time"]).strftime("%Y-%m-%d %H:%M:%S")   # 统一到秒，避免格式混杂
         row.setdefault("beijing_time", pd.Timestamp(row["utc_time"]).tz_localize("UTC").tz_convert("Asia/Shanghai")
                        .strftime("%Y-%m-%d %H:%M:%S"))
     except Exception:

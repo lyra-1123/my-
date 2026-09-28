@@ -133,3 +133,19 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-28,大K线回吐(fade),1H,big-candle,event_fade,R 振幅 k=0.75 h=2,PRE-REGISTERED (reports/big_candle_prereg.md),,0.062,,-0.04,-7.6,32,每笔 ATR（扣当前成本）；n 内/外 562/237；t=0.48；❌
 2026-09-28,大K线回吐(fade),1H,big-candle,event_fade,R 振幅 k=0.75 h=4,PRE-REGISTERED (reports/big_candle_prereg.md),,0.027,,-0.012,-2.0,32,每笔 ATR（扣当前成本）；n 内/外 562/237；t=0.2；❌
 2026-09-28,大K线回吐(fade),1H,big-candle,event_fade,R 振幅 k=0.75 h=8,PRE-REGISTERED (reports/big_candle_prereg.md),,-0.001,,-0.107,-24.2,32,每笔 ATR（扣当前成本）；n 内/外 562/237；t=-0.37；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.5 h=1,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,0.201,,-0.659,-16.72,48,每笔 ATR（扣当前成本）；n 内/外 168/67；t=-0.24；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.5 h=2,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,0.046,,-1.234,-32.03,48,每笔 ATR（扣当前成本）；n 内/外 168/67；t=-1.32；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.5 h=4,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.069,,-1.378,-19.72,48,每笔 ATR（扣当前成本）；n 内/外 168/67；t=-1.53；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.5 h=8,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.298,,-1.308,-21.56,48,每笔 ATR（扣当前成本）；n 内/外 168/67；t=-1.63；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.35 h=1,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.067,,-0.286,-2.85,48,每笔 ATR（扣当前成本）；n 内/外 574/211；t=-1.54；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.35 h=2,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.182,,-0.529,-6.56,48,每笔 ATR（扣当前成本）；n 内/外 574/211；t=-2.56；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.35 h=4,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.315,,-0.383,2.44,48,每笔 ATR（扣当前成本）；n 内/外 574/211；t=-2.55；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,B 实体 k=0.35 h=8,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.39,,-0.242,4.46,48,每笔 ATR（扣当前成本）；n 内/外 574/211；t=-2.1；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.5 h=1,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.056,,-0.358,-5.31,48,每笔 ATR（扣当前成本）；n 内/外 396/197；t=-1.61；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.5 h=2,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.137,,-0.801,-13.03,48,每笔 ATR（扣当前成本）；n 内/外 396/197；t=-2.79；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.5 h=4,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.275,,-0.696,-4.13,48,每笔 ATR（扣当前成本）；n 内/外 396/197；t=-2.64；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.5 h=8,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.423,,-0.575,-0.21,48,每笔 ATR（扣当前成本）；n 内/外 396/197；t=-2.34；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.35 h=1,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.093,,-0.052,-0.1,48,每笔 ATR（扣当前成本）；n 内/外 1186/538；t=-1.58；❌
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.35 h=2,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.194,,-0.306,-2.33,48,每笔 ATR（扣当前成本）；n 内/外 1186/538；t=-3.47；↗ 延续（fade 显著为负）
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.35 h=4,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.294,,-0.261,2.77,48,每笔 ATR（扣当前成本）；n 内/外 1186/538；t=-3.51；↗ 延续（fade 显著为负）
+2026-09-28,大K线回吐(fade),5MIN,big-candle,event_fade,R 振幅 k=0.35 h=8,PRE-REGISTERED (reports/big_candle_5min_prereg.md),,-0.32,,-0.228,2.85,48,每笔 ATR（扣当前成本）；n 内/外 1186/538；t=-2.84；❌

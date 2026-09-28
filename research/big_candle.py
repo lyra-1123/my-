@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import itertools
+import sys
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,8 @@ DEFS = {"B 实体": "body", "R 振幅": "range"}
 KS = (1.0, 0.75)
 HS = (1, 2, 4, 8)
 DEDUP = 8
-LOOKBACK = {"30MIN": 48, "1H": 24}
+LOOKBACK = {"5MIN": 288, "30MIN": 48, "1H": 24}
+RUNS = {"default": (("30MIN", "1H"), (1.0, 0.75)), "5min": (("5MIN",), (0.5, 0.35))}   # 预注册：big_candle_prereg.md / big_candle_5min_prereg.md
 
 
 class Data:
@@ -154,7 +156,10 @@ def attach_live(T: pd.DataFrame, live: dict) -> pd.DataFrame:
     return T
 
 
-def main() -> None:
+def main(run: str = "default") -> None:
+    FREQS, KS = RUNS[run]
+    k0 = KS[0]                                                          # 主检验阈值
+    sfx = "" if run == "default" else f"_{run}"
     pd.set_option("display.width", 280)
     live = live_positions()
     rows, keep = [], {}
@@ -168,33 +173,33 @@ def main() -> None:
                 rows.append({"频率": fq, "定义": dname, "k": k, "h": h, **s, "判定": verdict(s)})
                 keep[(fq, dname, k, h)] = T
     R = pd.DataFrame(rows)
-    print("[1] 全部 32 个预注册单元（fade 方向；R 为每笔 ATR，已去漂移、扣当前成本；R近3年 未扣成本，与 1.5×当前成本比较）")
+    print(f"[1] 全部 {len(FREQS) * len(DEFS) * len(KS) * len(HS)} 个预注册单元（fade 方向；R 为每笔 ATR，已去漂移、扣当前成本；R近3年 未扣成本，与 1.5×当前成本比较）")
     print(R.to_string(index=False))
-    R.to_csv("reports/big_candle_cells.csv", index=False)
+    R.to_csv(f"reports/big_candle_cells{sfx}.csv", index=False)
 
-    print("\n[2] 主检验（k=1.0）分组：每笔 R（扣当前成本）与笔数，样本内 | 样本外")
+    print(f"\n[2] 主检验（k={k0}）分组：每笔 R（扣当前成本）与笔数，样本内 | 样本外")
     for fq, dname in itertools.product(FREQS, DEFS):
-        print(f"\n--- {fq} {dname} k=1.0 ---")
+        print(f"\n--- {fq} {dname} k={k0} ---")
         for grp in ("candle", "session", "ctx"):
             tab = {}
             for h in HS:
-                T = keep[(fq, dname, 1.0, h)]
+                T = keep[(fq, dname, k0, h)]
                 T = T.assign(seg=np.where(T.t < SPLIT, "内", "外"), candle=T.candle.map({1: "大阳(做空)", -1: "大阴(做多)"}))
                 g = T.groupby([grp, "seg"]).r_now.agg(["mean", "size"])
                 tab[f"h={h}"] = g.apply(lambda r: f"{r['mean']:+.3f}({int(r['size'])})", axis=1)
             print(pd.DataFrame(tab).to_string())
 
-    print("\n[3] 极端事件检查（k=1.0，h=4）：逐年 fade R")
+    print(f"\n[3] 极端事件检查（k={k0}，h=4）：逐年 fade R")
     for fq, dname in itertools.product(FREQS, DEFS):
-        T = keep[(fq, dname, 1.0, 4)]
+        T = keep[(fq, dname, k0, 4)]
         print(f"   {fq} {dname}：", T.groupby(T.t.dt.year).r_now.mean().round(2).to_dict())
         top = T.reindex(T.r.abs().sort_values(ascending=False).index).head(5)
         print("      |R| 最大 5 个：", [(str(x.t)[:16], x.session, round(x.r, 2)) for x in top.itertuples()])
 
-    print("\n[4] 与在跑策略的关系（k=1.0，h=4，全样本）")
+    print(f"\n[4] 与在跑策略的关系（k={k0}，h=4，全样本）")
     for fq, dname in itertools.product(FREQS, DEFS):
-        T = attach_live(keep[(fq, dname, 1.0, 4)], live)
-        print(f"\n--- {fq} {dname} k=1.0 h=4：{len(T)} 个事件 ---")
+        T = attach_live(keep[(fq, dname, k0, 4)], live)
+        print(f"\n--- {fq} {dname} k={k0} h=4：{len(T)} 个事件 ---")
         for sid in live:
             g = T.groupby(f"{sid}_rel").agg(事件数=("r_now", "size"), fade_R=("r_now", "mean"), 在跑策略窗口R=(f"{sid}_R", "mean"))
             g["占比"] = (g["事件数"] / len(T)).round(2)
@@ -202,4 +207,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "default")

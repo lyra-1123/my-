@@ -25,6 +25,7 @@ from live import config as C  # noqa: E402
 TMP = tempfile.mkdtemp(prefix="live_selftest_")
 C.LOG_DIR = os.path.join(TMP, "logs")
 C.KILL_FILE = os.path.join(TMP, "STOP")
+C.RETRY_WAIT_SEC = 0
 
 from live import broker, mock_mt5, mt5_data, runner  # noqa: E402
 from paper.engine import compute  # noqa: E402

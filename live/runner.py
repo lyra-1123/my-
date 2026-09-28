@@ -25,7 +25,7 @@ from live import broker
 from live import config as C
 from live.logutil import append_row, flush_pending
 from live.mt5_api import mt5
-from live.mt5_data import DUR, connect, fetch_bars, utc_now_from_server
+from live.mt5_data import DUR, connect, fetch_bars, server_to_utc, utc_now_from_server
 from paper.engine import compute
 from paper.specs import get_spec
 
@@ -91,9 +91,46 @@ def daily_pnl(now_utc) -> float:
     return realized + floating
 
 
+def expected_last_bar(freq: str, now_utc: pd.Timestamp) -> pd.Timestamp:
+    """此刻应当已经走完的最后一根 K 线的开盘时间。"""
+    d = DUR[freq]
+    return pd.Timestamp(now_utc).floor(d) - d
+
+
+def fetch_bars_retry(freq: str, now_utc: pd.Timestamp) -> pd.DataFrame:
+    """
+    取 K 线；取数失败，或刚收盘的那根还没到（终端短暂断线/同步慢），等 RETRY_WAIT_SEC 秒重试，最多 RETRY_TIMES 次。
+    休市（周末、换日休市的一小时）时最后一根本来就不会更新，不重试。
+    """
+    exp = expected_last_bar(freq, now_utc)
+    last_err = None
+    for k in range(C.RETRY_TIMES + 1):
+        try:
+            bars = fetch_bars(freq, C.HISTORY_BARS[freq], now_utc)
+            if bars.index[-1] >= exp:
+                return bars
+            tick = mt5.symbol_info_tick(C.SYMBOL)
+            if tick is None or (now_utc - server_to_utc(pd.DatetimeIndex([pd.Timestamp(tick.time, unit="s")]))[0]) > pd.Timedelta(minutes=10):
+                return bars   # 报价也没在动：休市或长时间断线，按原逻辑处理（数据过期保护）
+            last_err = f"最新 K 线 {bars.index[-1]} 尚未更新到 {exp}"
+        except Exception as e:
+            bars, last_err = None, repr(e)
+            try:   # 与终端的连接断了（例如终端重启）：重新连接
+                connect()
+            except Exception:
+                pass
+        if k < C.RETRY_TIMES:
+            print(f"  {freq} 数据未就绪（{last_err}），{C.RETRY_WAIT_SEC} 秒后重试（{k + 1}/{C.RETRY_TIMES}）")
+            time.sleep(C.RETRY_WAIT_SEC)
+            now_utc = now_utc + pd.Timedelta(seconds=C.RETRY_WAIT_SEC)
+    if bars is None:
+        raise RuntimeError(f"重试 {C.RETRY_TIMES} 次后仍取不到 {freq} K 线：{last_err}")
+    return bars
+
+
 def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str | None, force=False, halt_orders: str = ""):
     spec = get_spec(sid)
-    bars = fetch_bars(spec.freq, C.HISTORY_BARS[spec.freq], now_utc)
+    bars = fetch_bars_retry(spec.freq, now_utc)
     last_bar = bars.index[-1]
     if not force and state["last_bar"].get(sid) == str(last_bar):
         return

@@ -174,3 +174,43 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,E2 MacroImpulse,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,0.08,0.0063,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
 2026-09-29,E3 PrevDayFalseBreak,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,0.67,0.0381,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
 2026-09-29,E4 RoundNumberReject,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,-0.46,-0.0252,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=1.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.24,0.0044,0.8,0.0393,,40,净利列为年化；IS回撤 -5.1% OOS回撤 -5.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=2.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.25,0.0086,0.82,0.0716,,40,净利列为年化；IS回撤 -9.9% OOS回撤 -8.7%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=3.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.26,0.0127,0.84,0.0992,,40,净利列为年化；IS回撤 -14.5% OOS回撤 -11.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=5.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.28,0.0203,0.87,0.1447,,40,净利列为年化；IS回撤 -23.1% OOS回撤 -14.6%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=8.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.3,0.0308,0.89,0.198,,40,净利列为年化；IS回撤 -34.6% OOS回撤 -20.1%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=10.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.32,0.0372,0.91,0.2272,,40,净利列为年化；IS回撤 -41.4% OOS回撤 -23.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=15.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.35,0.0518,0.93,0.2865,,40,净利列为年化；IS回撤 -56.3% OOS回撤 -29.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R1 固定手数,x=20.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.38,0.0646,0.95,0.3333,,40,净利列为年化；IS回撤 -68.6% OOS回撤 -33.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=1.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.24,0.0044,0.8,0.0393,,40,净利列为年化；IS回撤 -5.1% OOS回撤 -5.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=2.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0064,0.62,0.0537,,40,净利列为年化；IS回撤 -6.9% OOS回撤 -9.7%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=3.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0096,0.8,0.1169,,40,SELECTED 净利列为年化；IS回撤 -11.9% OOS回撤 -16.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=5.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0141,0.76,0.1782,,40,净利列为年化；IS回撤 -21.2% OOS回撤 -28.1%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=8.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0199,0.75,0.2419,,40,净利列为年化；IS回撤 -34.0% OOS回撤 -43.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=10.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.0231,0.76,0.267,,40,净利列为年化；IS回撤 -41.7% OOS回撤 -53.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=15.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.0182,0.75,0.2253,,40,净利列为年化；IS回撤 -57.1% OOS回撤 -72.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R2 按净值比例,x=20.0;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0024,0.74,-0.0142,,40,净利列为年化；IS回撤 -69.7% OOS回撤 -94.5%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.001;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.011,1.02,0.0587,,40,净利列为年化；IS回撤 -18.8% OOS回撤 -7.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.002;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.0188,1.01,0.102,,40,净利列为年化；IS回撤 -36.2% OOS回撤 -16.5%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.003;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0209,1.01,0.1554,,40,净利列为年化；IS回撤 -50.4% OOS回撤 -24.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.005;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.0133,1.01,0.2542,,40,净利列为年化；IS回撤 -69.6% OOS回撤 -40.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.0075;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,-0.0266,1.01,0.361,,40,净利列为年化；IS回撤 -85.3% OOS回撤 -56.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.01;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.2,-0.0942,1.02,0.4454,,40,净利列为年化；IS回撤 -94.2% OOS回撤 -68.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.015;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.21,-0.2254,1.02,0.5043,,40,净利列为年化；IS回撤 -99.0% OOS回撤 -85.7%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R3 ATR定风险,x=0.02;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.35,-0.3223,1.01,0.4126,,40,净利列为年化；IS回撤 -99.9% OOS回撤 -94.3%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.001;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.24,0.0108,1.02,0.0587,,40,净利列为年化；IS回撤 -15.1% OOS回撤 -7.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.002;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.18,0.01,0.9,0.0809,,40,净利列为年化；IS回撤 -24.2% OOS回撤 -15.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.003;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.11,0.005,0.95,0.1238,,40,净利列为年化；IS回撤 -34.0% OOS回撤 -19.0%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.005;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.2,0.016,0.89,0.1699,,40,净利列为年化；IS回撤 -47.2% OOS回撤 -29.5%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.0075;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.24,0.0219,0.86,0.2083,,40,净利列为年化；IS回撤 -61.3% OOS回撤 -35.5%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.01;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,0.0133,0.88,0.2563,,40,净利列为年化；IS回撤 -71.4% OOS回撤 -44.7%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.015;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.23,-0.0265,0.74,0.2294,,40,净利列为年化；IS回撤 -86.4% OOS回撤 -58.3%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R4 ATR定风险+回撤降仓,x=0.02;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,-0.0869,0.84,0.3138,,40,净利列为年化；IS回撤 -94.3% OOS回撤 -72.1%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.001;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.22,0.0106,1.02,0.0588,,40,净利列为年化；IS回撤 -18.8% OOS回撤 -7.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.002;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.21,0.0159,1.01,0.1017,,40,净利列为年化；IS回撤 -35.5% OOS回撤 -16.2%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.003;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.21,0.0191,1.01,0.1549,,40,净利列为年化；IS回撤 -50.4% OOS回撤 -24.6%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.005;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.17,-0.0042,0.99,0.2481,,40,净利列为年化；IS回撤 -72.9% OOS回撤 -42.6%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.0075;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.2,-0.0328,0.97,0.3386,,40,净利列为年化；IS回撤 -87.2% OOS回撤 -54.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.01;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.13,-0.1225,0.98,0.4111,,40,净利列为年化；IS回撤 -94.7% OOS回撤 -65.9%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.015;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.08,-0.2595,1.03,0.5259,,40,净利列为年化；IS回撤 -99.2% OOS回撤 -82.4%
+2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.02;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,-0.89,-1.0,1.04,0.4612,,40,净利列为年化；IS回撤 -100.0% OOS回撤 -92.8%

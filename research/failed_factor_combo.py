@@ -236,6 +236,8 @@ def oos_phase(T, sel, top, daily, fns, ref) -> None:
 
     # 5) DSR
     Bm = matrix_B()
+    Bm = Bm.loc[:, Bm.std() > 0]                 # 去掉零方差列（从不开仓的稀疏因子），否则相关矩阵含 NaN
+    M = M.loc[:, M.std() > 0]
     ns, nb = n_eff(M), n_eff(Bm)
     n_logged = sum(1 for _ in open("reports/rule_trials.csv", encoding="utf-8")) - 1
     sr_all = np.r_[(M.mean() / M.std()).to_numpy(), (Bm.mean() / Bm.std()).to_numpy()]

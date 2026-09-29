@@ -77,3 +77,96 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,overnight exit=0.6,IS sharpe_atr_now (must beat strict 0.3),0.31,-313,0.4,795,,11,overnight exit=0.6
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 2×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.56,708,0.75,1742,,11,state exit=0.3 + 移动止损 2×日ATR
 2026-09-27,HA1H 出场/过夜规则,1H,high-anchor,exit,state exit=0.3 + 移动止损 3×日ATR,IS sharpe_atr_now (must beat strict 0.3),0.43,468,0.55,1382,,11,state exit=0.3 + 移动止损 3×日ATR
+2026-09-29,未达标因子桶组合:MR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.01,5.7,-0.63,-201.2,,90,桶组合 MR S0；IS相关 TT30 -0.43 HA1H -0.03
+2026-09-29,未达标因子桶组合:MR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.08,-61.0,-0.62,-236.0,,90,桶组合 MR S1；IS相关 TT30 -0.43 HA1H -0.03
+2026-09-29,未达标因子桶组合:MB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.11,63.9,0.08,24.5,,90,桶组合 MB S0；IS相关 TT30 +0.43 HA1H +0.12
+2026-09-29,未达标因子桶组合:MB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.15,106.1,0.12,44.6,,90,桶组合 MB S1；IS相关 TT30 +0.45 HA1H +0.15
+2026-09-29,未达标因子桶组合:RR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.7,-428.1,-0.65,-201.1,,90,桶组合 RR S0；IS相关 TT30 -0.48 HA1H -0.06
+2026-09-29,未达标因子桶组合:RR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.75,-490.2,-0.51,-170.9,,90,桶组合 RR S1；IS相关 TT30 -0.47 HA1H -0.06
+2026-09-29,未达标因子桶组合:PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.52,308.6,0.68,222.7,,90,桶组合 PB S0；IS相关 TT30 +0.16 HA1H +0.09
+2026-09-29,未达标因子桶组合:PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.35,235.8,0.7,264.9,,90,桶组合 PB S1；IS相关 TT30 +0.15 HA1H +0.08
+2026-09-29,未达标因子桶组合:MR+MB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.12,-69.0,-0.13,-40.7,,90,桶组合 MR+MB S0；IS相关 TT30 -0.03 HA1H +0.09
+2026-09-29,未达标因子桶组合:MR+MB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.19,-123.4,-0.33,-119.7,,90,桶组合 MR+MB S1；IS相关 TT30 -0.03 HA1H +0.08
+2026-09-29,未达标因子桶组合:MR+RR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.56,-358.2,-1.04,-341.4,,90,桶组合 MR+RR S0；IS相关 TT30 -0.54 HA1H -0.03
+2026-09-29,未达标因子桶组合:MR+RR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.56,-407.9,-0.91,-329.6,,90,桶组合 MR+RR S1；IS相关 TT30 -0.54 HA1H -0.04
+2026-09-29,未达标因子桶组合:MR+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.08,48.1,0.1,33.3,,90,桶组合 MR+PB S0；IS相关 TT30 -0.21 HA1H +0.01
+2026-09-29,未达标因子桶组合:MR+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.02,-14.9,0.03,10.2,,90,桶组合 MR+PB S1；IS相关 TT30 -0.21 HA1H +0.02
+2026-09-29,未达标因子桶组合:MB+RR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.51,-287.9,-0.4,-119.5,,90,桶组合 MB+RR S0；IS相关 TT30 -0.04 HA1H +0.08
+2026-09-29,未达标因子桶组合:MB+RR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.55,-334.8,-0.51,-168.9,,90,桶组合 MB+RR S1；IS相关 TT30 -0.04 HA1H +0.07
+2026-09-29,未达标因子桶组合:MB+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.53,323.5,0.59,202.5,,90,桶组合 MB+PB S0；IS相关 TT30 +0.43 HA1H +0.11
+2026-09-29,未达标因子桶组合:MB+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.39,270.9,0.66,265.6,,90,桶组合 MB+PB S1；IS相关 TT30 +0.43 HA1H +0.11
+2026-09-29,未达标因子桶组合:RR+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.15,-92.7,0.26,81.1,,90,桶组合 RR+PB S0；IS相关 TT30 -0.19 HA1H +0.01
+2026-09-29,未达标因子桶组合:RR+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.24,-164.1,0.31,108.4,,90,桶组合 RR+PB S1；IS相关 TT30 -0.19 HA1H +0.00
+2026-09-29,未达标因子桶组合:MR+MB+RR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.38,-234.8,-0.69,-222.7,,90,桶组合 MR+MB+RR S0；IS相关 TT30 -0.33 HA1H +0.04
+2026-09-29,未达标因子桶组合:MR+MB+RR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.38,-262.9,-0.72,-250.6,,90,桶组合 MR+MB+RR S1；IS相关 TT30 -0.33 HA1H +0.03
+2026-09-29,未达标因子桶组合:MR+MB+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.09,57.1,0.46,157.6,,90,桶组合 MR+MB+PB S0；IS相关 TT30 +0.07 HA1H +0.08
+2026-09-29,未达标因子桶组合:MR+MB+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.06,44.6,0.36,136.3,,90,桶组合 MR+MB+PB S1；IS相关 TT30 +0.07 HA1H +0.07
+2026-09-29,未达标因子桶组合:MR+RR+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.21,-128.1,-0.47,-142.3,,90,桶组合 MR+RR+PB S0；IS相关 TT30 -0.38 HA1H +0.01
+2026-09-29,未达标因子桶组合:MR+RR+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.36,-251.6,-0.31,-106.6,,90,桶组合 MR+RR+PB S1；IS相关 TT30 -0.38 HA1H +0.02
+2026-09-29,未达标因子桶组合:MB+RR+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.19,-116.8,0.57,186.0,,90,桶组合 MB+RR+PB S0；IS相关 TT30 +0.07 HA1H +0.07
+2026-09-29,未达标因子桶组合:MB+RR+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.22,-148.9,0.66,236.3,,90,桶组合 MB+RR+PB S1；IS相关 TT30 +0.08 HA1H +0.07
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.14,-86.2,0.17,55.2,,90,桶组合 MR+MB+RR+PB S0；IS相关 TT30 -0.20 HA1H +0.07
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.22,-153.5,0.16,56.7,,90,桶组合 MR+MB+RR+PB S1；IS相关 TT30 -0.21 HA1H +0.06
+2026-09-29,未达标因子桶组合:G1 趋势→MB+PB/区间→MR+RR,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.02,15.0,-0.28,-93.8,,90,桶组合 G1 趋势→MB+PB/区间→MR+RR S0；IS相关 TT30 +0.12 HA1H +0.12
+2026-09-29,未达标因子桶组合:G1 趋势→MB+PB/区间→MR+RR,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.01,-4.0,-0.19,-71.9,,90,桶组合 G1 趋势→MB+PB/区间→MR+RR S1；IS相关 TT30 +0.12 HA1H +0.11
+2026-09-29,未达标因子桶组合:G2 趋势→MR+RR/区间→MB+PB,30MIN,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.25,-149.7,-0.76,-243.6,,90,桶组合 G2 趋势→MR+RR/区间→MB+PB S0；IS相关 TT30 -0.41 HA1H -0.04
+2026-09-29,未达标因子桶组合:G2 趋势→MR+RR/区间→MB+PB,30MIN,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.32,-218.1,-0.76,-264.6,,90,桶组合 G2 趋势→MR+RR/区间→MB+PB S1；IS相关 TT30 -0.42 HA1H -0.04
+2026-09-29,未达标因子桶组合:MR+MB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.09,-33.2,-0.3,-53.5,,90,桶组合 MR+MB S2；IS相关 TT30 -0.07 HA1H +0.12
+2026-09-29,未达标因子桶组合:MR+RR,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.58,-300.0,-0.72,-183.8,,90,桶组合 MR+RR S2；IS相关 TT30 -0.61 HA1H -0.04
+2026-09-29,未达标因子桶组合:MR+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.35,145.2,-0.08,-18.2,,90,桶组合 MR+PB S2；IS相关 TT30 -0.29 HA1H +0.14
+2026-09-29,未达标因子桶组合:MB+RR,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.81,-276.4,-0.09,-16.4,,90,桶组合 MB+RR S2；IS相关 TT30 -0.09 HA1H +0.06
+2026-09-29,未达标因子桶组合:MB+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.41,163.0,0.64,146.8,,90,桶组合 MB+PB S2；IS相关 TT30 +0.40 HA1H +0.25
+2026-09-29,未达标因子桶组合:RR+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.23,-97.0,0.09,19.8,,90,桶组合 RR+PB S2；IS相关 TT30 -0.29 HA1H +0.09
+2026-09-29,未达标因子桶组合:MR+MB+RR,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.62,-200.1,-0.52,-83.0,,90,桶组合 MR+MB+RR S2；IS相关 TT30 -0.38 HA1H +0.04
+2026-09-29,未达标因子桶组合:MR+MB+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.31,94.3,0.17,26.6,,90,桶组合 MR+MB+PB S2；IS相关 TT30 +0.02 HA1H +0.22
+2026-09-29,未达标因子桶组合:MR+RR+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.21,-82.4,-0.31,-60.1,,90,桶组合 MR+RR+PB S2；IS相关 TT30 -0.47 HA1H +0.06
+2026-09-29,未达标因子桶组合:MB+RR+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.23,-67.8,0.31,51.3,,90,桶组合 MB+RR+PB S2；IS相关 TT30 +0.01 HA1H +0.17
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,30MIN,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.22,-62.1,-0.11,-15.3,,90,桶组合 MR+MB+RR+PB S2；IS相关 TT30 -0.27 HA1H +0.14
+2026-09-29,未达标因子桶组合:MR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.52,-215.8,-0.96,-207.9,,90,桶组合 MR S0；IS相关 TT30 -0.57 HA1H -0.05
+2026-09-29,未达标因子桶组合:MR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.64,-303.2,-0.84,-211.0,,90,桶组合 MR S1；IS相关 TT30 -0.57 HA1H -0.06
+2026-09-29,未达标因子桶组合:MB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.64,249.2,0.78,155.4,,90,桶组合 MB S0；IS相关 TT30 +0.68 HA1H +0.18
+2026-09-29,未达标因子桶组合:MB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.77,348.4,0.56,126.2,,90,桶组合 MB S1；IS相关 TT30 +0.68 HA1H +0.19
+2026-09-29,未达标因子桶组合:RR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.3,-123.5,-0.75,-155.8,,90,桶组合 RR S0；IS相关 TT30 -0.42 HA1H -0.12
+2026-09-29,未达标因子桶组合:RR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.18,-81.2,-0.74,-162.4,,90,桶组合 RR S1；IS相关 TT30 -0.42 HA1H -0.11
+2026-09-29,未达标因子桶组合:PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.5,209.2,-0.08,-18.7,,90,桶组合 PB S0；IS相关 TT30 +0.00 HA1H +0.27
+2026-09-29,未达标因子桶组合:PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.59,267.5,0.03,6.6,,90,桶组合 PB S1；IS相关 TT30 -0.00 HA1H +0.26
+2026-09-29,未达标因子桶组合:MR+MB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.02,8.2,0.39,84.2,,90,桶组合 MR+MB S0；IS相关 TT30 +0.07 HA1H +0.16
+2026-09-29,未达标因子桶组合:MR+MB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.02,-10.1,0.48,119.2,,90,桶组合 MR+MB S1；IS相关 TT30 +0.07 HA1H +0.15
+2026-09-29,未达标因子桶组合:MR+RR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.39,-163.9,-0.76,-164.4,,90,桶组合 MR+RR S0；IS相关 TT30 -0.57 HA1H -0.06
+2026-09-29,未达标因子桶组合:MR+RR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.48,-223.2,-0.62,-138.6,,90,桶组合 MR+RR S1；IS相关 TT30 -0.57 HA1H -0.05
+2026-09-29,未达标因子桶组合:MR+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.02,-9.5,-0.68,-144.6,,90,桶组合 MR+PB S0；IS相关 TT30 -0.36 HA1H +0.10
+2026-09-29,未达标因子桶组合:MR+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.09,-43.1,-0.66,-160.7,,90,桶组合 MR+PB S1；IS相关 TT30 -0.35 HA1H +0.11
+2026-09-29,未达标因子桶组合:MB+RR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.41,157.6,0.52,106.7,,90,桶组合 MB+RR S0；IS相关 TT30 +0.29 HA1H +0.14
+2026-09-29,未达标因子桶组合:MB+RR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.45,187.0,0.51,113.7,,90,桶组合 MB+RR S1；IS相关 TT30 +0.29 HA1H +0.14
+2026-09-29,未达标因子桶组合:MB+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.57,232.9,0.08,18.7,,90,桶组合 MB+PB S0；IS相关 TT30 +0.42 HA1H +0.23
+2026-09-29,未达标因子桶组合:MB+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.66,300.5,0.18,44.9,,90,SELECTED 桶组合 MB+PB S1；IS相关 TT30 +0.44 HA1H +0.24
+2026-09-29,未达标因子桶组合:RR+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.36,153.2,-0.28,-58.3,,90,桶组合 RR+PB S0；IS相关 TT30 -0.28 HA1H +0.08
+2026-09-29,未达标因子桶组合:RR+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.31,147.0,-0.24,-55.1,,90,桶组合 RR+PB S1；IS相关 TT30 -0.28 HA1H +0.07
+2026-09-29,未达标因子桶组合:MR+MB+RR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.4,-167.8,-0.67,-144.5,,90,桶组合 MR+MB+RR S0；IS相关 TT30 -0.34 HA1H -0.02
+2026-09-29,未达标因子桶组合:MR+MB+RR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.41,-189.6,-0.69,-162.5,,90,桶组合 MR+MB+RR S1；IS相关 TT30 -0.34 HA1H -0.01
+2026-09-29,未达标因子桶组合:MR+MB+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.23,94.5,-0.04,-9.1,,90,桶组合 MR+MB+PB S0；IS相关 TT30 -0.00 HA1H +0.23
+2026-09-29,未达标因子桶组合:MR+MB+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.2,91.5,0.07,17.8,,90,桶组合 MR+MB+PB S1；IS相关 TT30 -0.01 HA1H +0.24
+2026-09-29,未达标因子桶组合:MR+RR+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.31,-131.2,-0.5,-105.0,,90,桶组合 MR+RR+PB S0；IS相关 TT30 -0.47 HA1H +0.05
+2026-09-29,未达标因子桶组合:MR+RR+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.39,-179.9,-0.45,-106.2,,90,桶组合 MR+RR+PB S1；IS相关 TT30 -0.47 HA1H +0.05
+2026-09-29,未达标因子桶组合:MB+RR+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.39,165.6,0.31,67.1,,90,桶组合 MB+RR+PB S0；IS相关 TT30 +0.12 HA1H +0.18
+2026-09-29,未达标因子桶组合:MB+RR+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),0.49,227.3,0.4,95.9,,90,桶组合 MB+RR+PB S1；IS相关 TT30 +0.14 HA1H +0.17
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.07,28.3,-0.3,-64.6,,90,桶组合 MR+MB+RR+PB S0；IS相关 TT30 -0.25 HA1H +0.10
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.02,-10.0,-0.31,-73.6,,90,桶组合 MR+MB+RR+PB S1；IS相关 TT30 -0.25 HA1H +0.10
+2026-09-29,未达标因子桶组合:G1 趋势→MB+PB/区间→MR+RR,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.01,-5.1,-0.61,-135.3,,90,桶组合 G1 趋势→MB+PB/区间→MR+RR S0；IS相关 TT30 -0.09 HA1H +0.11
+2026-09-29,未达标因子桶组合:G1 趋势→MB+PB/区间→MR+RR,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.02,-9.0,-0.36,-85.1,,90,桶组合 G1 趋势→MB+PB/区间→MR+RR S1；IS相关 TT30 -0.10 HA1H +0.11
+2026-09-29,未达标因子桶组合:G2 趋势→MR+RR/区间→MB+PB,1H,failed-ICIR buckets,S0,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.01,-5.4,-0.16,-33.4,,90,桶组合 G2 趋势→MR+RR/区间→MB+PB S0；IS相关 TT30 -0.29 HA1H -0.01
+2026-09-29,未达标因子桶组合:G2 趋势→MR+RR/区间→MB+PB,1H,failed-ICIR buckets,S1,entry=1.5;exit=0.3;tier=2.5,IS sharpe_atr_now (corr<0.5 gate),-0.11,-49.3,-0.11,-26.6,,90,桶组合 G2 趋势→MR+RR/区间→MB+PB S1；IS相关 TT30 -0.32 HA1H -0.02
+2026-09-29,未达标因子桶组合:MR+MB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.08,14.3,-0.48,-46.6,,90,桶组合 MR+MB S2；IS相关 TT30 +0.05 HA1H +0.18
+2026-09-29,未达标因子桶组合:MR+RR,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.77,-262.3,-0.98,-165.0,,90,桶组合 MR+RR S2；IS相关 TT30 -0.64 HA1H -0.10
+2026-09-29,未达标因子桶组合:MR+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.24,-74.6,-0.48,-82.1,,90,桶组合 MR+PB S2；IS相关 TT30 -0.45 HA1H +0.17
+2026-09-29,未达标因子桶组合:MB+RR,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.08,-17.9,-0.32,-38.1,,90,桶组合 MB+RR S2；IS相关 TT30 +0.19 HA1H +0.11
+2026-09-29,未达标因子桶组合:MB+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.6,167.1,0.29,43.7,,90,桶组合 MB+PB S2；IS相关 TT30 +0.44 HA1H +0.40
+2026-09-29,未达标因子桶组合:RR+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.35,-103.2,-0.48,-71.4,,90,桶组合 RR+PB S2；IS相关 TT30 -0.35 HA1H +0.14
+2026-09-29,未达标因子桶组合:MR+MB+RR,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.47,-86.4,-0.88,-82.0,,90,桶组合 MR+MB+RR S2；IS相关 TT30 -0.30 HA1H +0.04
+2026-09-29,未达标因子桶组合:MR+MB+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.2,37.8,-0.25,-27.2,,90,桶组合 MR+MB+PB S2；IS相关 TT30 -0.01 HA1H +0.34
+2026-09-29,未达标因子桶组合:MR+RR+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.53,-146.0,-0.76,-105.8,,90,桶组合 MR+RR+PB S2；IS相关 TT30 -0.55 HA1H +0.07
+2026-09-29,未达标因子桶组合:MB+RR+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),0.09,17.2,-0.2,-21.0,,90,桶组合 MB+RR+PB S2；IS相关 TT30 +0.10 HA1H +0.30
+2026-09-29,未达标因子桶组合:MR+MB+RR+PB,1H,failed-ICIR buckets,S2,entry=1.5;exit=0.3,IS sharpe_atr_now (corr<0.5 gate),-0.24,-43.1,-0.63,-58.4,,90,桶组合 MR+MB+RR+PB S2；IS相关 TT30 -0.27 HA1H +0.21
+2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P0 等权,IS portfolio sharpe,0.8,,0.89,,,3,"{'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 1.0}"
+2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P1 逆波动(样本内),IS portfolio sharpe,0.82,,0.85,,,3,"SELECTED {'TT30-EW-v1': 0.83, 'HA1H-v1': 1.12, 'new': 1.05}"
+2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P2 新策略半权,IS portfolio sharpe,0.78,,1.0,,,3,"{'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 0.5}"

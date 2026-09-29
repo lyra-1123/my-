@@ -1,0 +1,101 @@
+
+30MIN 成分池 14：MR=['AsiaSessionReversion', 'UptrendDipReversion', 'VolumeClimaxReversal', 'WeekendGapReversion']；MB=['HTFTrendLTFBreakout', 'LondonNYSessionMomentum', 'MACDMomentum', 'SqueezeReleaseMomentum', 'TRIXMomentum', 'VolConfirmedBreakout']；RR=['RangeVWAPReversion', 'ThreePushWedgeReversal']；PB=['PullbackSwing', 'SecondEntryH2']
+
+1H 成分池 27：MR=['AsiaSessionReversion', 'CCIReversion', 'MFIReversion', 'StochReversion', 'RSI2PullbackInTrend', 'UptrendDipReversion', 'VolumeClimaxReversal', 'WeekendGapReversion']；MB=['AroonTrend', 'CMFFlow', 'ForceIndex', 'HTFTrendLTFBreakout', 'IchimokuTrend', 'LondonNYSessionMomentum', 'MACDMomentum', 'OBVMomentum', 'PSARTrend', 'SqueezeReleaseMomentum', 'TRIXMomentum', 'VolConfirmedBreakout', 'VortexTrend']；RR=['RangeVWAPReversion', 'ThreePushWedgeReversal']；PB=['MTFPullbackResonance', 'PullbackSwing', 'SecondEntryH2', 'TrendPullbackLowVolume']
+
+H1 诊断（样本内月度 ICIR）：
+  30MIN MR（4 个）：桶 ICIR 内 +0.25  成分中位 +0.04  成分 |ICIR| 中位 0.08  → 支持 H1
+  30MIN MB（6 个）：桶 ICIR 内 -0.44  成分中位 -0.15  成分 |ICIR| 中位 0.20  → 不支持 H1
+  30MIN RR（2 个）：桶 ICIR 内 +0.24  成分中位 +0.21  成分 |ICIR| 中位 0.21  → 支持 H1
+  30MIN PB（2 个）：桶 ICIR 内 -0.04  成分中位 -0.20  成分 |ICIR| 中位 0.20  → 不支持 H1
+  1H MR（8 个）：桶 ICIR 内 +0.21  成分中位 +0.08  成分 |ICIR| 中位 0.12  → 支持 H1
+  1H MB（13 个）：桶 ICIR 内 -0.39  成分中位 -0.28  成分 |ICIR| 中位 0.28  → 不支持 H1
+  1H RR（2 个）：桶 ICIR 内 +0.14  成分中位 +0.23  成分 |ICIR| 中位 0.23  → 不支持 H1
+  1H PB（4 个）：桶 ICIR 内 -0.18  成分中位 -0.07  成分 |ICIR| 中位 0.21  → 不支持 H1
+
+样本内（2009-2019）全部 90 个配置，按 IS 夏普排序（前 25）：
+                   IS夏普    IS多头    IS空头  IS相关TT30  IS相关HA1H   相关门槛
+key                                                               
+1H|MB|S1           0.77  131.75  216.62      0.68      0.19  False
+1H|MB+PB|S1        0.66   83.03  217.46      0.44      0.24   True
+1H|MB|S0           0.64  105.96  143.21      0.68      0.18  False
+1H|MB+PB|S2        0.60   37.31  129.82      0.44      0.40   True
+1H|PB|S1           0.59  119.30  148.19     -0.00      0.26   True
+1H|MB+PB|S0        0.57   66.12  166.77      0.42      0.23   True
+30MIN|MB+PB|S0     0.53  167.76  155.71      0.43      0.11   True
+30MIN|PB|S0        0.52   96.92  211.66      0.16      0.09   True
+1H|PB|S0           0.50  103.23  105.98      0.00      0.27   True
+1H|MB+RR+PB|S1     0.49   -3.04  230.39      0.14      0.17   True
+1H|MB+RR|S1        0.45   43.38  143.66      0.29      0.14   True
+1H|MB+RR|S0        0.41   49.07  108.54      0.29      0.14   True
+30MIN|MB+PB|S2     0.41   31.03  132.00      0.40      0.25   True
+1H|MB+RR+PB|S0     0.39   -4.75  170.31      0.12      0.18   True
+30MIN|MB+PB|S1     0.39  179.87   90.99      0.43      0.11   True
+1H|RR+PB|S0        0.36   41.57  111.60     -0.28      0.08   True
+30MIN|MR+PB|S2     0.35   39.30  105.95     -0.29      0.14   True
+30MIN|PB|S1        0.35   20.82  215.01      0.15      0.08   True
+30MIN|MR+MB+PB|S2  0.31  -12.33  106.60      0.02      0.22   True
+1H|RR+PB|S1        0.31   29.00  117.98     -0.28      0.07   True
+1H|MR+MB+PB|S0     0.23   45.24   49.30     -0.00      0.23   True
+1H|MR+MB+PB|S1     0.20   29.63   61.89     -0.01      0.24   True
+1H|MR+MB+PB|S2     0.20   31.17    6.62     -0.01      0.34   True
+30MIN|MB|S1        0.15   62.32   43.73      0.45      0.15   True
+30MIN|MB|S0        0.11    1.13   62.72      0.43      0.12   True
+
+样本内夏普 > 0 的配置：34/90；中位 -0.09
+选中（满足相关门槛、IS 夏普最高）：1H|MB+PB|S1  IS 夏普 0.66
+不加门槛的第一名：1H|MB|S1  IS 夏普 0.77
+
+####################################################################################################
+样本外（2020-01 ~ 2026-09）——只跑一次
+            freq signal rule  IS夏普    IS多头    IS空头  IS相关TT30  IS相关HA1H   相关门槛  OOS夏普  OOS多头   OOS空头
+key                                                                                                
+1H|MB+PB|S1   1H  MB+PB   S1  0.66   83.03  217.46      0.44      0.24   True   0.18 -55.91  100.77
+1H|MB|S1      1H     MB   S1  0.77  131.75  216.62      0.68      0.19  False   0.56  -1.22  127.40
+全部 90 个配置：样本外夏普 > 0 的 33，中位 -0.26；IS/OOS 夏普秩相关 +0.72
+
+按信号类型汇总（样本内 / 样本外夏普中位数）：
+            IS夏普  OOS夏普
+freq  rule             
+1H    S0    0.02  -0.28
+      S1   -0.02  -0.24
+      S2   -0.24  -0.48
+30MIN S0   -0.14  -0.13
+      S1   -0.22  -0.19
+      S2   -0.22  -0.09
+
+参数平原（选中配置）：
+ entry  exit    IS   OOS
+   1.0   0.0 -0.01  0.22
+   1.0   0.3  0.53  0.54
+   1.0   0.6  0.65  0.43
+   1.5   0.0  0.02  0.01
+   1.5   0.3  0.66  0.18
+   1.5   0.6  0.76  0.18
+   2.0   0.0  0.35 -0.10
+   2.0   0.3  1.09  0.17
+   2.0   0.6  1.15  0.18
+
+DSR：本研究 N_eff 7.3 + 研究层 N_eff 18.1 → {'N': 25.4, 'SR_annual': np.float64(0.458), 'SR0_annual': np.float64(0.805), 'PSR(SR0=0)': 0.9872, 'DSR': 0.0451, 'skew': 1.7, 'kurt': 18.1, 'T_days': 5729}
+保守（+ 已登记 78 + 本次 90）→ {'N': 193.4, 'SR_annual': np.float64(0.458), 'SR0_annual': np.float64(1.106), 'PSR(SR0=0)': 0.9872, 'DSR': 0.0008, 'skew': 1.7, 'kurt': 18.1, 'T_days': 5729}
+
+组合层仓位分配（对照：TT30+HA1H 等权 IS 0.72 / OOS 1.11）：
+               IS   OOS                                                  权重
+方案                                                                         
+P0 等权        0.80  0.89     {'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 1.0}
+P1 逆波动(样本内)  0.82  0.85  {'TT30-EW-v1': 0.83, 'HA1H-v1': 1.12, 'new': 1.05}
+P2 新策略半权     0.78  1.00     {'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 0.5}
+  样本内选中：P1 逆波动(样本内)
+
+====================================================================================================
+判定：1H|MB+PB|S1
+  ❌ A1 样本外夏普 ≥ 0.3：0.18
+  ❌ A2 样本外多空都 > 0：(np.float64(-55.9), np.float64(100.8))
+  ✅ A3 平原 ≥7/9 内外为正：内 8/9 外 8/9
+  ✅ A4 PBO < 0.3：PBO 0.014；IS 最优在 OOS 夏普中位 +0.38
+  ❌ A5 DSR ≥ 0.5：0.0451
+  ❌ A6 相关 < 0.5 且组合夏普不降：内：相关 TT30 +0.44 HA1H +0.24，组合夏普 0.72→0.80；外：相关 TT30 +0.41 HA1H +0.22，组合夏普 1.11→0.89
+  ✅ A7 点差×2 样本外夏普 > 0：0.12
+  结论：未全部通过 → 不建议上模拟盘
+
+已登记 93 条试验到 reports/rule_trials.csv

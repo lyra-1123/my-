@@ -284,3 +284,7 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,TT30/HA1H 冲突规则,30MIN+1H,portfolio conflict,C2,HA1H跟随TT30,IS portfolio sharpe,0.54,,0.98,,,5,点差0.3: IS 0.51 OOS 0.95
 2026-09-29,TT30/HA1H 冲突规则,30MIN+1H,portfolio conflict,C3,冲突时TT30平仓,IS portfolio sharpe,0.79,,1.12,,,5,SELECTED 点差0.3: IS 0.77 OOS 1.09
 2026-09-29,TT30/HA1H 冲突规则,30MIN+1H,portfolio conflict,C4,冲突时都平仓,IS portfolio sharpe,0.74,,1.12,,,5,点差0.3: IS 0.72 OOS 1.09
+2026-09-29,TT 信号换细K线,15MIN,trend-tail,hyst,T15s 同16小时,IS usd sharpe @0.3 vs T30,-0.05,-72,0.55,1336,,4,T30 内/外 -0.05/0.77；不如30MIN
+2026-09-29,TT 信号换细K线,5MIN,trend-tail,hyst,T05s 同16小时,IS usd sharpe @0.3 vs T30,-0.1,-148,0.69,1771,,4,T30 内/外 -0.05/0.77；不如30MIN
+2026-09-29,TT 信号换细K线,15MIN,trend-tail,hyst,T15d 默认8小时,IS usd sharpe @0.3 vs T30,-0.32,-498,0.02,45,,4,T30 内/外 -0.05/0.77；不如30MIN
+2026-09-29,TT 信号换细K线,5MIN,trend-tail,hyst,T05d 默认3小时,IS usd sharpe @0.3 vs T30,-1.79,-2902,-0.52,-1264,,4,T30 内/外 -0.05/0.77；不如30MIN

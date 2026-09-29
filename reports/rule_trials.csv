@@ -170,3 +170,7 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P0 等权,IS portfolio sharpe,0.8,,0.89,,,3,"{'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 1.0}"
 2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P1 逆波动(样本内),IS portfolio sharpe,0.82,,0.85,,,3,"SELECTED {'TT30-EW-v1': 0.83, 'HA1H-v1': 1.12, 'new': 1.05}"
 2026-09-29,组合层仓位分配(TT30+HA1H+1H|MB+PB|S1),daily,portfolio,alloc,P2 新策略半权,IS portfolio sharpe,0.78,,1.0,,,3,"{'TT30-EW-v1': 1.0, 'HA1H-v1': 1.0, 'new': 0.5}"
+2026-09-29,E1 FixReversal,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,0.39,0.0152,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,E2 MacroImpulse,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,0.08,0.0063,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,E3 PrevDayFalseBreak,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,0.67,0.0381,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,E4 RoundNumberReject,15MIN,batch13 short-term events,event,h=4;cost=0.3$,IS event-study S1-S4,-0.46,-0.0252,,,,4,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外

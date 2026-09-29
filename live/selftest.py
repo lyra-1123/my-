@@ -104,7 +104,8 @@ def main():
     print(f"  移动止损：检查 {len(st)} 次，服务器止损 ≠ 模型止损 {len(st_bad)} 次")
     if len(st_bad):
         print(st_bad.head(8).to_string(index=False))
-    fail |= len(st) == 0 or len(st_bad) > 0
+    has_trail = any(get_spec(s).rule == "state_trail" for s in sids)
+    fail |= (has_trail and len(st) == 0) or len(st_bad) > 0
 
     dec = pd.read_csv(os.path.join(C.LOG_DIR, "decisions.csv"))
     err = dec[dec["action"] == "ERROR"]
@@ -117,6 +118,18 @@ def main():
     n_rej_fail = int((in_rej & (dec["action"] == "ORDER_FAILED")).sum())
     print(f"  拒单测试（{rej[0]} → {rej[1]}）：下单失败 {n_rej_fail} 次，告警文件出现 {alert_seen}，恢复后告警仍在 {alert_after}")
     fail |= n_rej_fail == 0 or not alert_seen or alert_after is not False
+
+    # 停用策略遗留持仓：给一个已停用的魔术号塞一笔持仓，应当触发告警
+    off = [s for s, v in C.STRATEGIES.items() if not v["enabled"]]
+    if off:
+        cfg = C.STRATEGIES[off[0]]
+        broker.open_position(off[0], cfg["magic"], cfg["lots"], -1, mock_mt5.NOW_UTC)
+        state["last_bar"] = {}
+        runner.cycle(state, force=True)
+        orphan_alert = os.path.exists(runner.alert_file()) and str(cfg["magic"]) in open(runner.alert_file(), encoding="utf-8").read()
+        print(f"  停用策略遗留持仓（{off[0]}）：告警 {orphan_alert}")
+        fail |= not orphan_alert
+        broker.close_all(off[0], cfg["magic"], mock_mt5.NOW_UTC)
 
     # STOP 文件测试：从当前状态开始，先确保有持仓，再放 STOP
     open(C.KILL_FILE, "w").close()

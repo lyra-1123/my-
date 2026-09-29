@@ -17,7 +17,7 @@ SERVER_TZ = "ny+7"
 STRATEGIES = {
     "TT30-EW-v1":      {"enabled": True, "magic": 3001, "lots": 0.01},   # 日内30min强势跟随
     "HA1H-v1":         {"enabled": True, "magic": 3002, "lots": 0.01},   # 年内高低位顺势
-    "HA1H-TS2-shadow": {"enabled": True, "magic": 3003, "lots": 0.01},   # 影子：移动止损版
+    "HA1H-TS2-shadow": {"enabled": False, "magic": 3003, "lots": 0.01},  # 影子：移动止损版。2026-09-30 起不在 MT5 上运行（与 v1 同向叠加仓位、多付点差；与 v1 的 252 日对比只用模拟盘账本 paper/state，不受影响）。停用前须确认该魔术号已空仓
     "MF30-EW-shadow":  {"enabled": False, "magic": 3004, "lots": 0.01},  # 影子：30min多逻辑组合。compare_signals 未通过（一致率 0.849 < 0.90，成交量来源差异），不上实盘，只在模拟盘账本上继续前向
 }
 

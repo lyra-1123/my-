@@ -301,6 +301,11 @@ def cycle(state: dict, force=False):
                 log_decision({"utc_time": str(now_utc), "strategy": sid, "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                               "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
                               "note": repr(e)})
+    # 已停用的策略不再被管理：如果它的魔术号下还有持仓，这笔单没人平，必须提醒
+    for sid, cfg in C.STRATEGIES.items():
+        if not cfg["enabled"] and broker.positions(cfg["magic"]):
+            problems.append(f"{sid} 已停用，但魔术号 {cfg['magic']} 仍有持仓 {broker.net_lots(cfg['magic']):+.2f} 手，"
+                            "程序不会再管理它：请在 MT5 里手动平仓")
     if problems:
         raise_alert(now_utc, problems, state)
     else:

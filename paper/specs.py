@@ -132,3 +132,20 @@ def get_spec(sid: str) -> StrategySpec:
         if s.id == sid:
             return s
     raise KeyError(f"未知策略 {sid}；已有：{[s.id for s in SPECS]}")
+
+
+SPECS.append(
+    StrategySpec(
+        id="WK1H-v1",
+        name="周度高低位突破",
+        description="1H 周度区间位置：价格在最近 5 根已收盘日线高低区间中的位置，迟滞开平仓，换日前平仓（第十五批，TT30 与 HA1H 之间的一周尺度）",
+        freq="1H",
+        components=(("DailyRangePos5", 1.0, ()),),
+        norm=750, entry=1.5, exit=0.3, lots=0.01,
+        forward_start="2026-09-30",
+        status="candidate",
+        notes="第十五批预登记通过（reports/batch15.md）；参数为先验值；与 TT30 相关 0.47~0.49，贴近 0.5 门槛",
+        evidence={"is_sharpe_atr": 0.55, "oos_sharpe_atr_2020_": 0.95, "cscv_oos_sharpe_median": 0.72,
+                  "param_PBO": 0.221, "research_PBO": 0.031, "DSR_Neff": 0.233},
+    )
+)

@@ -303,3 +303,7 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K4 非亚盘,IS sharpe_atr_now @0.3 vs base & random,0.47,,0.79,,,10,随机IS90% 0.57 随机OOS中位 0.97 年份更好 0.58
 2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K5 HA1H不反向,IS sharpe_atr_now @0.3 vs base & random,0.63,,1.13,,,10,SELECTED 随机IS90% 0.57 随机OOS中位 0.92 年份更好 0.58
 2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K5 HA1H不反向,IS sharpe_atr_now @0.3 vs base & random,0.56,,1.08,,,10,随机IS90% 0.55 随机OOS中位 1.00 年份更好 0.89
+2026-09-29,DailyRangePos5,1H,batch15 daily-state,hyst,entry=1.5;exit=0.3;spread=0.3,IS sharpe≥0.3 & corr<0.5,0.55,,0.95,,,4,通过；组合 内 0.69→0.72 外 1.08→1.15
+2026-09-29,DailyRangePos21,1H,batch15 daily-state,hyst,entry=1.5;exit=0.3;spread=0.3,IS sharpe≥0.3 & corr<0.5,0.87,,0.65,,,4,未通过；组合 内 0.69→0.87 外 1.08→1.06
+2026-09-29,DailyMomentum5,1H,batch15 daily-state,hyst,entry=1.5;exit=0.3;spread=0.3,IS sharpe≥0.3 & corr<0.5,0.42,,0.05,,,4,未通过；组合 内 0.69→0.70 外 1.08→0.88
+2026-09-29,MA200Distance,1H,batch15 daily-state,hyst,entry=1.5;exit=0.3;spread=0.3,IS sharpe≥0.3 & corr<0.5,0.42,,0.68,,,4,未通过；组合 内 0.69→0.67 外 1.08→1.07

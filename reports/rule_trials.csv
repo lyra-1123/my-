@@ -293,3 +293,13 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,TT30 盘中临时z执行,30MIN→5MIN,trend-tail,intrabar,V2 每5分钟开仓/收盘平仓,IS usd sharpe @0.3 vs V0,-0.01,-21.0,0.83,2129.0,,5,SELECTED 
 2026-09-29,TT30 盘中临时z执行,30MIN→5MIN,trend-tail,intrabar,V3 收盘开仓/每5分钟平仓,IS usd sharpe @0.3 vs V0,-0.1,-150.0,0.7,1703.0,,5,
 2026-09-29,TT30 盘中临时z执行,30MIN→5MIN,trend-tail,intrabar,V4 每15分钟开平,IS usd sharpe @0.3 vs V0,-0.1,-155.0,0.62,1505.0,,5,
+2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K1 强信号|z|≥2,IS sharpe_atr_now @0.3 vs base & random,0.19,,0.23,,,10,随机IS90% 0.53 随机OOS中位 0.40 年份更好 0.11
+2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K1 强信号|z|≥2,IS sharpe_atr_now @0.3 vs base & random,0.45,,0.9,,,10,随机IS90% 0.56 随机OOS中位 0.97 年份更好 0.47
+2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K2 日线趋势同向,IS sharpe_atr_now @0.3 vs base & random,0.46,,0.79,,,10,随机IS90% 0.60 随机OOS中位 0.61 年份更好 0.32
+2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K2 日线趋势同向,IS sharpe_atr_now @0.3 vs base & random,0.52,,1.02,,,10,随机IS90% 0.56 随机OOS中位 0.95 年份更好 0.58
+2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K3 放量,IS sharpe_atr_now @0.3 vs base & random,0.18,,0.63,,,10,随机IS90% 0.60 随机OOS中位 0.85 年份更好 0.21
+2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K3 放量,IS sharpe_atr_now @0.3 vs base & random,0.36,,0.88,,,10,随机IS90% 0.57 随机OOS中位 0.98 年份更好 0.68
+2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K4 非亚盘,IS sharpe_atr_now @0.3 vs base & random,0.36,,0.27,,,10,随机IS90% 0.62 随机OOS中位 0.73 年份更好 0.32
+2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K4 非亚盘,IS sharpe_atr_now @0.3 vs base & random,0.47,,0.79,,,10,随机IS90% 0.57 随机OOS中位 0.97 年份更好 0.58
+2026-09-29,TT30 确认条件,30MIN,trend-tail,过滤,K5 HA1H不反向,IS sharpe_atr_now @0.3 vs base & random,0.63,,1.13,,,10,SELECTED 随机IS90% 0.57 随机OOS中位 0.92 年份更好 0.58
+2026-09-29,TT30 确认条件,30MIN,trend-tail,加权,K5 HA1H不反向,IS sharpe_atr_now @0.3 vs base & random,0.56,,1.08,,,10,随机IS90% 0.55 随机OOS中位 1.00 年份更好 0.89

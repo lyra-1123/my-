@@ -178,6 +178,14 @@ def render() -> str:
         L.append(f"!!! 无法下单：{why}")
     if os.path.exists(C.KILL_FILE):
         L.append("!!! STOP 文件存在：程序会平仓并暂停")
+    alert = os.path.join(C.LOG_DIR, "ALERT.txt")
+    if os.path.exists(alert):
+        try:
+            lines = open(alert, encoding="utf-8").read().strip().splitlines()
+        except OSError:
+            lines = ["（ALERT.txt 读取失败）"]
+        L.append("!!! 告警（live/logs/ALERT.txt）：")
+        L += ["!!!   " + x for x in lines[:1] + lines[1:][-6:]]
     L.append("")
     for sid, cfg in C.STRATEGIES.items():
         if cfg["enabled"]:

@@ -183,6 +183,13 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
     elif abs(desired - current) > 1e-9 and halt_orders:
         note += f" 未下单：{halt_orders}"
         action = "BLOCKED"
+    elif stop is not None and desired != 0 and not halt_orders and broker.positions(cfg["magic"]):
+        # 持仓与目标一致（影子 HA1H-TS2）：把服务器止损同步到模型的移动止损
+        tick = mt5.symbol_info_tick(C.SYMBOL)
+        if tick is not None and ((desired > 0 and stop >= tick.bid) or (desired < 0 and stop <= tick.ask)):
+            note += f" 模型止损 {stop:.2f} 已越过现价，未更新服务器止损"
+        elif not broker.set_stop(sid, cfg["magic"], stop, now_utc):
+            failed.append(f"更新止损失败：{broker.LAST_ERROR[0]}")
     if failed:
         action = "ORDER_FAILED"
         note += " " + "；".join(failed)
@@ -216,6 +223,54 @@ def process(sid: str, cfg: dict, now_utc: pd.Timestamp, state: dict, halt: str |
                   "z": round(float(row["z"]), 4),
                   "z_exec": round(float(row["z_exec"]), 4), "target": target, "desired_lots": desired, "current_lots": current,
                   "action": action, "stop": stop, "spread": round(spread, 3), "data_age_min": round(age_min, 1), "note": note.strip()})
+    return action, note.strip()
+
+
+def alert_file() -> str:
+    return os.path.join(C.LOG_DIR, "ALERT.txt")
+
+
+def raise_alert(now_utc, problems: list[str], state: dict):
+    """下单失败 / 不允许下单 / 报错：醒目打印、响铃，并写 live/logs/ALERT.txt（live.status 会显示）。"""
+    state.setdefault("alert_since", str(now_utc))
+    state["alert_cycles"] = state.get("alert_cycles", 0) + 1
+    bj = pd.Timestamp(now_utc).tz_localize("UTC").tz_convert("Asia/Shanghai").strftime("%m-%d %H:%M")
+    lines = [f"[北京 {bj}] {p}" for p in problems]
+    print("\n" + "!" * 70)
+    print(f"!!! 告警：程序无法按目标下单（自 {state['alert_since']} UTC 起连续 {state['alert_cycles']} 轮）")
+    for x in lines:
+        print("!!!   " + x)
+    print("!!! 仓位正在与模型脱节。处理好后程序会在下一根 K 线自动补齐，告警自动解除。")
+    print("!" * 70 + "\n")
+    try:
+        os.makedirs(C.LOG_DIR, exist_ok=True)
+        new = not os.path.exists(alert_file())
+        with open(alert_file(), "a", encoding="utf-8") as fh:
+            if new:
+                fh.write(f"告警开始（UTC {state['alert_since']}）：程序无法按目标下单，仓位与模型脱节。问题解决后自动删除本文件。\n")
+            fh.write("\n".join(lines) + "\n")
+    except OSError as e:
+        print(f"!!! 告警文件写入失败：{e!r}")
+    if os.name == "nt":
+        try:
+            import winsound
+            for _ in range(3):
+                winsound.MessageBeep(winsound.MB_ICONHAND)
+                time.sleep(0.4)
+        except Exception:
+            pass
+
+
+def clear_alert(state: dict):
+    if state.pop("alert_since", None) is None and not os.path.exists(alert_file()):
+        return
+    n = state.pop("alert_cycles", 0)
+    try:
+        if os.path.exists(alert_file()):
+            os.remove(alert_file())
+    except OSError:
+        pass
+    print(f"告警解除：本轮下单正常（此前连续 {n} 轮异常）")
 
 
 def cycle(state: dict, force=False):
@@ -232,16 +287,24 @@ def cycle(state: dict, force=False):
             state["paused_until"] = str((nxt.tz_localize("America/New_York") - pd.Timedelta(hours=7)).tz_convert("UTC").tz_localize(None))
             halt = f"当日亏损 {pnl:.2f}$ 超过熔断线，暂停至 {state['paused_until']}"
     ok, why = broker.trading_allowed()
+    problems = [] if ok else [f"无法下单：{why}"]
     if not ok:
         print(f"!!! 无法下单：{why}")
     for sid, cfg in C.STRATEGIES.items():
         if cfg["enabled"]:
             try:
-                process(sid, cfg, now_utc, state, halt, force, "" if ok else why)
+                res = process(sid, cfg, now_utc, state, halt, force, "" if ok else why)
+                if res and res[0] == "ORDER_FAILED":
+                    problems.append(f"{sid}：{res[1]}")
             except Exception as e:  # 单个策略出错不影响其他策略
+                problems.append(f"{sid}：程序报错 {e!r}")
                 log_decision({"utc_time": str(now_utc), "strategy": sid, "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
                               "desired_lots": "", "current_lots": "", "action": "ERROR", "stop": "", "spread": "", "data_age_min": "",
                               "note": repr(e)})
+    if problems:
+        raise_alert(now_utc, problems, state)
+    else:
+        clear_alert(state)
     # 每个交易日收盘（纽约 17:00）后的第一次运行：自动生成前一交易日的复盘数据报告
     if C.AUTO_DAILY_REVIEW:
         try:

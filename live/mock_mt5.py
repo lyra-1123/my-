@@ -61,9 +61,10 @@ def initialize(*a, **k): return True
 def shutdown(): return True
 def last_error(): return (0, "ok")
 def symbol_select(*a): return True
-TermInfo = namedtuple("TermInfo", "trade_allowed connected")
+TermInfo = namedtuple("TermInfo", "trade_allowed tradeapi_disabled connected")
 TRADE_ALLOWED = [True]
-def terminal_info(): return TermInfo(TRADE_ALLOWED[0], True)
+REJECT_RETCODE = [None]   # 测试用：终端显示允许交易，但服务器拒绝每一笔订单（如 09-28 的 10027）
+def terminal_info(): return TermInfo(TRADE_ALLOWED[0], False, True)
 def account_info(): return Acc(1, "mock", ACCOUNT_TRADE_MODE_DEMO, ACCOUNT_MARGIN_MODE_RETAIL_HEDGING, 10000.0, 10000.0, "USD", True, True)
 def symbol_info(sym): return Info(100.0, 2, 0.01, 0.01, 0, 1)
 
@@ -109,6 +110,8 @@ def history_deals_get(a, b):
 def order_send(req):
     if not TRADE_ALLOWED[0]:
         return Res(10027, 0.0, "AutoTrading disabled by client")
+    if REJECT_RETCODE[0]:
+        return Res(REJECT_RETCODE[0], 0.0, "AutoTrading disabled by client")
     if req["action"] == TRADE_ACTION_SLTP:
         for i, p in enumerate(_pos):
             if p.ticket == req["position"]:

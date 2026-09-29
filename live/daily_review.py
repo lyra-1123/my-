@@ -25,6 +25,7 @@ import pandas as pd
 
 from factors.core import trading_day
 from live import config as C
+from live.broker import RETCODE_HINT
 from live.mt5_api import mt5
 from live.mt5_data import DUR, bars_range, connect, deals_between, fetch_bars, utc_now_from_server
 from paper.engine import compute, daily_from, trades_from
@@ -218,6 +219,7 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
     n_spread_block = int(notes.str.contains("点差").sum())
     n_stale = int(notes.str.contains("过期").sum())
     n_order_fail = int((pd.to_numeric(od["retcode"], errors="coerce") != 10009).sum()) if len(od) else 0
+    fail_by_code = order_fail_breakdown(od)
     manual = int(deals_hist[(deals_hist["magic"] == cfg["magic"]) & (deals_hist["utc"] >= start) & (deals_hist["utc"] < end)
                             & deals_hist["reason"].isin(MANUAL_REASONS)].shape[0])
     swap_trips = int((closed_today["swap"].abs() > 1e-9).sum()) if len(closed_today) else 0
@@ -227,8 +229,26 @@ def review_strategy(sid, cfg, day, start, end, deals_hist, dec, orders):
             "model_full": model_full, "is_live": is_live, "cmp_from": cmp_from, "live_day": live_day, "sigma": sigma, "z": z,
             "z_model": model_day / sigma if sigma else np.nan, "align": align, "n_bars_live": len(t_ok), "mismatch": mism,
             "live_pos_at_mismatch": live_pos.reindex(mism.index), "n_err": n_err, "n_spread_block": n_spread_block,
-            "n_stale": n_stale, "n_order_fail": n_order_fail, "n_blocked": n_blocked, "manual": manual, "swap_trips": swap_trips,
+            "n_stale": n_stale, "n_order_fail": n_order_fail, "fail_by_code": fail_by_code, "n_blocked": n_blocked, "manual": manual, "swap_trips": swap_trips,
             "live_start": live_start, "decisions": dd, "daily_model": daily, "tr_all": tr_all, "c": c}
+
+
+def order_fail_breakdown(od: pd.DataFrame) -> str:
+    """失败订单按（订单类型, 回执码）分组：'开平仓 10027 ×11（AutoTrading disabled…；说明）'。"""
+    if not len(od):
+        return ""
+    rc = pd.to_numeric(od["retcode"], errors="coerce")
+    bad = od[rc != 10009].assign(_rc=rc[rc != 10009])
+    if bad.empty:
+        return ""
+    kind = pd.to_numeric(bad["action"], errors="coerce").map({float(mt5.TRADE_ACTION_SLTP): "改止损"}).fillna("开平仓")
+    parts = []
+    for (k, code), g in bad.groupby([kind, bad["_rc"].fillna(-1)], sort=False):
+        code = int(code)
+        cm = str(g["comment"].dropna().iloc[0]) if "comment" in g and g["comment"].notna().any() else ""
+        extra = "；".join(x for x in (cm, RETCODE_HINT.get(code, "")) if x)
+        parts.append(f"{k} {code if code >= 0 else '无回执'} ×{len(g)}" + (f"（{extra}）" if extra else ""))
+    return "，".join(parts)
 
 
 def flags_for(r) -> list[tuple[str, str]]:
@@ -242,7 +262,8 @@ def flags_for(r) -> list[tuple[str, str]]:
     if r.get("n_blocked"):
         f.append(("🔴", f"{r['n_blocked']} 次有信号但终端/账户不允许下单（算法交易未开启等），仓位与模型脱节"))
     if r["n_order_fail"]:
-        f.append(("🔴", f"下单失败 {r['n_order_fail']} 次（orders.csv 回执不是 10009）"))
+        f.append(("🔴", f"下单失败 {r['n_order_fail']} 次（orders.csv 回执不是 10009）"
+                         + (f"：{r['fail_by_code']}" if r.get("fail_by_code") else "")))
     if r["swap_trips"]:
         f.append(("🔴", f"{r['swap_trips']} 笔交易被收取过夜费：按规则应在纽约 17:00 前平仓，需查明原因"))
     if np.isfinite(r["align"]):

@@ -39,11 +39,22 @@ LAST_ERROR = [""]   # 最近一次失败订单的回执说明（runner 写进决
 FILLS: list[dict] = []   # 本次处理中成功的市价成交（runner 每个策略处理前清空），用于记录成交价与滑点
 
 
+# 常见失败回执的含义（写进日志和告警，方便当场判断）
+RETCODE_HINT = {
+    10027: "终端禁止了算法交易：工具栏'算法交易'按钮需为绿色，且 工具→选项→智能交易 中不能禁止通过外部 Python API 交易",
+    10018: "市场关闭", 10017: "该品种禁止交易", 10044: "该品种只允许平仓", 10019: "保证金不足",
+    10030: "不支持的成交方式（filling mode）", 10016: "止损价无效（离现价太近或方向不对）", 10004: "重新报价",
+    10021: "没有报价", 10031: "与交易服务器断开", 10006: "请求被拒绝",
+}
+
+
 def trading_allowed() -> tuple[bool, str]:
-    """终端和账户是否允许程序下单（"算法交易"按钮、账户权限）。"""
+    """终端和账户是否允许程序下单（"算法交易"按钮、Python API 交易开关、账户权限）。"""
     ti, acc = mt5.terminal_info(), mt5.account_info()
     if ti is not None and not getattr(ti, "trade_allowed", True):
         return False, "MT5 终端未开启'算法交易'（工具栏按钮需为绿色；工具→选项→智能交易→允许算法交易）"
+    if ti is not None and getattr(ti, "tradeapi_disabled", False):
+        return False, "MT5 终端禁止通过外部 Python API 交易（工具→选项→智能交易，取消该项）"
     if acc is not None and not getattr(acc, "trade_expert", True):
         return False, "该账户不允许程序（EA）交易"
     if acc is not None and not getattr(acc, "trade_allowed", True):
@@ -55,7 +66,9 @@ def _send(req: dict, sid: str, utc_now) -> bool:
     res = mt5.order_send(req)
     ok = res is not None and res.retcode == mt5.TRADE_RETCODE_DONE
     if not ok:
-        LAST_ERROR[0] = f"{getattr(res, 'retcode', None)} {getattr(res, 'comment', mt5.last_error())}"
+        rc = getattr(res, "retcode", None)
+        LAST_ERROR[0] = (f"{rc} {getattr(res, 'comment', mt5.last_error())}"
+                         + (f"（{RETCODE_HINT[rc]}）" if rc in RETCODE_HINT else ""))
     elif req.get("action") == mt5.TRADE_ACTION_DEAL:
         px = getattr(res, "price", 0.0) or 0.0
         if not px and getattr(res, "deal", 0):

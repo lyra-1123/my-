@@ -214,3 +214,68 @@ date,factor,freq,cluster,rule,params,selected_on,is_sharpe,is_net_ex_drift,oos_s
 2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.01;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.13,-0.1225,0.98,0.4111,,40,净利列为年化；IS回撤 -94.7% OOS回撤 -65.9%
 2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.015;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,0.08,-0.2595,1.03,0.5259,,40,净利列为年化；IS回撤 -99.2% OOS回撤 -82.4%
 2026-09-29,TT30+HA1H 仓位管理,trade,portfolio sizing,R5 ATR定风险+单日止损,x=0.02;E0=10000;spread=0.3,IS CAGR s.t. IS maxDD<=13.3%,-0.89,-1.0,1.04,0.4612,,40,净利列为年化；IS回撤 -100.0% OOS回撤 -92.8%
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-8.07,-7272.1,-7.04,-3803.5,,60,每笔ATR内 -0.1664
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.48,-4299.4,-4.19,-2482.0,,60,每笔ATR内 -0.1241
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.76,-5776.8,-5.76,-2476.1,,60,每笔ATR内 -0.1859
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.08,-3395.3,-3.21,-1629.1,,60,每笔ATR内 -0.1292
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.34,-4748.3,-5.8,-2119.9,,60,每笔ATR内 -0.2012
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.17,-3086.8,-3.27,-1455.0,,60,每笔ATR内 -0.1481
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.66,-4381.9,-5.37,-2112.8,,60,每笔ATR内 -0.1804
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.7,-2608.5,-2.75,-1200.1,,60,每笔ATR内 -0.1330
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.53,-3780.6,-5.14,-1714.4,,60,每笔ATR内 -0.1983
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.71,-2373.8,-2.62,-998.5,,60,每笔ATR内 -0.1476
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.27,-3290.5,-4.8,-1417.1,,60,每笔ATR内 -0.2120
+2026-09-29,限价单剥头皮:S1 IRC,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.45,-2004.2,-2.47,-836.0,,60,每笔ATR内 -0.1474
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-9.21,-8376.3,-7.88,-4017.4,,60,每笔ATR内 -0.1625
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.67,-7088.5,-4.56,-2837.3,,60,每笔ATR内 -0.1626
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-8.12,-5904.7,-6.03,-2434.2,,60,每笔ATR内 -0.1723
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.62,-4889.4,-3.68,-1910.9,,60,每笔ATR内 -0.1574
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.55,-4745.0,-5.11,-1754.5,,60,每笔ATR内 -0.1858
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.87,-3777.9,-3.04,-1360.4,,60,每笔ATR内 -0.1581
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.86,-4310.2,-5.09,-1978.3,,60,每笔ATR内 -0.1608
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.95,-3882.1,-3.11,-1513.4,,60,每笔ATR内 -0.1569
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.83,-3751.4,-4.46,-1456.4,,60,每笔ATR内 -0.1789
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.86,-3282.3,-3.0,-1290.0,,60,每笔ATR内 -0.1647
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.55,-3247.6,-4.15,-1227.2,,60,每笔ATR内 -0.1872
+2026-09-29,限价单剥头皮:S2 IRS,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.27,-2677.3,-2.75,-1073.0,,60,每笔ATR内 -0.1605
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.93,-6468.2,-6.58,-3075.4,,60,每笔ATR内 -0.1602
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.11,-4586.9,-4.03,-2137.4,,60,每笔ATR内 -0.1480
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.09,-4810.4,-5.01,-1927.2,,60,每笔ATR内 -0.1603
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.47,-3570.6,-2.93,-1332.4,,60,每笔ATR内 -0.1452
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.92,-4033.0,-5.0,-1642.3,,60,每笔ATR内 -0.1738
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.32,-2972.7,-2.5,-1024.5,,60,每笔ATR内 -0.1489
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.34,-2849.2,-4.22,-1220.6,,60,每笔ATR内 -0.1600
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.16,-1941.6,-2.44,-864.1,,60,每笔ATR内 -0.1330
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.3,-2489.4,-3.63,-917.9,,60,每笔ATR内 -0.1699
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.21,-1775.9,-2.21,-701.6,,60,每笔ATR内 -0.1430
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.64,-2344.3,-4.03,-938.3,,60,每笔ATR内 -0.1908
+2026-09-29,限价单剥头皮:S3 AVB,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.3,-1626.6,-2.1,-617.7,,60,每笔ATR内 -0.1508
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-8.44,-6668.2,-6.4,-3060.3,,60,每笔ATR内 -0.1635
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.08,-4614.4,-3.43,-1932.4,,60,每笔ATR内 -0.1347
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-8.03,-5445.5,-5.64,-2189.0,,60,每笔ATR内 -0.1872
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.63,-3662.1,-3.38,-1582.4,,60,每笔ATR内 -0.1423
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.84,-4620.9,-5.12,-1741.7,,60,每笔ATR内 -0.2066
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.85,-3355.7,-2.61,-1105.7,,60,每笔ATR内 -0.1645
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.1,-3191.2,-4.58,-1428.4,,60,每笔ATR内 -0.1823
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.73,-2300.1,-2.26,-840.8,,60,每笔ATR内 -0.1500
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.83,-2806.3,-3.83,-1054.4,,60,每笔ATR内 -0.1966
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.85,-2147.0,-2.27,-759.5,,60,每笔ATR内 -0.1673
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.74,-2499.8,-4.45,-1094.3,,60,每笔ATR内 -0.2078
+2026-09-29,限价单剥头皮:S4 强反转6等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.73,-1889.2,-2.4,-725.0,,60,每笔ATR内 -0.1722
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.63,-5754.1,-6.34,-2843.2,,60,每笔ATR内 -0.1501
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.96,-4189.7,-3.5,-1832.1,,60,每笔ATR内 -0.1345
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-7.23,-4610.5,-5.29,-2001.5,,60,每笔ATR内 -0.1654
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.32,-3200.4,-3.29,-1484.4,,60,每笔ATR内 -0.1334
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-6.75,-3863.2,-5.04,-1703.5,,60,每笔ATR内 -0.1800
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z1.5|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-4.16,-2777.8,-2.6,-1062.9,,60,每笔ATR内 -0.1448
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.77,-2981.1,-4.29,-1369.7,,60,每笔ATR内 -0.1588
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.0|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.33,-1985.7,-2.19,-816.0,,60,每笔ATR内 -0.1261
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.48,-2544.0,-3.77,-1027.2,,60,每笔ATR内 -0.1728
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.25|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-3.12,-1650.3,-2.13,-706.1,,60,每笔ATR内 -0.1280
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m0.5;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-5.07,-2153.9,-3.92,-956.6,,60,每笔ATR内 -0.1791
+2026-09-29,限价单剥头皮:S5 强弱9等权,5MIN+M1,batch14 limit scalp,limit,z2.0|k0.5|m1.0;stop=2ATR;valid15m;hold30m;s=0.3;b=0.05,IS sharpe_atr_now (corr<0.3 gate),-2.87,-1419.7,-1.96,-593.6,,60,SELECTED 每笔ATR内 -0.1298
+2026-09-29,B1 IntradayMomentum,15MIN,batch14 session structure,event,cost=0.3$,IS event-study S1-S4,-1.35,-0.0513,,,,2,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,B2 SessionSeasonality,15MIN,batch14 session structure,event,cost=0.3$,IS event-study S1-S4,-0.02,-0.002,,,,2,t列为事件t值、净利列为每笔ATR；样本内未入选，未跑样本外
+2026-09-29,B3 AsiaNightLong,1H,batch14b session drift,fixed-time,entry19;cost=0.3$,IS net sharpe,1.13,0.1143,-0.2,-0.0017,-0.11,27,净利列为每笔去漂移ATR；逐小时扫描 24 次计入 N
+2026-09-29,B4 LondonMorningShort,1H,batch14b session drift,fixed-time,entry19;cost=0.3$,IS net sharpe,1.25,0.1305,-0.13,0.0054,0.34,27,净利列为每笔去漂移ATR；逐小时扫描 24 次计入 N
+2026-09-29,B5 Pair,1H,batch14b session drift,fixed-time,entry19;cost=0.3$,IS net sharpe,1.74,0.1226,-0.23,0.0019,0.12,27,SELECTED 净利列为每笔去漂移ATR；逐小时扫描 24 次计入 N

@@ -42,6 +42,9 @@ DIVISOR = {"XAUUSD": 1000, "XAGUSD": 1000}
 REC = struct.Struct(">5if")
 
 
+PAUSE = 0.5                                          # 每次请求前的等待（秒），降低被限流的概率；--pause 可改
+
+
 def fetch(sym: str, side: str, day: dt.date, raw_dir: str, retries: int = 8) -> bytes:
     """下载某日原始文件（带缓存与重试）；周末/无数据返回 b""。"""
     path = os.path.join(raw_dir, sym, side, f"{day:%Y%m%d}.bi5")
@@ -51,6 +54,7 @@ def fetch(sym: str, side: str, day: dt.date, raw_dir: str, retries: int = 8) -> 
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     last = ""
     for k in range(retries):
+        time.sleep(PAUSE)
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 data = r.read()
@@ -168,6 +172,7 @@ def check(out_dir: str) -> None:
 
 
 def main() -> None:
+    global PAUSE
     ap = argparse.ArgumentParser(description="Dukascopy M1 批量下载")
     ap.add_argument("--symbol", default="XAUUSD")
     ap.add_argument("--side", default="ASK", choices=["BID", "ASK"])
@@ -175,8 +180,10 @@ def main() -> None:
     ap.add_argument("--end", default=str(dt.date.today() - dt.timedelta(days=1)))
     ap.add_argument("--out", default=os.path.join(ROOT, "data"))
     ap.add_argument("--workers", type=int, default=3)
+    ap.add_argument("--pause", type=float, default=0.5, help="每次请求前等待的秒数（被限流时调大，如 1~2）")
     ap.add_argument("--check", action="store_true", help="只做自检（与现有 BID 文件比对）")
     a = ap.parse_args()
+    PAUSE = a.pause
     os.makedirs(a.out, exist_ok=True)
     if a.check:
         check(a.out)

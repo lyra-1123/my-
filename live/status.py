@@ -178,6 +178,10 @@ def render() -> str:
         L.append(f"!!! 无法下单：{why}")
     if os.path.exists(C.KILL_FILE):
         L.append("!!! STOP 文件存在：程序会平仓并暂停")
+    for sid, cfg in C.STRATEGIES.items():   # 已停用的策略不再被程序管理，遗留持仓必须手动平
+        if not cfg["enabled"] and broker.positions(cfg["magic"]):
+            L.append(f"!!! {sid} 已停用，但魔术号 {cfg['magic']} 仍有持仓 {broker.net_lots(cfg['magic']):+.2f} 手，"
+                     "程序不会再管理它：请在 MT5 里手动平仓")
     alert = os.path.join(C.LOG_DIR, "ALERT.txt")
     if os.path.exists(alert):
         try:

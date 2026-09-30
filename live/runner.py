@@ -352,6 +352,25 @@ def disable_quick_edit():
         pass
 
 
+def keep_awake() -> bool:
+    """
+    告诉 Windows：本程序运行期间不要因为闲置而自动睡眠（SetThreadExecutionState）。
+    即使电源设置被改回"自动睡眠"也有效；程序退出后自动失效。挡不住合盖、手动睡眠和电量耗尽。
+    只作用于调用它的线程，所以必须在主循环所在的线程里调用。
+    """
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
+        ok = ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED) != 0
+    except Exception:
+        ok = False
+    print("已阻止系统闲置睡眠（程序运行期间有效；合盖和手动睡眠仍会中断程序）" if ok
+          else "!!! 无法阻止系统闲置睡眠，请在电源设置里关闭自动睡眠")
+    return ok
+
+
 def main():
     disable_quick_edit()
     ap = argparse.ArgumentParser()
@@ -366,6 +385,7 @@ def main():
         cycle(state, force=C.ALIGN_ON_START)
         if args.once:
             return
+    keep_awake()
     print("已启动。每根 30 分钟 K 线收盘后运行；Ctrl+C 退出；创建 live/STOP 文件可平仓暂停。")
     while True:
         wake = next_wakeup(pd.Timestamp(time.time(), unit="s"))

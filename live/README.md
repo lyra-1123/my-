@@ -58,7 +58,7 @@ python -m live.compare_signals --dukascopy-dir "C:\...\数据" --days 60
 ```
 python -m live.runner
 ```
-- 保持命令行窗口和 MT5 终端都开着。电脑不能睡眠，可以在电源设置里关掉。
+- 保持命令行窗口和 MT5 终端都开着。电脑不能睡眠：runner 运行期间会通过 Windows 的 `SetThreadExecutionState` 阻止**闲置**睡眠（启动时打印"已阻止系统闲置睡眠"），即使电源设置被改回自动睡眠也有效；但它挡不住**合盖、手动睡眠、电量耗尽**，笔记本请接电源，并在电源设置里把"合上盖子时"设为"不采取任何操作"。`--once` 模式（任务计划程序触发）不会保持唤醒，需要在电源设置里关闭睡眠。
 - 也可以用 `python -m live.runner --once` 只跑一次，配合 Windows 任务计划程序在每个 :00 / :30 过 10 秒触发。
 
 ## 风控与开关

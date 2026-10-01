@@ -237,17 +237,17 @@ def raise_alert(now_utc, problems: list[str], state: dict):
     bj = pd.Timestamp(now_utc).tz_localize("UTC").tz_convert("Asia/Shanghai").strftime("%m-%d %H:%M")
     lines = [f"[北京 {bj}] {p}" for p in problems]
     print("\n" + "!" * 70)
-    print(f"!!! 告警：程序无法按目标下单（自 {state['alert_since']} UTC 起连续 {state['alert_cycles']} 轮）")
+    print(f"!!! 告警：程序运行异常（自 {state['alert_since']} UTC 起连续 {state['alert_cycles']} 轮）")
     for x in lines:
         print("!!!   " + x)
-    print("!!! 仓位正在与模型脱节。处理好后程序会在下一根 K 线自动补齐，告警自动解除。")
+    print("!!! 仓位可能与模型脱节。处理好后程序会在下一根 K 线自动补齐，告警自动解除。")
     print("!" * 70 + "\n")
     try:
         os.makedirs(C.LOG_DIR, exist_ok=True)
         new = not os.path.exists(alert_file())
         with open(alert_file(), "a", encoding="utf-8") as fh:
             if new:
-                fh.write(f"告警开始（UTC {state['alert_since']}）：程序无法按目标下单，仓位与模型脱节。问题解决后自动删除本文件。\n")
+                fh.write(f"告警开始（UTC {state['alert_since']}）：程序运行异常，仓位可能与模型脱节。问题解决后自动删除本文件。\n")
             fh.write("\n".join(lines) + "\n")
     except OSError as e:
         print(f"!!! 告警文件写入失败：{e!r}")
@@ -273,7 +273,20 @@ def clear_alert(state: dict):
     print(f"告警解除：本轮下单正常（此前连续 {n} 轮异常）")
 
 
-def cycle(state: dict, force=False):
+def note_suspended(planned: pd.Timestamp, actual: pd.Timestamp) -> str:
+    """runner 比计划晚运行：记录被挂起的时长和漏掉的决策时点（写进 decisions.csv，复盘报告和 live.status 会显示）。"""
+    late_min = (actual - planned).total_seconds() / 60
+    slots = pd.date_range(planned - pd.Timedelta(seconds=C.BAR_CLOSE_DELAY_SEC), actual, freq="30min")
+    bj = lambda t: pd.Timestamp(t).tz_localize("UTC").tz_convert("Asia/Shanghai").strftime("%H:%M")
+    msg = (f"程序被挂起约 {late_min:.0f} 分钟（计划北京 {bj(planned)} 运行，实际 {bj(actual)}；电脑睡眠/待机或进程卡住？），"
+           f"漏掉 {len(slots)} 轮决策：" + "、".join(bj(t) for t in slots))
+    log_decision({"utc_time": str(actual), "strategy": "RUNNER", "name": "", "bar": "", "z": "", "z_exec": "", "target": "",
+                  "desired_lots": "", "current_lots": "", "action": "SUSPENDED", "stop": "", "spread": "",
+                  "data_age_min": round(late_min, 1), "note": msg})
+    return msg
+
+
+def cycle(state: dict, force=False, problems_in: list[str] | None = None):
     now_utc = utc_now_from_server()
     halt = None
     if os.path.exists(C.KILL_FILE):
@@ -287,7 +300,7 @@ def cycle(state: dict, force=False):
             state["paused_until"] = str((nxt.tz_localize("America/New_York") - pd.Timedelta(hours=7)).tz_convert("UTC").tz_localize(None))
             halt = f"当日亏损 {pnl:.2f}$ 超过熔断线，暂停至 {state['paused_until']}"
     ok, why = broker.trading_allowed()
-    problems = [] if ok else [f"无法下单：{why}"]
+    problems = list(problems_in or []) + ([] if ok else [f"无法下单：{why}"])
     if not ok:
         print(f"!!! 无法下单：{why}")
     for sid, cfg in C.STRATEGIES.items():
@@ -390,8 +403,17 @@ def main():
     while True:
         wake = next_wakeup(pd.Timestamp(time.time(), unit="s"))
         time.sleep(max(1.0, (wake - pd.Timestamp(time.time(), unit="s")).total_seconds()))
+        extra = []
+        actual = pd.Timestamp(time.time(), unit="s")
+        if (actual - wake).total_seconds() > C.SUSPEND_ALERT_SEC:
+            try:
+                extra.append(note_suspended(wake, actual))
+            except Exception as e:
+                extra.append(f"程序被挂起（记录失败：{e!r}）")
+            print(f"!!! {extra[-1]}；等待 {C.RESUME_WAIT_SEC} 秒让 MT5 重新同步后再运行")
+            time.sleep(C.RESUME_WAIT_SEC)
         try:
-            cycle(state)
+            cycle(state, problems_in=extra)
             print(f"{pd.Timestamp(time.time(), unit='s'):%Y-%m-%d %H:%M:%S} UTC 已处理，详见 {C.LOG_DIR}/decisions.csv")
         except Exception as e:   # 任何意外都不能让程序退出：打印后等下一根 K 线再试
             import traceback

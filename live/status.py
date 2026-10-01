@@ -182,6 +182,10 @@ def render() -> str:
         if not cfg["enabled"] and broker.positions(cfg["magic"]):
             L.append(f"!!! {sid} 已停用，但魔术号 {cfg['magic']} 仍有持仓 {broker.net_lots(cfg['magic']):+.2f} 手，"
                      "程序不会再管理它：请在 MT5 里手动平仓")
+    if not dec.empty:   # 最近 24 小时程序被挂起（睡眠/待机/卡住）的记录
+        sp = dec[(dec["strategy"] == "RUNNER") & (dec["action"] == "SUSPENDED")
+                 & (dec["utc_time"] >= pd.Timestamp(now) - pd.Timedelta(hours=24))]
+        L += [f"!!! 最近 24 小时：{x}" for x in sp["note"].astype(str)]
     alert = os.path.join(C.LOG_DIR, "ALERT.txt")
     if os.path.exists(alert):
         try:

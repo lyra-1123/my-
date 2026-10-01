@@ -319,7 +319,7 @@ def cumulative(r, prereg, end):
             "win": float((cl["net"] > 0).mean()) if len(cl) else np.nan, "band": band}
 
 
-def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
+def write_report(day, results, account, now_utc, foreign=None, ctx=None, suspended=None) -> str:
     L = []
     d = pd.Timestamp(day).strftime("%Y-%m-%d")
     s, e = day_bounds(day)
@@ -358,6 +358,11 @@ def write_report(day, results, account, now_utc, foreign=None, ctx=None) -> str:
     # 规则检查
     L.append("## 2. 规则与执行检查（阈值事先写死）\n")
     anyf = False
+    if suspended is not None and len(suspended):
+        mins = pd.to_numeric(suspended["data_age_min"], errors="coerce").sum()
+        L.append(f"- 🔴 **程序**：被挂起 {len(suspended)} 次，合计约 {mins:.0f} 分钟（电脑睡眠/待机或进程卡住），期间没有决策：")
+        L += [f"  - {x}" for x in suspended["note"].astype(str)]
+        anyf = True
     if foreign is not None and len(foreign):
         L.append(f"- 🔴 **账户**：当日有 {len(foreign)} 笔不属于本程序魔术号的 {C.SYMBOL} 成交（手动单或其他 EA），会占用保证金、干扰熔断统计")
         anyf = True
@@ -501,7 +506,9 @@ def run_review(day: pd.Timestamp | None = None, now_utc: pd.Timestamp | None = N
     ours = {v["magic"] for v in C.STRATEGIES.values()}
     foreign = deals_hist[(deals_hist["utc"] >= start) & (deals_hist["utc"] < end) & ~deals_hist["magic"].isin(ours)
                          & deals_hist["entry"].isin([0, 1, 2, 3])]
-    md = write_report(day, results, mt5.account_info(), now_utc, foreign, market_context(start, end, day))
+    susp = (dec[(dec["strategy"] == "RUNNER") & (dec["action"] == "SUSPENDED") & (dec["utc_time"] >= start) & (dec["utc_time"] < end)]
+            if not dec.empty else None)
+    md = write_report(day, results, mt5.account_info(), now_utc, foreign, market_context(start, end, day), susp)
     path = os.path.join(REPORT_DIR, f"review_{day:%Y-%m-%d}.md")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(md)
